@@ -1,0 +1,24 @@
+{
+  "schema": "oas-mindmap-requirements/v1",
+  "saved_at": "2026-09-18T19:06:00+08:00",
+  "source": {
+    "document": "OAS-功能导图-可编辑.html",
+    "generated_at": "2026-09-18 18:24:13",
+    "tasks": 64
+  },
+  "counts": {
+    "nodes": 2159,
+    "requirements": 0,
+    "custom_nodes": 0,
+    "removed_nodes": 0
+  },
+  "requirements": [],
+  "overlay": {
+    "edits": {},
+    "added": {},
+    "removed": {},
+    "orphans": {},
+    "seq": 0,
+    "updated_at": "2026-09-18T19:02:45+08:00"
+  }
+}
