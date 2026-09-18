@@ -2,11 +2,10 @@
 """子任务组：把多个已有任务按自定义顺序串成一组运行。"""
 
 import json
-from enum import Enum
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
 from module.config.multi_select import normalize_multi_select
 from module.logger import logger
@@ -144,29 +143,9 @@ def resolve_group_tasks(value) -> list[str]:
     return result
 
 
-class TaskGroupScheduleMode(str, Enum):
-    """子任务组的定时方式"""
-    # 按子任务自己的定时规则运行：组内任务各自到期才跑，任务组只保证执行顺序
-    SUBTASK = '按子任务自己的定时规则'
-    # 按任务组自己的定时规则运行：任务组每次到期都把组内任务按顺序跑一遍
-    GROUP = '按任务组自己的定时规则'
-
-
 class TaskGroupConfig(BaseModel):
     tasks: MultiLine = Field(default='', description='task_group_tasks_help')
-    schedule_mode: TaskGroupScheduleMode = Field(default=TaskGroupScheduleMode.SUBTASK,
-                                                 description='task_group_schedule_mode_help')
     stop_on_error: bool = Field(default=True, description='task_group_stop_on_error_help')
-
-    @validator('schedule_mode', pre=True, always=True)
-    def parse_schedule_mode(cls, value):
-        """兼容旧配置和手动编辑：无法识别的值按子任务自己的定时规则处理。"""
-        if isinstance(value, TaskGroupScheduleMode):
-            return value
-        text = str(value or '').strip().lower()
-        if text in ('按任务组自己的定时规则', 'group', 'task_group', 'taskgroup'):
-            return TaskGroupScheduleMode.GROUP
-        return TaskGroupScheduleMode.SUBTASK
 
     @property
     def task_list(self) -> list[str]:

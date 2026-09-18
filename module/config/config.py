@@ -192,43 +192,6 @@ class Config(ConfigState, ConfigManual, ConfigWatcher, ConfigMenu):
             logger.warning(f'Can not read the task group: {e}')
             return set()
 
-    def task_group_uses_subtask_schedule(self) -> bool:
-        """
-        子任务组是否按「组内任务自己的定时规则」运行。
-
-        :return: True 表示任务组的下次运行时间由组内任务自己的定时规则决定
-        """
-        try:
-            from tasks.TaskGroup.config import TaskGroupScheduleMode
-            group = getattr(self.model, 'task_group', None)
-            if group is None:
-                return False
-            return group.group_config.schedule_mode == TaskGroupScheduleMode.SUBTASK
-        except Exception as e:
-            logger.warning(f'Can not read the task group: {e}')
-            return False
-
-    def task_group_next_run(self):
-        """
-        按组内任务自己的定时规则计算任务组的下次运行时间。
-
-        :return: 组内任务最早的下次运行时间，不需要/不可用时返回 None
-        """
-        if not self.task_group_uses_subtask_schedule():
-            return None
-        times = []
-        for name in self.task_group_members():
-            task = getattr(self.model, convert_to_underscore(name), None)
-            next_run = getattr(getattr(task, 'scheduler', None), 'next_run', None)
-            if isinstance(next_run, str):
-                try:
-                    next_run = datetime.strptime(next_run, '%Y-%m-%d %H:%M:%S')
-                except ValueError:
-                    next_run = None
-            if isinstance(next_run, datetime):
-                times.append(next_run)
-        return min(times) if times else None
-
     def update_scheduler(self) -> None:
         """
         更新调度器， 设置pending_task and waiting_task
@@ -239,12 +202,8 @@ class Config(ConfigState, ConfigManual, ConfigWatcher, ConfigMenu):
         error = []
         self.scheduler_update_dt = datetime.now()
         group_members = self.task_group_members()
-        # 按子任务自己的定时规则运行时，任务组的下次运行时间跟着组内任务走
-        group_next_run = self.task_group_next_run()
         for key, value in self.model.dict().items():
             func = Function(key, value)
-            if group_next_run is not None and func.command == 'TaskGroup':
-                func.next_run = group_next_run
             if not func.enable:
                 continue
             if not isinstance(func.next_run, datetime):
