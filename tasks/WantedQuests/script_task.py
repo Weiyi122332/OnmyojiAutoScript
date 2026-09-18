@@ -39,8 +39,8 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         if unwanted_boss_names is not None and unwanted_boss_names != '':
             self.unwanted_boss_name_list = re.split(r"[，,]", unwanted_boss_names)
 
-        # 悬赏会使用探索和秘闻战斗，御魂直接复用这两个任务的预设。
-        self.switch_mission_souls()
+        # 优先使用本任务自己的御魂方案，未配置时复用探索和秘闻的预设。
+        self.switch_souls()
 
         preSuc = False
         if (self.get_config()).cooperation_only:
@@ -97,6 +97,28 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
             sleep(1.5)
         self.next_run()
         raise TaskEnd('WantedQuests')
+
+    def switch_souls(self) -> None:
+        """执行悬赏封印前切换御魂。
+
+        优先使用「悬赏封印 → 执行任务前切换御魂」里配置的方案；
+        没有配置时沿用旧行为：复用探索与秘闻任务里已配置的御魂预设。
+        """
+        soul_config = self.config.model.wanted_quests.switch_soul_config
+        if soul_config.enable:
+            logger.info('Wanted quests use its own soul preset')
+            self.goto_page(page_shikigami_records)
+            self.run_switch_soul(soul_config.switch_group_team)
+        if soul_config.enable_switch_by_name:
+            logger.info('Wanted quests use its own named soul preset')
+            self.goto_page(page_shikigami_records)
+            self.run_switch_soul_by_name(
+                soul_config.group_name,
+                soul_config.team_name,
+            )
+        if soul_config.enable or soul_config.enable_switch_by_name:
+            return
+        self.switch_mission_souls()
 
     def switch_mission_souls(self) -> None:
         """为悬赏装配探索与秘闻任务已配置的御魂预设。"""

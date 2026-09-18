@@ -18,6 +18,8 @@ class ConfigMenu:
         self.menu['TaskList'] = []
         # 脚本设置
         self.menu['Script'] = ['Script', 'GlobalGame', 'Restart']
+        # 子任务组
+        self.menu["Task Group"] = ['TaskGroup']
         # 刷御魂
         self.menu["Soul Zones"] = ['Orochi', 'Sougenbi', 'FallenSun', 'EternitySea', 'SixRealms', 'OtherWorldTwilight']
         # 日常的任务

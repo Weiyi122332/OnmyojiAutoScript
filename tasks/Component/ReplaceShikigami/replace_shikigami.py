@@ -30,6 +30,10 @@ class ReplaceShikigami(BaseTask, ReplaceShikigamiAssets):
         :param shikigami_order:
         :return:
         """
+        if shikigami_class == ShikigamiClass.DEFAULT:
+            # 默认：保持游戏当前的稀有度筛选，不做任何切换
+            logger.info('Keep the current shikigami class, skip switching')
+            return
         match_selected = {ShikigamiClass.MATERIAL: self.I_RS_MATERIAL_SELECTED,
                           ShikigamiClass.N: self.I_RS_N_SELECTED,
                           ShikigamiClass.R: self.I_RS_R_SELECTED,

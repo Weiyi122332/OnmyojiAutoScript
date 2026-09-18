@@ -65,6 +65,10 @@ from tasks.KittyShop.config import KittyShop
 from tasks.DyeTrials.config import DyeTrials
 # ----------------------------------------------------------------------------------------------------------------------
 
+# 子任务组---------------------------------------------------------------------------------------------------------------
+from tasks.TaskGroup.config import TaskGroup
+# ----------------------------------------------------------------------------------------------------------------------
+
 # 肝帝专属---------------------------------------------------------------------------------------------------------------
 from tasks.BondlingFairyland.config import BondlingFairyland
 from tasks.EvoZone.config import EvoZone
@@ -158,6 +162,9 @@ class ConfigModel(ConfigBase):
     guild_banquet: GuildBanquet = Field(default_factory=GuildBanquet)
     demon_retreat: DemonRetreat = Field(default_factory=DemonRetreat)
     guild_activity_monitor: GuildActivityMonitor = Field(default_factory=GuildActivityMonitor)
+
+    # 子任务组：把多个已有任务按自定义顺序串成一组运行
+    task_group: TaskGroup = Field(default_factory=TaskGroup)
 
     def __init__(self, config_name: str=None, **data) -> None:
         """

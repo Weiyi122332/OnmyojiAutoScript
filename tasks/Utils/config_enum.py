@@ -12,6 +12,8 @@ class ShikigamiClass(str, Enum):
     N = 'N'
     # 材料
     MATERIAL = 'MATERIAL'
+    # 默认：保持游戏当前的式神稀有度筛选，不执行任何切换稀有度的操作
+    DEFAULT = '默认'
 
 
 class DemonClass(str, Enum):
@@ -29,7 +31,6 @@ class DemonClass(str, Enum):
     GHOSTLY_SONGSTRESS = '鬼灵歌伎'
     # Boss_7 夜荒魂
     BOSS_7 = '夜荒魂'
-
 
 
 
