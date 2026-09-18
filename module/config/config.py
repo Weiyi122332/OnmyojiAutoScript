@@ -176,21 +176,27 @@ class Config(ConfigState, ConfigManual, ConfigWatcher, ConfigMenu):
 
     def task_group_members(self) -> set:
         """
-        当前生效的子任务组里的任务名。
+        当前生效的所有任务组里的任务名。
 
-        被加进子任务组的任务由子任务组接管调度，其中的「启动方案」失效，
+        被加进任务组的任务由任务组接管调度，其中的「启动方案」失效，
         调度器不会再单独调度它们。
 
-        :return: 大驼峰任务名的集合，没有生效的子任务组时返回空集合
+        :return: 任务名的集合，没有生效的任务组时返回空集合
         """
+        members = set()
         try:
-            group = getattr(self.model, 'task_group', None)
-            if group is None or not group.scheduler.enable:
-                return set()
-            return set(group.group_config.task_list)
-        except Exception as e:
-            logger.warning(f'Can not read the task group: {e}')
-            return set()
+            from tasks.TaskGroup.config import GROUP_COUNT
+        except Exception:
+            GROUP_COUNT = 5
+        for index in range(1, GROUP_COUNT + 1):
+            try:
+                group = getattr(self.model, f'task_group_{index}', None)
+                if group is None or not group.scheduler.enable:
+                    continue
+                members.update(group.group_config.task_list)
+            except Exception as e:
+                logger.warning(f'Can not read the task group {index}: {e}')
+        return members
 
     def update_scheduler(self) -> None:
         """

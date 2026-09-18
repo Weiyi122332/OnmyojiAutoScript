@@ -65,8 +65,9 @@ from tasks.KittyShop.config import KittyShop
 from tasks.DyeTrials.config import DyeTrials
 # ----------------------------------------------------------------------------------------------------------------------
 
-# 子任务组---------------------------------------------------------------------------------------------------------------
-from tasks.TaskGroup.config import TaskGroup
+# 任务组-----------------------------------------------------------------------------------------------------------------
+from tasks.TaskGroup.config import (TaskGroup1, TaskGroup2, TaskGroup3, TaskGroup4, TaskGroup5,
+                                    migrate_legacy_group)
 # ----------------------------------------------------------------------------------------------------------------------
 
 # 肝帝专属---------------------------------------------------------------------------------------------------------------
@@ -163,8 +164,12 @@ class ConfigModel(ConfigBase):
     demon_retreat: DemonRetreat = Field(default_factory=DemonRetreat)
     guild_activity_monitor: GuildActivityMonitor = Field(default_factory=GuildActivityMonitor)
 
-    # 子任务组：把多个已有任务按自定义顺序串成一组运行
-    task_group: TaskGroup = Field(default_factory=TaskGroup)
+    # 任务组：把多个已有任务按自定义顺序串成一组运行，最多可以建 5 个组
+    task_group_1: TaskGroup1 = Field(default_factory=TaskGroup1)
+    task_group_2: TaskGroup2 = Field(default_factory=TaskGroup2)
+    task_group_3: TaskGroup3 = Field(default_factory=TaskGroup3)
+    task_group_4: TaskGroup4 = Field(default_factory=TaskGroup4)
+    task_group_5: TaskGroup5 = Field(default_factory=TaskGroup5)
 
     def __init__(self, config_name: str=None, **data) -> None:
         """
@@ -188,6 +193,12 @@ class ConfigModel(ConfigBase):
     def _migrate_renamed_tasks(data: dict) -> dict:
         """兼容 RichMan/FlightChess 更名前保存的用户配置。"""
         data = dict(data)
+        # 旧版「子任务组」（单个组 + 一行一个任务名的文本框）搬到任务组 1
+        legacy_group = data.pop('task_group', None)
+        if legacy_group is not None and 'task_group_1' not in data:
+            migrated_group = migrate_legacy_group(legacy_group)
+            if migrated_group:
+                data['task_group_1'] = migrated_group
         if data.get('running_task') in ('RichMan', 'Fakegod', 'FlightChess'):
             data['running_task'] = 'ActivityShikigami'
         old_rich_man = data.get('rich_man')
