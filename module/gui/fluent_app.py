@@ -74,6 +74,54 @@ class FluentApp():
         qmlRegisterType(Class, "Oas", 1, 0, qml_class)
 
 
+# 任务组相关界面文字的中文（.qm 里还没有这些新字符串，这里直接兜底）
+_TASK_GROUP_ZH = {
+    'Task Group': '任务组',
+    'TaskGroup1': '任务组 1',
+    'TaskGroup2': '任务组 2',
+    'TaskGroup3': '任务组 3',
+    'TaskGroup4': '任务组 4',
+    'TaskGroup5': '任务组 5',
+    'Task 1': '第 1 个任务',
+    'Task 2': '第 2 个任务',
+    'Task 3': '第 3 个任务',
+    'Task 4': '第 4 个任务',
+    'Task 5': '第 5 个任务',
+    'Task 6': '第 6 个任务',
+    'Task 7': '第 7 个任务',
+    'Task 8': '第 8 个任务',
+    'Task 9': '第 9 个任务',
+    'Task 10': '第 10 个任务',
+    'task_group_name_help': '给这个任务组起个名字，方便自己认（例如「日常」「御魂」「活动」）。',
+    'task_group_slot_help': '按顺序从上往下执行：第 1 个任务、第 2 个任务……不需要的任务留「不设置」即可。',
+}
+
+
+class TaskGroupTranslator(QTranslator):
+    """
+    把菜单里的 TaskGroup1..5 显示成任务组的自定义名称。
+
+    QML 里的菜单项是 qsTr(任务名)，所以这里接管这几个任务名的翻译，
+    名称来自各配置实例里「任务组名称」设置。
+    """
+
+    def translate(self, context, source_text, disambiguation=None, n=-1):
+        try:
+            from module.config.task_group_names import collect_group_names
+            name = collect_group_names().get(source_text)
+        except Exception as e:
+            logger.error(f'load task group names failed: {e}')
+            name = None
+        if name:
+            return name
+        if getattr(self, 'language', '简体中文') == '简体中文':
+            return _TASK_GROUP_ZH.get(source_text, '')
+        return ''
+
+    def set_language(self, language: str) -> None:
+        self.language = language
+
+
 class Translator(QObject):
 
     def __init__(self, engine, app) -> None:
@@ -84,6 +132,9 @@ class Translator(QObject):
         self.path_zh_CN = str((Path.cwd() / "module" / "config" / "i18n" / "zh_CN.qm").resolve())
 
         self.translator = QTranslator()
+        # 任务组自定义名称：装在 .qm 之后，Qt 会用后装的
+        self.task_group_translator = TaskGroupTranslator()
+        QGuiApplication.installTranslator(self.task_group_translator)
 
     @Slot(str)
     def set_language(self, language: str) -> None:
@@ -93,16 +144,20 @@ class Translator(QObject):
         :return:
         """
         if language == "简体中文":
+            self.task_group_translator.set_language(language)
             if not self.translator.load(self.path_zh_CN):
                 logger.error("load language 简体中文 failed!")
             QGuiApplication.installTranslator(self.translator)
+            QGuiApplication.installTranslator(self.task_group_translator)
             self._engine.retranslate()
             return
 
         if language == "English":
+            self.task_group_translator.set_language(language)
             if not self.translator.load(self.path_en_US):
                 logger.error("load language English failed!")
             QGuiApplication.installTranslator(self.translator)
+            QGuiApplication.installTranslator(self.task_group_translator)
             self._engine.retranslate()
             return
 
@@ -124,6 +179,3 @@ class DpiScale(QObject):
             case "ceil": QGuiApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.Ceil)  # 始终缩放
             case "round_prefer_floor": QGuiApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.RoundPreferFloor)  # 设备像素比0.75及以上的，进行缩放
             case _: QGuiApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-
-
-

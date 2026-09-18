@@ -110,6 +110,13 @@ async def chinese_translate(data: dict = Body(...)):
 async def additional_translate() -> dict:
     try:
         data = I18n.load_additions()
+        # 任务组的自定义名称：菜单 / 任务列表显示的是翻译后的名字，
+        # 所以把「TaskGroup1 -> 自定义名称」塞进翻译表，前端就会显示自定义名称。
+        from module.config.task_group_names import collect_group_names
+        names = collect_group_names()
+        for language in data.values():
+            if isinstance(language, dict):
+                language.update(names)
         return data
     except Exception as e:
         logger.error(e)
