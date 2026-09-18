@@ -2122,6 +2122,7 @@
     },
     "group_config": {
       "tasks": "",
+      "schedule_mode": "按子任务自己的定时规则",
       "stop_on_error": true
     }
   }
