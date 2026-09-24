@@ -42,9 +42,10 @@ class GeneralRoom(BaseTask, GeneralRoomAssets):
                 return True
         return False
 
-    def ensure_private(self) -> bool:
+    def ensure_private(self, room_mark: RuleImage = None) -> bool:
         """
         确认私人房间, 不公开仅邀请
+        :param room_mark: 已进入房间的标志；用于处理建房弹窗关闭时的过渡帧
         :return:
         """
         logger.info('Ensure private')
@@ -63,6 +64,9 @@ class GeneralRoom(BaseTask, GeneralRoomAssets):
                 continue
             if self.appear_then_click(self.I_ENSURE_PRIVATE_FALSE_2, interval=1, threshold=0.7):
                 continue
+            if room_mark is not None and self.appear(room_mark):
+                logger.info('Room already created, private ensured')
+                return True
         return False
 
     def ensure_public(self) -> bool:

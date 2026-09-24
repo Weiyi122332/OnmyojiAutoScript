@@ -241,6 +241,9 @@
       for (const optionValue of field.options || []) {
         createOption(control, optionValue, optionValue);
       }
+    } else if (field.control === "checkbox") {
+      control = document.createElement("input");
+      control.type = "checkbox";
     } else {
       control = document.createElement("input");
       control.type = field.control === "number" ? "number" : "text";
@@ -299,19 +302,17 @@
     if (!element) {
       return;
     }
-    const eventName = element.tagName === "SELECT" ? "change" : "input";
+    const eventName = element.tagName === "SELECT" || element.type === "checkbox"
+      ? "change"
+      : "input";
     element.addEventListener(eventName, () => updateRuleFromForm(fieldKey));
   }
 
   function bindDynamicFieldEvents() {
-    bindRuleFieldChange(el.itemName, "itemName");
-    bindRuleFieldChange(el.imageName, "imageName");
-    bindRuleFieldChange(el.method, "method");
-    bindRuleFieldChange(el.threshold, "threshold");
-    bindRuleFieldChange(el.mode, "mode");
-    bindRuleFieldChange(el.keyword, "keyword");
-    bindRuleFieldChange(el.duration, "duration");
-    bindRuleFieldChange(el.description, "description");
+    for (const field of getRuleFields()) {
+      const element = document.getElementById(getRuleFieldDomId(field.key));
+      bindRuleFieldChange(element, field.key);
+    }
 
     if (el.listName) {
       el.listName.addEventListener("input", () => {
@@ -378,12 +379,19 @@
     if (!element) {
       return;
     }
+    if (element.type === "checkbox") {
+      element.checked = Boolean(value);
+      return;
+    }
     element.value = value ?? "";
   }
 
   function readFieldValue(field, element) {
     if (!element) {
       return field.default ?? "";
+    }
+    if (field.control === "checkbox") {
+      return Boolean(element.checked);
     }
     if (field.control === "number") {
       const raw = String(element.value || "").trim();

@@ -5,6 +5,7 @@
 import numpy as np
 import cv2
 
+from module.atom.click import RuleClick
 from module.ocr.base_ocr import BaseCor, OcrMode, OcrMethod, OcrMethodType
 from module.ocr.sub_ocr import Full, Single, Digit, DigitCounter, Duration, Quantity
 from module.logger import logger
@@ -76,19 +77,20 @@ class RuleOcr(Digit, DigitCounter, Duration, Single, Full, Quantity):
 
     def coord(self) -> tuple:
         """
-        获取一个区域，随机返回一个坐标
+        将 OCR 点击区域交给高风险 RuleClick 生成坐标。
         :return:
         """
-        area = None
         if self.mode == OcrMode.FULL:
             area = self.area
         else:
             area = self.roi
-
-        x, y, w, h = area
-        x = np.random.randint(x, x + w)
-        y = np.random.randint(y, y + h)
-        return x, y
+        area = tuple(area)
+        return RuleClick(
+            roi_front=area,
+            roi_back=area,
+            name=self.name,
+            profile='High',
+        ).coord()
 
 
 if __name__ == "__main__":

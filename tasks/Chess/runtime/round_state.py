@@ -460,6 +460,11 @@ class ChessRoundStateMixin:
             )
             return occupied
 
+        return self._board_set_has_shikigami_visual(set_index)
+
+    def _board_set_has_shikigami_visual(self, set_index: int) -> bool:
+        """仅按当前截图中的勾玉标志判断指定站位是否有人。"""
+
         x, y, width, height = self._set_jade_area(set_index)
         image_height, image_width = self.device.image.shape[:2]
         if (
@@ -493,6 +498,54 @@ class ChessRoundStateMixin:
             ))
             for rule in self.board_occupancy_rules
         )
+
+    def _reconcile_lineup_after_hyakki_round(
+        self,
+        next_round_no: int | None = None,
+    ) -> list[str]:
+        """百鬼夜行结束后移除已不在原站位上的式神上阵记录。"""
+        if next_round_no in self.BOSS_CHALLENGE_ROUNDS:
+            logger.info(
+                'Skip post-Hyakki lineup check during boss round: '
+                f'round={next_round_no}'
+            )
+            return []
+        deployed_names = set(
+            getattr(self, '_board_lineup_names', set())
+        )
+        actual_positions = dict(
+            getattr(self, '_board_actual_positions', {})
+        )
+        player_positions = set(
+            getattr(self, '_player_deployed_positions', set())
+        )
+        removed = []
+        for name in sorted(deployed_names):
+            set_index = actual_positions.get(
+                name,
+                self.shikigami_deploy_positions.get(name),
+            )
+            if set_index is None:
+                continue
+            if self._board_set_has_shikigami_visual(int(set_index)):
+                continue
+            deployed_names.discard(name)
+            actual_positions.pop(name, None)
+            player_positions.discard(int(set_index))
+            removed.append(name)
+            logger.warning(
+                'Chess shikigami missing after Hyakki round; '
+                f'mark as undeployed: name={name}, set={set_index}'
+            )
+
+        self._board_lineup_names = deployed_names
+        self._board_actual_positions = actual_positions
+        self._player_deployed_positions = player_positions
+        logger.info(
+            'Chess post-Hyakki lineup check: '
+            f'removed={removed}, deployed={sorted(deployed_names)}'
+        )
+        return removed
 
     def _read_board_position_count(self) -> dict:
         """统计 12 个站位勾玉区域中检测到图标的位置数量。"""

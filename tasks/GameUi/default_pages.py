@@ -37,12 +37,32 @@ from tasks.Restart.assets import RestartAssets
 from tasks.RyouToppa.assets import RyouToppaAssets
 
 
+HIGH_DENSITY_RANDOM_CLICK_TASKS = frozenset({
+    'ActivityShikigami',
+    'Exploration',
+})
+
+# 依据现有设备日志：这些任务的结算点击量较低，或运行频率极低。
+# 未列出的普通任务也默认按低密度处理，仅高密度任务显式传入 Scatter。
+LOW_DENSITY_RANDOM_CLICK_TASKS = frozenset({
+    'AbyssShadows', 'AreaBoss', 'DailyTrifles', 'Delegation',
+    'DemonEncounter', 'Dokan', 'Duel', 'GoldYoukai', 'GuildBanquet',
+    'Hunt', 'KekkaiUtilize', 'Orochi', 'RealmRaid', 'Restart',
+    'WantedQuests', 'WeeklyPurchase',
+})
+
+# 百鬼棋局虽然日志点击量低，但其奖励页有独立安全多边形，不走通用四区域。
+DEDICATED_SCATTER_RANDOM_CLICK_TASKS = frozenset({'Chess'})
+
+
 def settlement_random_click(area=None) -> RuleClick:
-    """默认按四档权重选择16个椭圆区域；任务可显式指定 scatter 区域。"""
+    """低密度任务使用四区域中的左右区域；高密度任务显式传入 Scatter。"""
     if area is None:
-        areas = tuple(getattr(GeneralBattleAssets, f'C_RANDOM_{i}') for i in range(1, 17))
-        # 1–4、5–8、9–12、13–16号区域的单区权重分别为4、3、2、1。
-        area = random.choices(areas, weights=(4,) * 4 + (3,) * 4 + (2,) * 4 + (1,) * 4, k=1)[0]
+        enabled_areas = (
+            GeneralBattleAssets.C_RANDOM_LEFT,
+            GeneralBattleAssets.C_RANDOM_RIGHT,
+        )
+        area = random.choice(enabled_areas)
     # 浅拷贝隔离单次结算的连点属性；scatter 沿用进入任务时生成的重心。
     click = copy(area)
     click.name = 'SETTLEMENT_RANDOM_CLICK'
@@ -79,15 +99,23 @@ def random_click(
 
 
 def reward_random_click() -> RuleClick:
-    """奖励页默认使用16个结算区域及中心椭圆正态采样。"""
+    """奖励页默认按低密度任务策略使用左右区域。"""
     return settlement_random_click()
 
 
-def detect_relax_page(task) -> bool:
-    """识别闲庭，并让庭院标志接入多皮肤循环检测。"""
-    if not task.appear(task.I_BACK_BROWN):
+def reward_details_visible(task) -> bool:
+    """识别奖励物品详情或御魂详情弹层。"""
+    return (
+        task.appear(GeneralBattleAssets.I_REWARD_PARTICULARS)
+        or task.appear(GeneralBattleAssets.I_REWARD_PARTICULARS_ORCHI)
+    )
+
+
+def close_reward_details(task) -> bool:
+    if not reward_details_visible(task):
         return False
-    return task.appear(task.I_CHECK_MAIN)
+    task.click(random_click(ltrb=(True, False, True, False)), interval=0.8)
+    return True
 
 
 def handle_login_page(task) -> bool:
@@ -127,16 +155,10 @@ def handle_activity_overlay(task) -> bool:
     while not timer.reached():
         task.screenshot()
 
-        if task.appear(GameUiAssets.I_ACTIVITY_AWARD):
+        if task.appear(GlobalGameAssets.I_UI_REWARD):
             if not award_clicked:
-                click = random.choice([
-                    GameUiAssets.C_RANDOM_TOP,
-                    GameUiAssets.C_RANDOM_DOWN,
-                    GameUiAssets.C_RANDOM_LEFT,
-                    GameUiAssets.C_RANDOM_RIGHT,
-                ])
-                logger.info(f'Clear activity award overlay via {click.name}')
-                task.click(click, interval=0)
+                logger.info('Clear activity award overlay via ui_reward')
+                task.click(GlobalGameAssets.C_UI_REWARD, interval=0)
                 task.device.click_record_clear()
                 award_clicked = True
             time.sleep(0.2)
@@ -168,11 +190,20 @@ page_main.add_enter_success_hooks(
     GameUiAssets.I_AD_CLOSE_RED, GlobalGameAssets.I_UI_BACK_RED, RestartAssets.I_CANCEL_BATTLE,
 )
 
+# 阵容助手可能从多个页面误触进入，黄色返回会回到实际来源页。
+# 不绑定固定父页面；导航器识别到该无出边全局页后，使用全局未知页
+# 关闭动作点击黄色返回，再重新识别返回后的页面。
+page_lineup_helper = Page(
+    GameUiAssets.I_CHECK_LINEUP_HELPER,
+    category="global",
+    priority=90,
+)
+
 # 公共活动主页。各活动任务只负责从这里继续导航到各自玩法页面。
 page_activity = Page(
     any_of(
         GameUiAssets.I_CHECK_ACTIVITY,
-        GameUiAssets.I_ACTIVITY_AWARD,
+        GlobalGameAssets.I_UI_REWARD,
         GameUiAssets.I_ACTIVITY_SIGNIN_CLOSE,
     ),
     category="global",
@@ -187,10 +218,9 @@ page_activity.add_enter_failure_hooks(
 page_activity.connect(page_main, GlobalGameAssets.I_UI_BACK_YELLOW, key="page_activity->page_main")
 page_main.connect(page_activity, GameUiAssets.I_MAIN_GOTO_ACTIVITY, key="page_main->page_activity")
 
-# 闲庭仍会命中庭院主页标志，因此使用更高优先级先识别闲庭，再点击左上角返回庭院。
-# I_CHECK_MAIN 必须从任务实例读取，以便失配时触发多庭院皮肤循环识别。
+# 闲庭使用独立设置图标识别，不依赖庭院皮肤；返回后由导航器截图确认到达庭院。
 page_relax = Page(
-    detect_relax_page,
+    GameUiAssets.I_CHECK_MAIN_SET,
     category="global",
     priority=90,
 )
@@ -518,6 +548,7 @@ page_reward = Page(
         GeneralBattleAssets.I_REWARD_SOUL_5,
         GeneralBattleAssets.I_REWARD_SOUL_6,
         GlobalGameAssets.I_UI_REWARD,
+        reward_details_visible,
     ),
     category="global",
     priority=25
@@ -532,6 +563,8 @@ def handle_battle_reward_page(task) -> bool:
     Returns:
         bool: 执行结果
     """
+    if close_reward_details(task):
+        return True
     if task.appear_then_click(GeneralBattleAssets.I_OVER_GHOST, interval=0.8):
         return True
     return task.click(reward_random_click(), interval=0.8)

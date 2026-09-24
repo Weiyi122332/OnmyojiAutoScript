@@ -1,0 +1,12 @@
+[
+  {
+    "itemName": "check_lineup_helper",
+    "imageName": "page_check_lineup_helper.png",
+    "roiFront": "90,15,126,50",
+    "roiBack": "85,10,136,60",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "Default",
+    "description": "阵容助手页"
+  }
+]

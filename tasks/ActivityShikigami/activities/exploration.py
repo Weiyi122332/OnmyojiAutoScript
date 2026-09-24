@@ -1,16 +1,12 @@
 """式神活动探索：关键字入口、宝箱、系统式神战斗及遭遇战。"""
 
-import random
 import time
 
 from module.atom.click import RuleClick
-from module.atom.ocr import RuleOcr
-from module.atom.swipe import RuleSwipe
 from module.exception import GameStuckError
 from module.logger import logger
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 from tasks.Component.GeneralBattle.general_battle import BattleAction
-from tasks.ActivityShikigami.config import ExplorationMode
 from tasks.GameUi.default_pages import settlement_random_click
 import tasks.ActivityShikigami.page as pages
 
@@ -38,7 +34,7 @@ class ExplorationAct:
 
     def _battle_settlement_click(self):
         if self.current_action_type.startswith('exp_'):
-            return settlement_random_click()
+            return settlement_random_click(self.C_SAFE_RANDOM_CLICK_AREA_ACT)
         return super()._battle_settlement_click()
 
     def _handle_prepare(self, context, config):
@@ -59,11 +55,16 @@ class ExplorationAct:
             if not self._wait_exp(lambda: not self.appear(self.I_EVENT_REWARD_CLOSE), timeout=5):
                 raise GameStuckError('Exploration reward close button did not disappear')
             return True
-        for marker in (self.I_EVENT_REWARD_REWARD, self.I_SHIKIGAMI_HELP):
+        for marker, click in (
+            (self.I_UI_REWARD, self.C_UI_REWARD),
+            (
+                self.I_SHIKIGAMI_HELP,
+                settlement_random_click(self.C_SAFE_RANDOM_CLICK_AREA_ACT),
+            ),
+        ):
             if not self.appear(marker):
                 continue
             # 每次只点一下；连点属性不能继承通用结算的概率连点。
-            click = settlement_random_click()
             click.burst_count = 1
             self.click(click, interval=0.8)
             if not self._wait_exp(lambda: not self.appear(marker), timeout=5):
@@ -84,57 +85,20 @@ class ExplorationAct:
 
     def _find_exp_entry(self, rule):
         viewport = tuple(rule.roi_back)
-        x, y, width, height = viewport
-        up = RuleSwipe((x + width // 2, y + 50, 12, 12),
-                       (x + width // 2, y + height - 60, 12, 12),
-                       mode='default', name='activity_exp_list_top')
-        distance = 120
-        down = RuleSwipe(up.roi_back,
-                         (up.roi_back[0], up.roi_back[1] - distance, 12, 12),
-                         mode='default', name='activity_exp_list_next')
-        # 本次探索仅首次查找前上划一次，切模式和事件返回均不再回顶。
-        if getattr(self, '_exp_list_needs_top', True):
-            self.swipe(up, interval=0)
-            time.sleep(1)
-            self._exp_list_needs_top = False
-        scan = RuleOcr(roi=viewport, area=viewport, mode='Full', method='Default',
-                       keyword='', name='activity_exp_list_contents')
-        previous_tasks = None
-        empty_reads = 0
-        down_swipes = 0
-        while True:
-            self.screenshot()
-            candidates = []
-            for _, match_x, match_y, match_width, match_height in rule.match_all(self.device.image):
-                # match_all返回屏幕绝对坐标；入口保持图片高度，扩展到任务栏宽度。
-                box = [(match_x - x, match_y - y),
-                       (match_x - x + match_width, match_y - y + match_height)]
-                roi = self._exp_entry_roi(box, viewport, match_height)
-                if roi is not None:
-                    candidates.append(roi)
-            if candidates:
-                roi = min(candidates, key=lambda value: value[1])
-                return RuleClick(roi, roi, name=f'{rule.name}_entry')
-            # 入口仍用图片；到底判断读取任务栏文字，避免只比较类型而混淆不同任务。
-            tasks = tuple(''.join(str(item.ocr_text).split())
-                          for item in scan.detect_and_ocr(self.device.image)
-                          if str(item.ocr_text).strip())
-            logger.info(f'Exploration task list: {tasks}')
-            if down_swipes >= 2:
-                logger.info('Exploration entry not found after 2 downward swipes: mode complete')
-                return False
-            if tasks and tasks == previous_tasks:
-                logger.info('Exploration task list unchanged after scrolling: bottom reached')
-                return False
-            empty_reads = 0 if tasks else empty_reads + 1
-            if empty_reads >= 3:
-                raise GameStuckError('Cannot read exploration task list to confirm bottom')
-            previous_tasks = tasks
-            if self.time_limit_reached():
-                raise GameStuckError('Exploration time limit reached while scanning task list')
-            self.swipe(down, interval=0)
-            down_swipes += 1
-            time.sleep(random.uniform(1, 2))
+        x, y, _, _ = viewport
+        self.screenshot()
+        candidates = []
+        for _, match_x, match_y, match_width, match_height in rule.match_all(self.device.image):
+            # match_all返回屏幕绝对坐标；入口保持图片高度，扩展到任务栏宽度。
+            box = [(match_x - x, match_y - y),
+                   (match_x - x + match_width, match_y - y + match_height)]
+            roi = self._exp_entry_roi(box, viewport, match_height)
+            if roi is not None:
+                candidates.append(roi)
+        if not candidates:
+            return False
+        roi = min(candidates, key=lambda value: value[1])
+        return RuleClick(roi, roi, name=f'{rule.name}_entry')
 
     def _enter_exp_entry(self, mode, rule):
         entry = self._find_exp_entry(rule)
@@ -191,7 +155,7 @@ class ExplorationAct:
             if self.appear(self.I_EVENT_REWARD):
                 if mode == 'encounter':
                     raise GameStuckError('Encounter unexpectedly opened a chest event')
-                if not self._wait_exp(lambda: self.appear(self.I_EVENT_REWARD_REWARD),
+                if not self._wait_exp(lambda: self.appear(self.I_UI_REWARD),
                                       click=self.I_EVENT_REWARD_OPEN):
                     raise GameStuckError('Chest reward did not appear')
                 self._clear_exp_rewards()
@@ -212,14 +176,14 @@ class ExplorationAct:
                         or (self.appear(self.I_EXP_CHECK_EXPLORATION)
                             and not self._exp_normal_fight_appear()))
                     and not self.appear(self.I_SHIKIGAMI_HELP)
-                    and not self.appear(self.I_EVENT_REWARD_REWARD),
+                    and not self.appear(self.I_UI_REWARD),
                 )
                 return True
             if self.appear(self.I_EVENT_STORY):
                 if not self._wait_exp(lambda: self.appear(self.I_STORY_SKIP_ENSURE),
                                       click=self.I_EVENT_STORY):
                     raise GameStuckError('Story skip confirmation did not appear')
-                if not self._wait_exp(lambda: self.appear(self.I_EVENT_REWARD_REWARD),
+                if not self._wait_exp(lambda: self.appear(self.I_UI_REWARD),
                                       click=self.I_STORY_SKIP_ENSURE):
                     raise GameStuckError('Story reward did not appear')
                 self._clear_exp_rewards()
@@ -246,13 +210,8 @@ class ExplorationAct:
     def run_exploration(self):
         self._exp_soul_switched = False
         self.goto_page(pages.page_activity_exploration)
-        self._exp_list_needs_top = True
         for mode, rule in (('main', self.I_EXP_MAIN), ('encounter', self.I_EXP_ENCOUNTER),
                            ('branch', self.I_EXP_BRANCH)):
-            option = {'main': ExplorationMode.MAIN, 'branch': ExplorationMode.BRANCH,
-                      'encounter': ExplorationMode.ENCOUNTER}[mode]
-            if option not in self.conf.general_config.exploration_modes:
-                continue
             self.current_action_type = f'exp_{mode}'
             count = 0
             while True:

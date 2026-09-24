@@ -43,5 +43,59 @@
     "method": "CF_RGB(CCCCCC,FFFFFF)",
     "keyword": "封印",
     "description": "黑豹暗域已完成"
+  },
+  {
+    "itemName": "4_died",
+    "roiFront": "435,432,91,45",
+    "roiBack": "435,432,91,45",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "已击破",
+    "description": ""
+  },
+  {
+    "itemName": "5_died",
+    "roiFront": "678,432,91,45",
+    "roiBack": "678,432,91,45",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "已击破",
+    "description": ""
+  },
+  {
+    "itemName": "6_died",
+    "roiFront": "920,431,91,45",
+    "roiBack": "920,431,91,45",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "已击破",
+    "description": ""
+  },
+  {
+    "itemName": "2_died",
+    "roiFront": "526,309,91,45",
+    "roiBack": "526,309,91,45",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "已击破",
+    "description": ""
+  },
+  {
+    "itemName": "3_died",
+    "roiFront": "839,309,91,45",
+    "roiBack": "839,309,91,45",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "已击破",
+    "description": ""
+  },
+  {
+    "itemName": "1_died",
+    "roiFront": "674,168,91,45",
+    "roiBack": "674,168,91,45",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "已击破",
+    "description": ""
   }
 ]

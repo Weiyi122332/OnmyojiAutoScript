@@ -1,6 +1,5 @@
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
-from module.atom.scatter import RuleScatter
 from module.atom.long_click import RuleLongClick
 from module.atom.swipe import RuleSwipe
 from module.atom.ocr import RuleOcr
@@ -22,9 +21,9 @@ class ActivityShikigamiAssets:
 
 	# Image Rule Assets
 	# 上锁图标 
-	I_LOCK = RuleImage(roi_front=(868,653,31,30), roi_back=(760,628,330,86), threshold=0.7, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_lock.png")
+	I_LOCK = RuleImage(roi_front=(898,647,24,27), roi_back=(759,628,330,86), threshold=0.7, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_lock.png")
 	# 还未上锁图片 
-	I_UNLOCK = RuleImage(roi_front=(868,653,31,30), roi_back=(752,625,313,92), threshold=0.7, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_unlock.png")
+	I_UNLOCK = RuleImage(roi_front=(899,648,24,23), roi_back=(752,625,313,92), threshold=0.7, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_unlock.png")
 	# 活动爬塔标志 
 	I_CLIMB_MODE_PASS = RuleImage(roi_front=(1143,544,21,21), roi_back=(1118,510,119,186), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_climb_mode_pass.png")
 	# 体力爬塔标志 
@@ -38,9 +37,9 @@ class ActivityShikigamiAssets:
 	# 体力爬塔阵容锁定 
 	I_AP_LOCK = RuleImage(roi_front=(796,653,31,30), roi_back=(758,628,313,92), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_ap_lock.png")
 	# 活动通用挑战图标 
-	I_ACT_FIRE = RuleImage(roi_front=(1125,578,99,97), roi_back=(1080,530,192,190), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_act_fire.png")
+	I_ACT_FIRE = RuleImage(roi_front=(1125,578,99,97), roi_back=(1080,530,192,190), threshold=0.8, method="Template matching", profile="More", file="./tasks/ActivityShikigami/as/climb/as_act_fire.png")
 	# boss挑战标志 
-	I_AS_BOSS_FIRE = RuleImage(roi_front=(1130,590,92,47), roi_back=(1080,530,192,190), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_as_boss_fire.png")
+	I_AS_BOSS_FIRE = RuleImage(roi_front=(1130,590,92,47), roi_back=(1080,530,192,190), threshold=0.8, method="Template matching", profile="More", file="./tasks/ActivityShikigami/as/climb/as_as_boss_fire.png")
 	# 使用五倍卷 
 	I_FIGHT_PENTA_USE = RuleImage(roi_front=(867,650,31,30), roi_back=(755,631,330,86), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/climb_fight_penta_use.png")
 	# 不使用五倍卷 
@@ -56,12 +55,10 @@ class ActivityShikigamiAssets:
 
 
 	# Ocr Rule Assets
-	# 体力的数量检测 
-	O_REMAIN_AP = RuleOcr(roi=(1142,14,95,34), area=(1142,14,95,34), mode="Quantity", method="Default", keyword="", name="remain_ap")
 	# 活动门票的剩余检测 
 	O_REMAIN_PASS = RuleOcr(roi=(756,17,88,31), area=(756,17,88,31), mode="Digit", method="Default", keyword="", name="remain_pass")
 	# boss剩余攻击次数 
-	O_REMAIN_BOSS = RuleOcr(roi=(1169,668,70,30), area=(1169,668,70,30), mode="Digit", method="Default", keyword="", name="remain_boss")
+	O_REMAIN_BOSS = RuleOcr(roi=(1169,668,70,30), area=(1169,668,70,30), mode="DigitCounter", method="Default", keyword="", name="remain_boss")
 	# 100体活动门票检测 
 	O_REMAIN_AP100 = RuleOcr(roi=(936,16,99,42), area=(911,8,129,61), mode="Digit", method="Default", keyword="", name="remain_ap100")
 	# 五倍卷剩余数量 
@@ -83,28 +80,19 @@ class ActivityShikigamiAssets:
 	I_TO_BATTLE_CLIMB = RuleImage(roi_front=(68,98,140,33), roi_back=(32,83,247,97), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/climb_to_battle_climb.png")
 	#  
 	I_CHECK_CLIMB_MAIN = RuleImage(roi_front=(151,18,134,40), roi_back=(141,0,157,67), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/climb_check_climb_main.png")
-
-
-	# Scatter Rule Assets
-	# 开始战斗
-	C_START_FIRE = RuleScatter(roi_front=(1108,573,139,130), roi_back=(1108,573,139,130), polygon=[(1129, 578), (1108, 611), (1111, 659), (1141, 690), (1180, 702), (1222, 683), (1239, 655), (1246, 619), (1232, 587), (1209, 574), (1158, 573)], name="start_fire")
-
-
 	# Image Rule Assets
 	# 宝箱事件 
 	I_EVENT_REWARD = RuleImage(roi_front=(529,78,222,51), roi_back=(524,73,232,61), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_event_reward.png")
 	# 战斗事件 
 	I_EVENT_FIGHT = RuleImage(roi_front=(529,78,222,51), roi_back=(524,73,232,61), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_event_fight.png")
 	# 战斗 
-	I_EVENT_FIGHT_FIGHT = RuleImage(roi_front=(1048,548,96,44), roi_back=(1043,543,106,54), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_event_fight_fight.png")
+	I_EVENT_FIGHT_FIGHT = RuleImage(roi_front=(1048,548,96,44), roi_back=(1043,543,106,54), threshold=0.8, method="Template matching", profile="More", file="./tasks/ActivityShikigami/as/exploration/exploration_event_fight_fight.png")
 	# 开启宝箱 
 	I_EVENT_REWARD_OPEN = RuleImage(roi_front=(1050,558,96,44), roi_back=(1045,552,106,54), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_event_reward_open.png")
 	#  
 	I_EVENT_CLOSE = RuleImage(roi_front=(1095,117,42,38), roi_back=(1079,94,76,87), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_event_close.png")
 	# 式神助战 
 	I_SHIKIGAMI_HELP = RuleImage(roi_front=(142,282,42,42), roi_back=(127,266,74,80), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_shikigami_help.png")
-	# 宝箱奖励 
-	I_EVENT_REWARD_REWARD = RuleImage(roi_front=(481,183,318,46), roi_back=(457,165,363,81), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_event_reward_reward.png")
 	# 遭遇战锁定 
 	I_EVENT_FIGHT_LOCK = RuleImage(roi_front=(795,600,33,30), roi_back=(790,595,43,40), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_event_fight_lock.png")
 	# 遭遇战解锁 
@@ -176,7 +164,7 @@ class ActivityShikigamiAssets:
 	# 体力阵容已锁定 
 	I_FG_AP_LOCK = RuleImage(roi_front=(779,648,31,30), roi_back=(686,610,313,92), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/fakegod/as_ap_lock.png")
 	# 活动挑战按钮 
-	I_FG_ACT_FIRE = RuleImage(roi_front=(1139,599,84,45), roi_back=(1080,530,192,190), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/fakegod/as_act_fire.png")
+	I_FG_ACT_FIRE = RuleImage(roi_front=(1139,599,84,45), roi_back=(1080,530,192,190), threshold=0.8, method="Template matching", profile="More", file="./tasks/ActivityShikigami/as/fakegod/as_act_fire.png")
 
 
 	# Ocr Rule Assets
@@ -228,8 +216,6 @@ class ActivityShikigamiAssets:
 	I_CHECK_BATTLE_MAIN = RuleImage(roi_front=(151,18,141,41), roi_back=(141,0,192,69), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/page/as_check_battle_main.png")
 	# 确认跳过 
 	I_CONFIRM_SKIP = RuleImage(roi_front=(707,442,137,38), roi_back=(656,397,231,124), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/page/as_confirm_skip.png")
-	# 活动奖励附属页面 
-	I_ACTIVITY_AWARD = RuleImage(roi_front=(475,234,324,40), roi_back=(448,169,372,114), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/page/as_activity_award.png")
 	# 活动签到附属页面关闭按钮 
 	I_ACTIVITY_SIGNIN_CLOSE = RuleImage(roi_front=(1137,179,40,32), roi_back=(1113,150,94,85), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/page/as_activity_signin_close.png")
 
@@ -267,7 +253,7 @@ class ActivityShikigamiAssets:
 	#  
 	I_RM_FITGHT_ANCHOR = RuleImage(roi_front=(555,433,50,28), roi_back=(163,100,1011,473), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/richman/rm_rm_fitght_anchor.png")
 	#  
-	I_RM_MODE_FIGHT = RuleImage(roi_front=(1137,604,83,38), roi_back=(1117,585,121,76), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/richman/rm_rm_mode_fight.png")
+	I_RM_MODE_FIGHT = RuleImage(roi_front=(1137,604,83,38), roi_back=(1117,585,121,76), threshold=0.8, method="Template matching", profile="More", file="./tasks/ActivityShikigami/as/richman/rm_rm_mode_fight.png")
 	#  
 	I_RM_FIGHT_LOCK = RuleImage(roi_front=(1132,511,32,32), roi_back=(1121,502,53,51), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/richman/rm_rm_fight_lock.png")
 	#  
@@ -275,7 +261,7 @@ class ActivityShikigamiAssets:
 	#  
 	I_RM_FIGHT_BOSS_GOTO_RECORDS = RuleImage(roi_front=(1021,642,41,34), roi_back=(1005,626,69,66), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/richman/rm_rm_fight_boss_goto_records.png")
 	#  
-	I_RM_MODE_FIGHT_BOSS = RuleImage(roi_front=(1135,601,83,38), roi_back=(1117,585,121,76), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/richman/rm_rm_mode_fight_boss.png")
+	I_RM_MODE_FIGHT_BOSS = RuleImage(roi_front=(1135,601,83,38), roi_back=(1117,585,121,76), threshold=0.8, method="Template matching", profile="More", file="./tasks/ActivityShikigami/as/richman/rm_rm_mode_fight_boss.png")
 	#  
 	I_RM_FIGHT_LOCK_BOSS = RuleImage(roi_front=(1129,515,32,32), roi_back=(1118,502,53,51), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/richman/rm_rm_fight_lock_boss.png")
 	#  

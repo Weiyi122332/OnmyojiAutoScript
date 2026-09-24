@@ -6,6 +6,7 @@
     "roiBack": "547,518,172,96",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "奖励，就是那个魂"
   },
   {
@@ -15,6 +16,7 @@
     "roiBack": "32,650,47,45",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "预设的小图标"
   },
   {
@@ -24,6 +26,7 @@
     "roiBack": "1110,500,169,200",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "准备"
   },
   {
@@ -33,6 +36,7 @@
     "roiBack": "296,33,414,224",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "战斗胜利"
   },
   {
@@ -42,6 +46,7 @@
     "roiBack": "1131,538,100,100",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "准备但是界面还未加载这个时候是黑色的"
   },
   {
@@ -51,6 +56,7 @@
     "roiBack": "358,1,214,288",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "失败"
   },
   {
@@ -60,6 +66,7 @@
     "roiBack": "305,625,236,83",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "确认预设的队伍"
   },
   {
@@ -69,6 +76,7 @@
     "roiBack": "107,668,55,49",
     "method": "Template matching",
     "threshold": 0.7,
+    "profile": "Default",
     "description": "选择buff"
   },
   {
@@ -78,6 +86,7 @@
     "roiBack": "25,563,30,34",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "左下角的位置指针"
   },
   {
@@ -87,6 +96,7 @@
     "roiBack": "0,0,91,83",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "左上角的退出"
   },
   {
@@ -96,6 +106,7 @@
     "roiBack": "674,388,135,63",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "退出确认"
   },
   {
@@ -105,6 +116,7 @@
     "roiBack": "89,14,36,36",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "左上角好友图标"
   },
   {
@@ -114,6 +126,7 @@
     "roiBack": "24,23,111,684",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "结算时的统计图标"
   },
   {
@@ -123,6 +136,7 @@
     "roiBack": "254,163,797,261",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "结算金币"
   },
   {
@@ -132,6 +146,7 @@
     "roiBack": "108,163,1070,261",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "结算紫蛇皮"
   },
   {
@@ -141,6 +156,7 @@
     "roiBack": "254,163,797,261",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "结算金蛇皮"
   },
   {
@@ -150,6 +166,7 @@
     "roiBack": "254,163,797,261",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "结算四星青吉鬼"
   },
   {
@@ -159,6 +176,7 @@
     "roiBack": "254,163,797,396",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "结算五星御魂"
   },
   {
@@ -168,6 +186,7 @@
     "roiBack": "254,163,797,396",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "结算六星御魂"
   },
   {
@@ -177,6 +196,7 @@
     "roiBack": "239,36,399,133",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "针对封魔的特殊"
   },
   {
@@ -186,6 +206,7 @@
     "roiBack": "222,648,418,43",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "description"
   },
   {
@@ -195,6 +216,7 @@
     "roiBack": "0,0,1279,714",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "绿标"
   },
   {
@@ -204,6 +226,7 @@
     "roiBack": "0,0,1280,720",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "绿标-左上角部分"
   },
   {
@@ -213,6 +236,7 @@
     "roiBack": "0,0,1280,720",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "绿标-下半部分"
   },
   {
@@ -222,6 +246,7 @@
     "roiBack": "9,636,100,74",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "新版本的预设图案带数字"
   },
   {
@@ -231,6 +256,7 @@
     "roiBack": "210,1,147,72",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "战斗信息标识"
   },
   {
@@ -240,6 +266,7 @@
     "roiBack": "483,18,337,102",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "战斗数据统计"
   },
   {
@@ -249,6 +276,7 @@
     "roiBack": "594,447,90,55",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "皮肤碎片确定按钮"
   },
   {
@@ -258,6 +286,7 @@
     "roiBack": "411,233,452,247",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "战斗组队退出页面标志"
   },
   {
@@ -267,6 +296,7 @@
     "roiBack": "1108,128,45,41",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "时运加成关闭"
   },
   {
@@ -276,6 +306,27 @@
     "roiBack": "697,409,89,32",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "御魂溢出"
+  },
+  {
+    "itemName": "reward_particulars",
+    "imageName": "gb_reward_particulars.png",
+    "roiFront": "725,289,98,33",
+    "roiBack": "111,76,1053,564",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "Default",
+    "description": ""
+  },
+  {
+    "itemName": "reward_particulars_orchi",
+    "imageName": "gb_reward_particulars_orchi.png",
+    "roiFront": "931,496,107,31",
+    "roiBack": "111,76,1053,564",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "Default",
+    "description": "御魂详情"
   }
 ]

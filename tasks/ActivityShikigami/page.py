@@ -19,8 +19,6 @@ from tasks.GameUi.page import (
     page_main,
     page_reward,
     page_shikigami_records,
-    random_click,
-    reward_random_click,
 )
 from tasks.GlobalGame.assets import GlobalGameAssets
 
@@ -66,9 +64,8 @@ def handle_activity_reward(task) -> bool:
     _settle_activity_auxiliary(task)
     if not task.appear(GlobalGameAssets.I_UI_REWARD):
         return False
-    click = random_click()
-    logger.info(f'Clear activity reward page via {click.name}')
-    task.click(click, interval=0)
+    logger.info('Clear activity reward page via ui_reward')
+    task.click(GlobalGameAssets.C_UI_REWARD, interval=0)
     task.device.click_record_clear()
     return True
 
@@ -105,13 +102,12 @@ def handle_activity_overlay(task) -> bool:
     while not timer.reached():
         task.screenshot()
 
-        if task.appear(ActivityShikigamiAssets.I_ACTIVITY_AWARD):
+        if task.appear(GlobalGameAssets.I_UI_REWARD):
             if not award_clicked:
                 _settle_activity_auxiliary(task)
-                if task.appear(ActivityShikigamiAssets.I_ACTIVITY_AWARD):
-                    click = random_click()
-                    logger.info(f'Clear activity award overlay via {click.name}')
-                    task.click(click, interval=0)
+                if task.appear(GlobalGameAssets.I_UI_REWARD):
+                    logger.info('Clear activity award overlay via ui_reward')
+                    task.click(GlobalGameAssets.C_UI_REWARD, interval=0)
                     task.device.click_record_clear()
                     award_clicked = True
             time.sleep(0.2)
@@ -128,7 +124,7 @@ def handle_activity_overlay(task) -> bool:
         if task.appear(ActivityShikigamiAssets.I_CHECK_BATTLE_MAIN):
             # 主界面标志可能先于延迟弹窗出现，等待一秒后再确认稳定。
             _settle_activity_auxiliary(task)
-            if task.appear(ActivityShikigamiAssets.I_ACTIVITY_AWARD) or \
+            if task.appear(GlobalGameAssets.I_UI_REWARD) or \
                     task.appear(ActivityShikigamiAssets.I_ACTIVITY_SIGNIN_CLOSE):
                 continue
             if task.appear(ActivityShikigamiAssets.I_CHECK_BATTLE_MAIN):
@@ -145,7 +141,7 @@ def handle_activity_overlay(task) -> bool:
 page_act = Page(
     any_of(
         ActivityShikigamiAssets.I_CHECK_BATTLE_MAIN,
-        ActivityShikigamiAssets.I_ACTIVITY_AWARD,
+        GlobalGameAssets.I_UI_REWARD,
         ActivityShikigamiAssets.I_ACTIVITY_SIGNIN_CLOSE,
     ),
     priority=70,
@@ -188,7 +184,7 @@ page_climb_ap100.add_enter_failure_hooks(GlobalGameAssets.I_UI_BACK_RED)
 page_climb_ap100.connect(page_climb_main, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_ap100->climb_main')
 
 page_climb_boss = Page(ActivityShikigamiAssets.I_AS_BOSS_FIRE)
-page_climb_boss.connect(page_climb_main, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_boss->climb_main')
+page_climb_boss.connect(page_act, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_boss->activity')
 
 # 大富翁棋盘。
 page_rich_man = Page(ActivityShikigamiAssets.I_CHECK_RM_RICHMAN)

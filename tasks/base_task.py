@@ -5,7 +5,7 @@
 from time import sleep, time
 
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, time as clock_time, timedelta
 from module.atom.animate import RuleAnimate
 from module.atom.click import RuleClick
 from module.atom.gif import RuleGif
@@ -655,6 +655,21 @@ class BaseTask(GlobalGameAssets, CostumeBase):
         else:
             start_time = self.start_time
         self.config.task_delay(task, start_time=start_time, success=success, server=server, target=target)
+
+    def set_next_run_next_monday(self, task: str, scheduler) -> None:
+        """周目标达成后改到下周一，保留显式配置的运行时刻。"""
+        finished_at = datetime.now().replace(microsecond=0)
+        configured_time = scheduler.server_update
+        run_time = (
+            finished_at.time()
+            if configured_time == clock_time(hour=9)
+            else configured_time
+        )
+        next_monday = finished_at.date() + timedelta(
+            days=7 - finished_at.weekday()
+        )
+        target = datetime.combine(next_monday, run_time)
+        self.set_next_run(task=task, server=False, target=target)
 
     def custom_next_run(self, task: str, custom_time: Time = None, time_delta: float = 1) -> None:
         """

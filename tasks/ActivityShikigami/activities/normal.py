@@ -14,6 +14,8 @@ import tasks.ActivityShikigami.page as pages
 class NormalClimbAct:
     """体力、门票、首领和百体四种爬塔战斗。"""
 
+    CLIMB_OCR_REDIRECT_AFTER_CORRECTIONS = 5
+
     def setup_climb_pages(self):
         page_act = self.navigator.resolve_page(pages.page_act)
         page_climb_main = self.navigator.resolve_page(pages.page_climb_main)
@@ -50,10 +52,10 @@ class NormalClimbAct:
             ActivityShikigamiAssets.I_TO_BATTLE_CLIMB,
             key='climb_main->climb_ap100',
         )
-        page_climb_main.connect(
+        page_act.connect(
             page_boss,
             ActivityShikigamiAssets.I_TO_BATTLE_BOSS,
-            key='climb_main->climb_boss',
+            key='activity->climb_boss',
         )
         page_pass.connect(page_ap, ActivityShikigamiAssets.I_CLIMB_MODE_SWITCH, key='climb_pass->climb_ap')
         page_ap.connect(page_pass, ActivityShikigamiAssets.I_CLIMB_MODE_SWITCH, key='climb_ap->climb_pass')
@@ -275,7 +277,9 @@ class NormalClimbAct:
         penta_enabled = self._climb_penta_enabled(action_type)
         resource_consumption = self._climb_resource_consumption(action_type)
         penta_consumption = 1 if penta_enabled else 0
-        self.climb_pending_consumption[action_type] = resource_consumption
+        # 体力不再通过 OCR 跟踪；体力分支只记录并检查活动门票。
+        if action_type != 'ap':
+            self.climb_pending_consumption[action_type] = resource_consumption
         ap_pass_consumption = '-'
         if action_type == 'ap':
             ap_pass_consumption = self._climb_ap_pass_consumption(action_type)
@@ -283,7 +287,8 @@ class NormalClimbAct:
         self.climb_pending_consumption['penta_pass'] = penta_consumption
         logger.info(
             'Record climb consumption snapshot: '
-            f'resource={action_type}:{resource_consumption}, '
+            f'resource={action_type}:'
+            f'{resource_consumption if action_type != "ap" else "untracked"}, '
             f'ap_pass={ap_pass_consumption}, '
             f'penta_pass={penta_consumption}'
         )
@@ -413,18 +418,46 @@ class NormalClimbAct:
         """用公共修复器更新一种爬塔资源，并消费其待确认快照。"""
         previous_count = self.climb_consumable_count[name]
         expected_consumption = self.climb_pending_consumption[name]
-        remain = self._normalize_climb_consumable_count(
-            name=name,
-            raw_count=raw_count,
-            previous_count=previous_count,
-            expected_consumption=expected_consumption,
+        expected_count = max(previous_count - expected_consumption, 0)
+        correction_required = (
+            previous_count >= 0
+            and expected_consumption > 0
+            and raw_count < expected_count
         )
+        if correction_required:
+            correction_rounds = self.climb_ocr_correction_rounds[name] + 1
+            self.climb_ocr_correction_rounds[name] = correction_rounds
+        else:
+            correction_rounds = 0
+            self.climb_ocr_correction_rounds[name] = 0
+
+        if (
+            correction_required
+            and correction_rounds
+            >= self.CLIMB_OCR_REDIRECT_AFTER_CORRECTIONS
+        ):
+            remain = max(raw_count, 0)
+            self.climb_ocr_correction_rounds[name] = 0
+            logger.warning(
+                f'Climb {name} OCR stayed abnormal for '
+                f'{correction_rounds} rounds; redirect cached count: '
+                f'previous={previous_count}, raw={raw_count}, '
+                f'expected={expected_count}'
+            )
+        else:
+            remain = self._normalize_climb_consumable_count(
+                name=name,
+                raw_count=raw_count,
+                previous_count=previous_count,
+                expected_consumption=expected_consumption,
+            )
         self.climb_consumable_count[name] = remain
         self.climb_pending_consumption[name] = 0
         logger.info(
             f'Climb {name} remain: raw={raw_count}, normalized={remain}, '
             f'previous={previous_count}, '
-            f'expected_consumption={expected_consumption}'
+            f'expected_consumption={expected_consumption}, '
+            f'correction_rounds={correction_rounds}'
         )
         return remain
 
@@ -445,13 +478,7 @@ class NormalClimbAct:
             if self.appear_then_click(self.I_UI_CONFIRM_SAMLL, interval=1) or \
                     self.appear_then_click(self.I_UI_CONFIRM, interval=1):
                 continue
-            if action_type == 'boss':
-                clicked = self.appear_then_click(fire_rule, interval=1)
-            else:
-                clicked = False
-                if self.appear(self.I_ACT_FIRE, interval=1):
-                    clicked = self.click(self.C_START_FIRE, interval=1)
-            if clicked:
+            if self.appear_then_click(fire_rule, interval=1):
                 self.device.click_record_clear()
                 click_times += 1
                 logger.info(f'Try click fire, remain times[{max_times - click_times}]')
@@ -475,7 +502,6 @@ class NormalClimbAct:
         if action_type == 'pass':
             raw_remain = self.O_REMAIN_PASS.ocr_digit(self.device.image)
         elif action_type == 'ap':
-            raw_remain = self.O_REMAIN_AP.ocr_quantity(self.device.image)
             raw_ap_pass = self.O_REMAIN_AP_PASS.ocr_digit(
                 self.device.image
             )
@@ -484,21 +510,27 @@ class NormalClimbAct:
         else:
             raw_remain = self.O_REMAIN_AP100.ocr_digit(self.device.image)
 
-        remain = self._update_climb_consumable_count(
-            action_type, raw_remain
-        )
+        remain = None
+        if action_type != 'ap':
+            remain = self._update_climb_consumable_count(
+                action_type, raw_remain
+            )
         ap_pass_remain = None
         if action_type == 'ap':
             ap_pass_remain = self._update_climb_consumable_count(
                 'ap_pass', raw_ap_pass
             )
-        required = self._climb_resource_consumption(action_type)
+        required = (
+            self._climb_resource_consumption(action_type)
+            if action_type != 'ap'
+            else None
+        )
         ap_pass_required = (
             self._climb_ap_pass_consumption(action_type)
             if action_type == 'ap'
             else None
         )
-        if remain < required or (
+        if (remain is not None and remain < required) or (
             ap_pass_remain is not None
             and ap_pass_remain < ap_pass_required
         ):

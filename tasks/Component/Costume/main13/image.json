@@ -2,10 +2,11 @@
   {
     "itemName": "pet_house_13",
     "imageName": "main13_pet_house_13.png",
-    "roiFront": "811,271,58,34",
+    "roiFront": "813,270,37,35",
     "roiBack": "778,232,127,98",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "description"
   },
   {
@@ -15,6 +16,7 @@
     "roiBack": "710,174,68,88",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "description"
   },
   {
@@ -24,15 +26,17 @@
     "roiBack": "959,138,50,58",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "description"
   },
   {
     "itemName": "check_main_13",
     "imageName": "main13_check_main_13.png",
-    "roiFront": "367,191,90,94",
-    "roiBack": "281,136,221,182",
+    "roiFront": "1042,235,85,86",
+    "roiBack": "928,177,221,182",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "description"
   },
   {
@@ -42,6 +46,7 @@
     "roiBack": "543,125,63,69",
     "method": "Template matching",
     "threshold": 0.6,
+    "profile": "Default",
     "description": "description"
   },
   {
@@ -51,6 +56,7 @@
     "roiBack": "97,171,211,244",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "description"
   },
   {
@@ -60,6 +66,7 @@
     "roiBack": "804,387,312,129",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "description"
   },
   {
@@ -69,6 +76,7 @@
     "roiBack": "808,395,327,118",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "description"
   },
   {
@@ -78,6 +86,7 @@
     "roiBack": "782,392,328,135",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "description"
   },
   {
@@ -87,6 +96,7 @@
     "roiBack": "814,386,279,137",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "description"
   },
   {
@@ -96,6 +106,7 @@
     "roiBack": "774,382,320,122",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "Default",
     "description": "description"
   }
 ]

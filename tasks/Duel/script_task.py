@@ -1,7 +1,7 @@
 # This Python file uses the following encoding: utf-8
 # @author runhey
 # github https://github.com/runhey
-from time import sleep
+from time import monotonic, sleep
 
 import random
 from datetime import time, datetime, timedelta
@@ -53,6 +53,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
         limit_time = self.conf.duel_config.limit_time
         self.limit_time: timedelta = timedelta(hours=limit_time.hour, minutes=limit_time.minute,
                                                seconds=limit_time.second)
+        self._weekly_goal_reached = False
         self.prepare_duel()
         while True:
             self.screenshot()
@@ -72,7 +73,12 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
             self.start_duel()
         logger.info('Duel battle end')
         self.goto_page(page_main)
-        self.set_next_run(task='Duel', success=True, finish=True)
+        if self._weekly_goal_reached:
+            self.set_next_run_next_monday(
+                task='Duel', scheduler=self.conf.scheduler,
+            )
+        else:
+            self.set_next_run(task='Duel', success=True, finish=True)
         raise TaskEnd('Duel')
 
     def prepare_duel(self):
@@ -130,6 +136,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
                 and self.is_celeb_honor_full()
             ):
                 logger.info('Duel normal honor and celeb honor are both full')
+                self._weekly_goal_reached = True
                 return False
             target_star = self.conf.duel_celeb_config.celeb_star
             if target_star > 0 and self.current_celeb_star >= target_star:
@@ -137,10 +144,12 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
                     f'Duel celeb star target reached: '
                     f'{self.current_celeb_star}/{target_star}'
                 )
+                self._weekly_goal_reached = True
                 return False
         else:
             if self.conf.duel_config.honor_full_exit and self.check_honor():
                 logger.info('Duel normal honor is full')
+                self._weekly_goal_reached = True
                 return False
             # 普通斗技目标分数最大按 3000 计算。
             configured_target = self.conf.duel_config.target_score
@@ -149,6 +158,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
                 logger.info(f'Duel target score {configured_target} is treated as 3000')
             if self.current_score >= target_score:
                 logger.info('Duel task is over score')
+                self._weekly_goal_reached = True
                 return False
         return True
 
@@ -174,8 +184,102 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
         logger.hr('duel battle matching')
         if self.practice_mode:
             self.enter_practice_ban_mode()
+        waiting_started_at = None
+        waiting_logged = False
+        matchmaking_timeout = float(
+            getattr(self.conf.duel_config, 'matchmaking_timeout_seconds', 60)
+        )
         while not self.is_in_battle_prepare():
+            # 排队和匹配成功后的加载都可能超过全局60秒卡死限制。
+            self.device.stuck_record_clear()
             self.screenshot()
+            if self.appear(self.I_EXIT_WAITING):
+                now = monotonic()
+                if waiting_started_at is None:
+                    waiting_started_at = now
+                if not waiting_logged:
+                    logger.info(
+                        'Duel matchmaking: waiting for opponent; '
+                        f'limit={matchmaking_timeout:.0f}s'
+                    )
+                    waiting_logged = True
+                if now - waiting_started_at < matchmaking_timeout:
+                    sleep(0.5)
+                    continue
+
+                # 超时点重新截图，避免“刚好匹配成功”时仍按旧帧点击取消。
+                self.device.stuck_record_clear()
+                self.screenshot()
+                if not self.appear(self.I_EXIT_WAITING):
+                    logger.info(
+                        'Duel matchmaking completed while timeout exit was '
+                        'being verified; abort cancellation'
+                    )
+                    waiting_started_at = None
+                    waiting_logged = False
+                    continue
+                if not self.appear_then_click(self.I_EXIT_WAITING, interval=0):
+                    self.device.stuck_record_clear()
+                    self.screenshot()
+                    logger.info(
+                        'Duel matchmaking exit click was not executed; '
+                        'refresh state before continuing'
+                    )
+                    if self.is_in_battle_prepare(skip_screenshot=True) or not \
+                            self.appear(self.I_EXIT_WAITING):
+                        logger.info(
+                            'Duel entered battle while matchmaking exit '
+                            'failed; abort cancellation'
+                        )
+                        waiting_started_at = None
+                        waiting_logged = False
+                    continue
+
+                # 点击并不代表退出成功。任一退出步骤未得到确认时都以新帧
+                # 复核：仍在等待则稍后重试；未回大厅则视为竞态匹配成功。
+                sleep(0.5)
+                self.device.stuck_record_clear()
+                self.screenshot()
+                if self.is_in_battle_prepare(skip_screenshot=True):
+                    logger.info(
+                        'Duel entered battle during matchmaking exit; '
+                        'abort cancellation'
+                    )
+                    return
+                if self.appear(self.I_EXIT_WAITING):
+                    logger.warning(
+                        'Duel matchmaking exit was not completed; retry'
+                    )
+                    continue
+                if not (
+                    self.appear(self.I_D_BATTLE)
+                    or self.appear(self.I_D_BATTLE2)
+                    or self.appear(self.I_D_BATTLE_PROTECT)
+                ):
+                    logger.info(
+                        'Duel matchmaking marker disappeared without '
+                        'returning to lobby; treat as matched and wait for '
+                        'battle entry'
+                    )
+                    waiting_started_at = None
+                    waiting_logged = False
+                    continue
+                logger.warning(
+                    'Duel matchmaking timeout; exited and will retry: '
+                    f'limit={matchmaking_timeout:.0f}s'
+                )
+                waiting_started_at = None
+                waiting_logged = False
+                sleep(0.5)
+                continue
+
+            if waiting_started_at is not None:
+                logger.info(
+                    'Duel matchmaking marker disappeared naturally; '
+                    'match succeeded, wait for battle entry'
+                )
+                waiting_started_at = None
+                waiting_logged = False
             # 战斗按钮
             self.ui_click_until_disappear(self.I_D_BATTLE, interval=1.2)
             self.ui_click_until_disappear(self.I_D_BATTLE2, interval=1.2)

@@ -818,6 +818,9 @@ class AnnotatorManager:
                 raise AnnotatorError("invalid_rule", f"第 {index + 1} 条规则 threshold 非法", 400) from e
             if threshold < 0 or threshold > 1:
                 raise AnnotatorError("invalid_rule", f"第 {index + 1} 条规则 threshold 必须在 0-1", 400)
+            profile = str(rule.get("profile", "Default")).strip() or "Default"
+            if profile not in ("Default", "High", "More"):
+                raise AnnotatorError("invalid_rule", f"第 {index + 1} 条图片规则 profile 非法", 400)
             normalized.append(
                 {
                     "itemName": item_name,
@@ -826,6 +829,7 @@ class AnnotatorManager:
                     "roiBack": self._parse_roi(str(rule.get("roiBack", ""))),
                     "method": method,
                     "threshold": threshold,
+                    "profile": profile,
                     "description": str(rule.get("description", "")).strip(),
                 }
             )
@@ -859,10 +863,14 @@ class AnnotatorManager:
             item_name = str(rule.get("itemName", "")).strip()
             if not item_name:
                 raise AnnotatorError("invalid_rule", f"第 {index + 1} 条点击规则缺少 itemName", 400)
+            profile = str(rule.get("profile", "Default")).strip() or "Default"
+            if profile not in ("Default", "High", "More"):
+                raise AnnotatorError("invalid_rule", f"第 {index + 1} 条点击规则 profile 非法", 400)
             normalized.append({
                 "itemName": item_name,
                 "roiFront": self._parse_roi(str(rule.get("roiFront", ""))),
                 "roiBack": self._parse_roi(str(rule.get("roiBack", ""))),
+                "profile": profile,
                 "description": str(rule.get("description", "")).strip(),
             })
         return normalized
@@ -873,6 +881,12 @@ class AnnotatorManager:
             item_name = str(rule.get("itemName", "")).strip()
             if not item_name:
                 raise AnnotatorError("invalid_rule", f"第 {index + 1} 条散点规则缺少 itemName", 400)
+            try:
+                focus_count = int(rule.get("focusCount"))
+            except (TypeError, ValueError) as exc:
+                raise AnnotatorError("invalid_rule", f"第 {index + 1} 条散点规则 focusCount 非法", 400) from exc
+            if focus_count <= 0:
+                raise AnnotatorError("invalid_rule", f"第 {index + 1} 条散点规则 focusCount 必须大于 0", 400)
             polygon = self._parse_scatter_polygon(rule.get("polygon"))
             bounding_roi = self._polygon_bounding_roi(polygon)
             normalized.append({
@@ -880,6 +894,8 @@ class AnnotatorManager:
                 "roiFront": bounding_roi,
                 "roiBack": bounding_roi,
                 "polygon": polygon,
+                "focusCount": focus_count,
+                "functional": bool(rule.get("functional", False)),
                 "description": str(rule.get("description", "")).strip(),
             })
         return normalized
@@ -1165,6 +1181,7 @@ class AnnotatorManager:
                             "roiBack": str(item.get("roiBack", "0,0,100,100")),
                             "method": str(item.get("method", "Template matching")),
                             "threshold": float(item.get("threshold", 0.8)),
+                            "profile": str(item.get("profile", "Default")),
                             "description": str(item.get("description", "")),
                         }
                     )
@@ -1186,6 +1203,7 @@ class AnnotatorManager:
                             "itemName": str(item.get("itemName", "")),
                             "roiFront": str(item.get("roiFront", "0,0,100,100")),
                             "roiBack": str(item.get("roiBack", "0,0,100,100")),
+                            "profile": str(item.get("profile", "Default")),
                             "description": str(item.get("description", "")),
                         }
                     )
@@ -1196,6 +1214,8 @@ class AnnotatorManager:
                             "roiFront": str(item.get("roiFront", "0,0,100,100")),
                             "roiBack": str(item.get("roiBack", "0,0,100,100")),
                             "polygon": item.get("polygon", []),
+                            "focusCount": item.get("focusCount", 8),
+                            "functional": bool(item.get("functional", False)),
                             "description": str(item.get("description", "")),
                         }
                     )
@@ -1335,6 +1355,9 @@ class AnnotatorManager:
                 threshold = float(rule.get("threshold", 0.8))
             except (TypeError, ValueError) as e:
                 raise AnnotatorError("invalid_rule", "threshold 非法", 400) from e
+            profile = str(rule.get("profile", "Default")).strip() or "Default"
+            if profile not in ("Default", "High", "More"):
+                raise AnnotatorError("invalid_rule", "profile 非法", 400)
             roi_back = self._parse_roi_tuple(str(rule.get("roiBack", "")))
             task_root, target_json = self._resolve_json_path(task_name, json_relpath)
             template = self.get_rule_image_file(task_name, json_relpath, image_name)
@@ -1346,6 +1369,7 @@ class AnnotatorManager:
                 method=method,
                 threshold=threshold,
                 file=str(template),
+                profile=profile,
             )
             detail = detect_image_detail(str(source_path), target)
             return {
@@ -1357,6 +1381,7 @@ class AnnotatorManager:
                 "roiFront": self._parse_roi(str(detail.get("roiFront", rule.get("roiFront", "0,0,100,100")))),
                 "roiBack": self._parse_roi(str(detail.get("roiBack", rule.get("roiBack", "0,0,100,100")))),
                 "threshold": threshold,
+                "profile": profile,
                 "message": str(detail.get("message", "not_match")),
                 "target_json": str(target_json.relative_to(task_root).as_posix()),
             }

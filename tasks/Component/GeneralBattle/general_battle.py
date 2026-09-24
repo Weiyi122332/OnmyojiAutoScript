@@ -8,7 +8,7 @@ import random
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from tasks.GameUi.default_pages import random_click, settlement_random_click
+from tasks.GameUi.default_pages import close_reward_details, random_click, settlement_random_click
 from typing import Callable, Union
 
 from module.atom.gif import RuleGif
@@ -685,6 +685,8 @@ class GeneralBattle(GeneralBuff, GeneralBattleAssets):
             BattleAction: 当前轮奖励页处理后的动作决策。
         """
         context.reward_no_battle_ts = None
+        if close_reward_details(self):
+            return BattleAction.CONTINUE
         # TODO: 部分副本奖励界面不一定是战斗成功, 需要重写
         context.is_win = True
         self.appear_then_click(self.I_OVER_GHOST, interval=0.8)
@@ -1041,16 +1043,18 @@ class GeneralBattle(GeneralBuff, GeneralBattleAssets):
                 continue
             break
         self.click(tmp)
-        logger.info("Click preset ensure")
-        wait_ensure_timer = Timer(4).start()
-        while 1:
+        wait_ensure_timer = Timer(3).start()
+        preset_clicked = False
+        while True:
             if wait_ensure_timer.reached():
                 logger.warning(timeout_warning)
                 return
             self.screenshot()
-            if not self.appear(self.I_PRESET_ENSURE):
-                break
+            if preset_clicked and not self.appear(self.I_PRESET_ENSURE):
+                logger.info("Click preset ensure success")
+                return
             if self.appear_then_click(self.I_PRESET_ENSURE, interval=1):
+                preset_clicked = True
                 continue
 
     def random_click_swipt(self):

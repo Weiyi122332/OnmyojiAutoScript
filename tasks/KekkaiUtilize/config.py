@@ -45,8 +45,8 @@ class UtilizeConfig(BaseModel):
         le=1,
         description='lazy_mode_weight_help',
     )
-    box_ap_enable: bool = Field(default=True)
-    box_exp_enable: bool = Field(default=True)
+    box_ap_enable: bool = Field(default=True, description='box_ap_enable_help')
+    box_exp_enable: bool = Field(default=True, description='box_exp_enable_help')
     box_exp_waste: bool = Field(default=True, description='box_exp_waste_help')
 
 

@@ -27,15 +27,6 @@
     "description": "当前活动主界面标志"
   },
   {
-    "itemName": "activity_award",
-    "imageName": "page_activity_award.png",
-    "roiFront": "475,234,324,40",
-    "roiBack": "448,169,372,114",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": ""
-  },
-  {
     "itemName": "activity_signin_close",
     "imageName": "page_activity_signin_close.png",
     "roiFront": "1100,186,40,32",

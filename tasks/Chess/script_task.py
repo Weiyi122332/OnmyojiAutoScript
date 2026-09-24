@@ -12,12 +12,13 @@ from tasks.Chess.runtime.hand_operations import ChessHandOperationsMixin
 from tasks.Chess.runtime.recognition import ChessRecognitionMixin
 from tasks.Chess.runtime.round_state import ChessRoundStateMixin
 from tasks.Chess.runtime.settings import ChessRuntimeSettings
+from tasks.Chess.runtime.state_loop import ChessStateLoopMixin
 from tasks.Component.GeneralBattle.general_battle import GeneralBattle
 from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.page import page_chess
 
 
-class ScriptTask(
+class ChessLegacyScriptTask(
     ChessRecognitionMixin,
     ChessHandOperationsMixin,
     ChessRoundStateMixin,
@@ -84,6 +85,7 @@ class ScriptTask(
         )
         self._consecutive_matchmaking_timeouts = 0
         completed = 0
+        coin_limit_reached = False
         rank_protection_exits_remaining = 0
         next_game_already_started = False
         logger.info(
@@ -117,6 +119,7 @@ class ScriptTask(
                         'Stop Chess task before next game: '
                         'coin reached 600/600'
                     )
+                    coin_limit_reached = True
                     break
 
             logger.debug(
@@ -200,6 +203,7 @@ class ScriptTask(
                     logger.info(
                         'Stop Chess task after game: coin reached 600/600'
                     )
+                    coin_limit_reached = True
                     break
 
         logger.info(
@@ -207,7 +211,12 @@ class ScriptTask(
             f'target={target_count}, coin_full_exit={coin_full_exit}, '
             f'rank_protection={rank_protection}'
         )
-        self.set_next_run(task='Chess', success=True, finish=True)
+        if coin_limit_reached:
+            self.set_next_run_next_monday(
+                task='Chess', scheduler=self.config.chess.scheduler,
+            )
+        else:
+            self.set_next_run(task='Chess', success=True, finish=True)
         raise TaskEnd('Chess')
 
     def run_one_game(self) -> int | None:
@@ -234,6 +243,8 @@ class ScriptTask(
         unknown_since = None
         battle_economy_done = False
         battle_hand_cleanup_done = False
+        hyakki_round_seen = False
+        hyakki_lineup_checked = False
 
         while True:
             self.device.stuck_record_clear()
@@ -268,6 +279,11 @@ class ScriptTask(
                     next_round_confirmed = 1
                 round_transition_pending = True
                 if next_round_confirmed >= self.ROUND_CONFIRM_FRAMES:
+                    if hyakki_round_seen and not hyakki_lineup_checked:
+                        self._reconcile_lineup_after_hyakki_round(
+                            next_round_no=observed_round,
+                        )
+                        hyakki_lineup_checked = True
                     logger.debug(
                         f'Chess round boundary confirmed: {round_no} -> '
                         f'{observed_round}, phase={phase}, '
@@ -294,6 +310,8 @@ class ScriptTask(
                 )
 
             if mode in ('战', '鬼', '待'):
+                if mode == '鬼':
+                    hyakki_round_seen = True
                 if mode == '战':
                     if not battle_hand_cleanup_done:
                         battle_hand_cleanup_done = (
@@ -789,7 +807,85 @@ class ScriptTask(
                     waiting_logged = True
                 self.device.stuck_record_clear()
                 if now - waiting_started_at >= matchmaking_timeout:
-                    self.click(self.C_CANCEL_WAITING)
+                    # 超时点必须使用新截图复核；标志自然消失说明已经匹配，
+                    # 此时中断取消流程，转入加载等待。
+                    self.device.stuck_record_clear()
+                    self.screenshot()
+                    if not self.appear(self.I_CANCEL_WAITING):
+                        logger.info(
+                            'Chess matchmaking completed while timeout exit '
+                            'was being verified; abort cancellation'
+                        )
+                        waiting_started_at = None
+                        waiting_logged = False
+                        matched_loading_started_at = time.monotonic()
+                        matched_loading_logged = False
+                        time.sleep(self.SLOW_POLL_INTERVAL)
+                        continue
+                    if not self.appear_then_click(
+                        self.I_CANCEL_WAITING,
+                        interval=0,
+                    ):
+                        self.device.stuck_record_clear()
+                        self.screenshot()
+                        if self._is_in_chess_game():
+                            logger.info(
+                                'Chess entered battle while matchmaking exit '
+                                'failed; abort cancellation'
+                            )
+                            self._consecutive_matchmaking_timeouts = 0
+                            return
+                        if (
+                            not self.appear(self.I_CANCEL_WAITING)
+                            and not self.appear(self.I_CHESS_START)
+                        ):
+                            logger.info(
+                                'Chess matchmaking completed while exit '
+                                'click failed; wait for battle loading'
+                            )
+                            waiting_started_at = None
+                            waiting_logged = False
+                            matched_loading_started_at = time.monotonic()
+                            matched_loading_logged = False
+                            time.sleep(self.SLOW_POLL_INTERVAL)
+                            continue
+                        if self.appear(self.I_CANCEL_WAITING):
+                            time.sleep(self.SLOW_POLL_INTERVAL)
+                            continue
+                        logger.info(
+                            'Chess matchmaking exit completed before click; '
+                            'retry from lobby'
+                        )
+
+                    # 点击取消后再次确认实际结果。仍显示取消按钮表示退出失败；
+                    # 未回大厅则是匹配成功与退出动作发生竞态。
+                    time.sleep(self.ACTION_SETTLE_INTERVAL)
+                    self.device.stuck_record_clear()
+                    self.screenshot()
+                    if self._is_in_chess_game():
+                        logger.info(
+                            'Chess entered battle during matchmaking exit; '
+                            'abort cancellation'
+                        )
+                        self._consecutive_matchmaking_timeouts = 0
+                        return
+                    if self.appear(self.I_CANCEL_WAITING):
+                        logger.warning(
+                            'Chess matchmaking exit was not completed; retry'
+                        )
+                        continue
+                    if not self.appear(self.I_CHESS_START):
+                        logger.info(
+                            'Chess matchmaking marker disappeared without '
+                            'returning to lobby; treat as matched and wait '
+                            'for battle loading'
+                        )
+                        waiting_started_at = None
+                        waiting_logged = False
+                        matched_loading_started_at = time.monotonic()
+                        matched_loading_logged = False
+                        time.sleep(self.SLOW_POLL_INTERVAL)
+                        continue
                     self._consecutive_matchmaking_timeouts += 1
                     logger.warning(
                         'Chess matchmaking timeout: '
@@ -936,3 +1032,7 @@ class ScriptTask(
         round_no = self._wait_for_round_start()
         while round_no is not None:
             round_no = self.run_one_round(round_no)
+
+
+class ScriptTask(ChessStateLoopMixin, ChessLegacyScriptTask):
+    """正式 Chess 入口：状态驱动回合循环复用原有执行动作。"""

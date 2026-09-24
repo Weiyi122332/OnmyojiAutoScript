@@ -41,6 +41,7 @@ RULE_TYPE_SCHEMAS: OrderedDict[str, dict[str, Any]] = OrderedDict(
                     "max": 1,
                     "integer": False,
                 },
+                {"key": "profile", "label": "profile", "control": "select", "default": "Default", "options": ["Default", "High", "More"]},
                 {"key": "description", "label": "description", "control": "textarea", "default": "", "full": True},
             ],
         },
@@ -78,6 +79,7 @@ RULE_TYPE_SCHEMAS: OrderedDict[str, dict[str, Any]] = OrderedDict(
             },
             "fields": [
                 {"key": "itemName", "label": "itemName", "control": "text", "default": "new"},
+                {"key": "profile", "label": "profile", "control": "select", "default": "Default", "options": ["Default", "High", "More"]},
                 {"key": "description", "label": "description", "control": "textarea", "default": "", "full": True},
             ],
         },
@@ -92,6 +94,8 @@ RULE_TYPE_SCHEMAS: OrderedDict[str, dict[str, Any]] = OrderedDict(
             },
             "fields": [
                 {"key": "itemName", "label": "itemName", "control": "text", "default": "new"},
+                {"key": "focusCount", "label": "focusCount", "control": "number", "default": 8},
+                {"key": "functional", "label": "functional", "control": "checkbox", "default": False},
                 {"key": "description", "label": "description", "control": "textarea", "default": "", "full": True},
             ],
         },

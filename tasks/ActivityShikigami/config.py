@@ -21,12 +21,6 @@ class ActivityTask(str, Enum):
     CLIMB = '爬塔'
 
 
-class ExplorationMode(str, Enum):
-    MAIN = '主线'
-    ENCOUNTER = '遭遇战'
-    BRANCH = '支线'
-
-
 ACTIVITY_EXECUTION_ORDER = ('探索', '大富翁', '伪神', '爬塔')
 ACTIVITY_NAME_TO_FIELD = {
     '大富翁': 'rich_man',
@@ -62,9 +56,6 @@ class GeneralConfig(ConfigBase):
         ],
         title='Activity Task Sequence',
         description='activity_task_sequence_help',
-    )
-    exploration_modes: list[ExplorationMode] = Field(
-        default=list(ExplorationMode), description='exploration_modes_help',
     )
     throw_limit: int = Field(default=0, title='Throw Limit', ge=0)
     ap_limit: int = Field(default=0, title='Ap Limit', ge=0)
@@ -152,7 +143,7 @@ class GeneralConfig(ConfigBase):
     def activity_enabled(self, activity_name: str) -> bool:
         field = ACTIVITY_NAME_TO_FIELD[activity_name]
         if field == 'exploration':
-            return bool(self.exploration_modes)
+            return True
         if field == 'rich_man':
             return self.throw_limit > 0
         if field == 'climb':
@@ -208,10 +199,6 @@ class GeneralConfig(ConfigBase):
             if name not in selected:
                 selected.append(name)
         return selected
-
-    @validator('exploration_modes', pre=True)
-    def parse_exploration_modes(cls, value):
-        return normalize_multi_select(value)
 
     @validator('limit_time', pre=True, always=True)
     def parse_limit_time(cls, value):

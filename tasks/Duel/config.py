@@ -37,6 +37,11 @@ class DuelConfig(ConfigBase):
         default=False,
         description='duel_random_sleep_help',
     )
+    matchmaking_timeout_seconds: int = Field(
+        default=60,
+        ge=10,
+        description='matchmaking_timeout_seconds_help',
+    )
 
 
 class DuelCelebConfig(ConfigBase):

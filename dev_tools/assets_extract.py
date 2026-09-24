@@ -67,11 +67,14 @@ class ImageExtractor:
         :return:
         """
         description: str = f'\t# {item["description"]} \n'
+        profile = str(item.get("profile", "Default"))
+        profile_arg = f'profile="{profile}", ' if profile in ("High", "More") else ''
         name: str = f'\tI_{name_transform(item["itemName"])} = RuleImage(' \
                     f'roi_front=({item["roiFront"]}), ' \
                     f'roi_back=({item["roiBack"]}), ' \
                     f'threshold={item["threshold"]}, ' \
                     f'method="{item["method"]}", ' \
+                    f'{profile_arg}' \
                     f'file="./{self.image_path}/{item["imageName"]}")\n'
         return description + name
 
@@ -97,10 +100,13 @@ class ClickExtractor:
         :param item:
         :return:
         """
-        description: str = f'\t# {item["description"]} \n'
+        description: str = f'\t# {item["description"]}\n'
+        profile = str(item.get("profile", "Default"))
+        profile_arg = f'profile="{profile}", ' if profile in ("High", "More") else ''
         name: str = f'\tC_{name_transform(item["itemName"])} = RuleClick(' \
                     f'roi_front=({item["roiFront"]}), ' \
                     f'roi_back=({item["roiBack"]}), ' \
+                    f'{profile_arg}' \
                     f'name="{item["itemName"]}")\n'
         return description + name
 
@@ -127,6 +133,8 @@ class ScatterExtractor:
                f'roi_front=({item["roiFront"]}), ' \
                f'roi_back=({item["roiBack"]}), ' \
                f'polygon=[{points}], ' \
+               f'focus_count={int(item["focusCount"])}, ' \
+               f'functional={bool(item.get("functional", False))}, ' \
                f'name="{item["itemName"]}")\n'
         return description + name
 
@@ -335,12 +343,17 @@ class AssetsExtractor:
     @classmethod
     def is_click_file(cls, data: list) -> bool:
         """
-        判断是不是clickrule 文件, 我这样的判断是有点不合规的
+        按 Click 的必要字段判断，允许 description/profile 等扩展字段。
         :param data: 解析后的json数据，是list
         :return:
         """
         item = data[0]
-        return len(item) == 4
+        return (
+            all(key in item for key in ('itemName', 'roiFront', 'roiBack'))
+            and not any(key in item for key in (
+                'imageName', 'polygon', 'duration', 'mode', 'keyword',
+            ))
+        )
 
     @classmethod
     def is_scatter_file(cls, data: list) -> bool:

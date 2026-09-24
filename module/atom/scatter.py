@@ -8,15 +8,14 @@ from module.atom.click import RuleClick
 
 
 class RuleScatter(RuleClick):
-    """在多边形内按多个随机重心进行正态分布点击。"""
+    """在多边形内按延迟生成的多个重心进行时序正态点击。"""
 
-    _SCREEN_HALF_AREA = 1280 * 720 / 2
-    _MIN_FOCUSES = 2
-    _MAX_FOCUSES = 10
-    _MIN_CLICK_RADIUS = 25
-    _MAX_CLICK_RADIUS = 150
-    _LONG_TASK_THRESHOLD_SECONDS = 40 * 60
-    _LONG_TASK_BIAS_RATIO = 0.85
+    _CLICKS_PER_FOCUS = 50
+    _FUNCTIONAL_HISTORY_WEIGHT = 0.75
+    _HISTORY_HALF_LIFE_SECONDS = 10 * 60
+    _MIN_CLICK_RADIUS = 50.0
+    _SHRINK_HALF_LIFE_CLICKS = 10
+    _OUTSIDE_POLYGON_PROBABILITY = 0.01
 
     # 调度器为当前进程维护唯一任务上下文。generation 用于让所有
     # RuleScatter 在任务切换后延迟清空各自的倾向重心。
@@ -29,19 +28,27 @@ class RuleScatter(RuleClick):
         roi_front: tuple,
         roi_back: tuple,
         polygon: list[tuple[int, int]] | tuple[tuple[int, int], ...],
+        focus_count: int,
+        functional: bool = False,
         name: str = None,
     ) -> None:
-        super().__init__(roi_front=roi_front, roi_back=roi_back, name=name)
+        super().__init__(
+            roi_front=roi_front,
+            roi_back=roi_back,
+            name=name,
+            functional=functional,
+        )
+        if isinstance(focus_count, bool) or not isinstance(focus_count, int) \
+                or focus_count <= 0:
+            raise ValueError('focus_count must be a positive integer')
         self.polygon = self._normalize_polygon(polygon)
-        # 规则对象在脚本启动、加载 assets.py 时创建，因此每次重启都会
-        # 重新计算一组点击重心。
-        self.click_focuses = self._generate_click_focuses()
-        self.click_focus_weights = self._generate_focus_weights()
-        # 使用可变对象保存倾向状态，使奖励页对规则做浅拷贝后仍与
-        # 原规则共用同一任务内选出的倾向重心。
-        self._task_bias_state = {
-            'generation': -1,
-            'indices': (),
+        self.focus_count = focus_count
+        # 结算点击会浅拷贝规则，可变状态确保拷贝仍累计同一任务的点击。
+        self._scatter_state = {
+            'focuses': [],
+            'focus_click_counts': [],
+            'click_count': 0,
+            'max_radius': None,
         }
 
     @classmethod
@@ -52,10 +59,14 @@ class RuleScatter(RuleClick):
         cls._active_task_started_at = time.monotonic()
 
     def reset_click_focuses(self) -> None:
-        """进入专属任务时重新抽取重心，并清空上一轮的长任务倾向。"""
-        self.click_focuses = self._generate_click_focuses()
-        self.click_focus_weights = self._generate_focus_weights()
-        self._task_bias_state = {'generation': -1, 'indices': ()}
+        """进入专属任务时清空重心，首次点击时再生成第一个。"""
+        self._scatter_state.clear()
+        self._scatter_state.update(
+            focuses=[],
+            focus_click_counts=[],
+            click_count=0,
+            max_radius=None,
+        )
 
     @classmethod
     def end_task(cls, task_name: str | None = None) -> None:
@@ -78,7 +89,8 @@ class RuleScatter(RuleClick):
 
     @property
     def center(self) -> tuple:
-        center_x, center_y, _ = self.click_focuses[0]
+        self._ensure_click_focuses()
+        center_x, center_y = self._scatter_state['focuses'][0]
         return int(round(center_x)), int(round(center_y))
 
     def move(self, x: int, y: int) -> None:
@@ -88,13 +100,10 @@ class RuleScatter(RuleClick):
         dx, dy = target_x - origin_x, target_y - origin_y
         self.roi_front = target_x, target_y, width, height
         self.polygon = tuple((px + dx, py + dy) for px, py in self.polygon)
-        self.click_focuses = tuple(
-            (focus_x + dx, focus_y + dy, radius)
-            for focus_x, focus_y, radius in self.click_focuses
-        )
-        self.click_focus_weights = self._generate_focus_weights()
-        self._task_bias_state.clear()
-        self._task_bias_state.update(generation=-1, indices=())
+        self._scatter_state['focuses'][:] = [
+            (focus_x + dx, focus_y + dy)
+            for focus_x, focus_y in self._scatter_state['focuses']
+        ]
 
     @staticmethod
     def _normalize_polygon(polygon):
@@ -106,181 +115,172 @@ class RuleScatter(RuleClick):
             raise ValueError('polygon must contain at least three distinct points')
         return points
 
-    def _polygon_area(self) -> float:
-        return abs(sum(
-            x1 * y2 - x2 * y1
-            for (x1, y1), (x2, y2) in zip(
-                self.polygon,
-                self.polygon[1:] + self.polygon[:1],
-            )
-        )) / 2
-
-    def _focus_count(self) -> int:
-        ratio = min(1.0, self._polygon_area() / self._SCREEN_HALF_AREA)
-        count = round(
-            self._MIN_FOCUSES
-            + ratio * (self._MAX_FOCUSES - self._MIN_FOCUSES)
-        )
-        return max(self._MIN_FOCUSES, min(self._MAX_FOCUSES, count))
-
-    def _generate_click_focuses(self) -> tuple:
+    def _uniform_polygon_point(self) -> tuple[float, float]:
         xs, ys = zip(*self.polygon)
         left, right = float(min(xs)), float(max(xs))
         top, bottom = float(min(ys)), float(max(ys))
-        focus_count = self._focus_count()
-
-        candidates = []
-        target_candidates = max(160, focus_count * 32)
-        for _ in range(target_candidates * 40):
-            x = float(np.random.uniform(left, right))
-            y = float(np.random.uniform(top, bottom))
-            if not self._point_in_polygon(x, y):
-                continue
-            radius = int(np.random.randint(
-                self._MIN_CLICK_RADIUS,
-                self._MAX_CLICK_RADIUS + 1,
-            ))
-            candidates.append((x, y, radius))
-            if len(candidates) >= target_candidates:
-                break
-
-        if not candidates:
-            raise ValueError('RuleScatter polygon contains no sampleable point')
-
-        # 重心只需位于多边形内；点击圆可越过边界，采样时再裁掉
-        # 多边形之外的部分。
-        np.random.shuffle(candidates)
-        selected = list(candidates[:focus_count])
-        original = tuple(candidates)
-        while len(selected) < focus_count:
-            selected.append(original[int(np.random.randint(0, len(original)))])
-        return tuple(selected)
-
-    def _generate_focus_weights(self) -> tuple:
-        """同一多边形内，越靠右下的重心点击概率越高。"""
-        xs, ys = zip(*self.polygon)
-        left, right = min(xs), max(xs)
-        top, bottom = min(ys), max(ys)
-        width = max(1.0, right - left)
-        height = max(1.0, bottom - top)
-        raw_weights = []
-        for x, y, _ in self.click_focuses:
-            position = ((x - left) / width + (y - top) / height) / 2
-            # 左上权重 0.80，右下权重 1.00，差距保持温和。
-            raw_weights.append(0.80 + 0.20 * position)
-        total = sum(raw_weights)
-        return tuple(weight / total for weight in raw_weights)
-
-    @classmethod
-    def _long_task_bias_active(cls) -> bool:
-        started_at = cls._active_task_started_at
-        return (
-            cls._active_task_name is not None
-            and started_at is not None
-            and time.monotonic() - started_at >= cls._LONG_TASK_THRESHOLD_SECONDS
-        )
-
-    def _select_task_bias_indices(self) -> tuple[int, ...]:
-        """选取略偏右下、且彼此保持一定距离的 2–3 个重心。"""
-        focus_count = len(self.click_focuses)
-        selected_count = min(
-            focus_count,
-            int(np.random.randint(2, min(3, focus_count) + 1)),
-        )
-        if selected_count >= focus_count:
-            return tuple(range(focus_count))
-
-        base_weights = np.asarray(self.click_focus_weights, dtype=float)
-        first = int(np.random.choice(focus_count, p=base_weights))
-        selected = [first]
-        xs = [focus[0] for focus in self.click_focuses]
-        ys = [focus[1] for focus in self.click_focuses]
-        diagonal = max(1.0, math.hypot(max(xs) - min(xs), max(ys) - min(ys)))
-
-        while len(selected) < selected_count:
-            scores = np.zeros(focus_count, dtype=float)
-            for index, (x, y, _) in enumerate(self.click_focuses):
-                if index in selected:
-                    continue
-                nearest_distance = min(
-                    math.hypot(
-                        x - self.click_focuses[item][0],
-                        y - self.click_focuses[item][1],
-                    )
-                    for item in selected
-                )
-                # 原权重保留右下倾向；距离因子避免倾向点全部挤在一起。
-                distance_factor = 0.35 + 0.65 * nearest_distance / diagonal
-                scores[index] = base_weights[index] * distance_factor
-            total = float(scores.sum())
-            if total <= 0:
-                break
-            selected.append(int(np.random.choice(focus_count, p=scores / total)))
-        return tuple(selected)
-
-    def _effective_focus_weights(self) -> tuple:
-        if not type(self)._long_task_bias_active():
-            return self.click_focus_weights
-
-        generation = type(self)._task_context_generation
-        if self._task_bias_state.get('generation') != generation:
-            self._task_bias_state.clear()
-            self._task_bias_state.update(
-                generation=generation,
-                indices=self._select_task_bias_indices(),
+        for _ in range(4096):
+            point = (
+                float(np.random.uniform(left, right)),
+                float(np.random.uniform(top, bottom)),
             )
+            if self._point_in_polygon(*point):
+                return point
+        raise ValueError('RuleScatter polygon contains no sampleable point')
 
-        indices = self._task_bias_state['indices']
-        if not indices:
-            return self.click_focus_weights
+    def _history_focus_point(self) -> tuple[float, float] | None:
+        """按功能权重选组，再按时间衰减从框内历史落点中选重心。"""
+        history = [
+            item for item in self.task_click_history()
+            if self._point_in_polygon(item[0], item[1])
+        ]
+        if not history:
+            return None
+        functional = [item for item in history if item[3]]
+        non_functional = [item for item in history if not item[3]]
+        if functional and non_functional:
+            source = functional if np.random.random() < \
+                self._FUNCTIONAL_HISTORY_WEIGHT else non_functional
+        else:
+            source = functional or non_functional
 
-        base_weights = np.asarray(self.click_focus_weights, dtype=float)
-        effective = base_weights * (1 - self._LONG_TASK_BIAS_RATIO)
-        selected_weights = base_weights[list(indices)]
-        selected_weights /= selected_weights.sum()
-        effective[list(indices)] += self._LONG_TASK_BIAS_RATIO * selected_weights
-        effective /= effective.sum()
-        return tuple(float(weight) for weight in effective)
+        now = time.monotonic()
+        decay = math.log(2) / self._HISTORY_HALF_LIFE_SECONDS
+        weights = np.asarray([
+            math.exp(-max(0.0, now - item[2]) * decay)
+            for item in source
+        ], dtype=float)
+        weights /= weights.sum()
+        selected = source[int(np.random.choice(len(source), p=weights))]
+        return float(selected[0]), float(selected[1])
+
+    def _generate_click_focus(self) -> tuple[float, float]:
+        reference = self._history_focus_point()
+        if reference is None:
+            return self._uniform_polygon_point()
+        focuses = self._scatter_state['focuses']
+        if not focuses:
+            return reference
+
+        previous_x, previous_y = focuses[-1]
+        target_x, target_y = reference
+        progress = len(focuses) / max(1, self.focus_count - 1)
+        curve = math.sin(math.pi * min(1.0, progress))
+        width = max(x for x, _ in self.polygon) - min(x for x, _ in self.polygon)
+        candidate = (
+            previous_x * 0.35 + target_x * 0.65 - width * 0.08 * curve,
+            previous_y * 0.35 + target_y * 0.65,
+        )
+        return candidate if self._point_in_polygon(*candidate) else reference
+
+    def _ensure_click_focuses(self) -> None:
+        state = self._scatter_state
+        desired = min(
+            self.focus_count,
+            1 + state['click_count'] // self._CLICKS_PER_FOCUS,
+        )
+        while len(state['focuses']) < desired:
+            focus = self._generate_click_focus()
+            state['focuses'].append(focus)
+            state['focus_click_counts'].append(0)
+            if state['max_radius'] is None:
+                state['max_radius'] = max(
+                    math.hypot(focus[0] - x, focus[1] - y)
+                    for x, y in self.polygon
+                )
+
+    def _select_focus_index(self) -> int:
+        weights = np.arange(1, len(self._scatter_state['focuses']) + 1, dtype=float)
+        weights /= weights.sum()
+        return int(np.random.choice(len(self._scatter_state['focuses']), p=weights))
 
     def _random_normal_point(self) -> tuple:
-        index = int(np.random.choice(
-            len(self.click_focuses),
-            p=self._effective_focus_weights(),
-        ))
-        center_x, center_y, radius = self.click_focuses[index]
-        deviation = max(0.01, radius / 3)
-        for _ in range(96):
-            x = float(np.random.normal(center_x, deviation))
-            y = float(np.random.normal(center_y, deviation))
-            if math.hypot(x - center_x, y - center_y) > radius:
-                continue
-            click_x, click_y = int(round(x)), int(round(y))
-            if self._point_in_polygon(click_x, click_y):
+        self._ensure_click_focuses()
+        state = self._scatter_state
+        index = self._select_focus_index()
+        focus_x, focus_y = state['focuses'][index]
+        local_count = state['focus_click_counts'][index]
+        # 框外的上一点会把小型 Scatter 的临时中心拉出可点区域。
+        history = [
+            item for item in self.task_click_history()
+            if self._point_in_polygon(item[0], item[1])
+        ]
+        previous = history[-1][:2] if history else (focus_x, focus_y)
+        phase = min(1.0, (local_count + 1) / self._CLICKS_PER_FOCUS)
+        convergence = 0.22 + 0.58 * phase
+        center_x = previous[0] + (focus_x - previous[0]) * convergence
+        center_y = previous[1] + (focus_y - previous[1]) * convergence
+        direction_x, direction_y = focus_x - previous[0], focus_y - previous[1]
+        distance = math.hypot(direction_x, direction_y)
+        if distance < 1e-6:
+            direction_x, direction_y = 1.0, 0.0
+        else:
+            direction_x /= distance
+            direction_y /= distance
+        perpendicular_x, perpendicular_y = -direction_y, direction_x
+
+        # 按整个规则的点击次数收缩，新重心加入时不重新放大范围。
+        shrink = 0.5 ** (state['click_count'] / self._SHRINK_HALF_LIFE_CLICKS)
+        radius = max(self._MIN_CLICK_RADIUS, state['max_radius'] * shrink)
+        allow_outside_polygon = (
+            np.random.random() < self._OUTSIDE_POLYGON_PROBABILITY
+        )
+        for _ in range(192):
+            parallel = float(np.random.normal(0, max(1.0, radius / 3)))
+            perpendicular = float(np.random.normal(0, max(1.0, radius / 5)))
+            click_x = int(round(
+                center_x + direction_x * parallel
+                + perpendicular_x * perpendicular
+            ))
+            click_y = int(round(
+                center_y + direction_y * parallel
+                + perpendicular_y * perpendicular
+            ))
+            inside_circle = math.hypot(
+                click_x - center_x, click_y - center_y
+            ) <= radius
+            inside_polygon = self._point_in_polygon(click_x, click_y)
+            outside_in_circle = (
+                allow_outside_polygon
+                and 0 <= click_x < 1280
+                and 0 <= click_y < 720
+                and inside_circle
+            )
+            if inside_circle and (inside_polygon or outside_in_circle):
+                state['focus_click_counts'][index] += 1
+                state['click_count'] += 1
+                self._record_task_click((click_x, click_y))
                 return click_x, click_y
 
-        # 极窄或凹多边形可能连续拒绝随机点，回退时也不允许
-        # 把取整后落在边框外的重心直接返回。
         fallback_x = int(round(center_x))
         fallback_y = int(round(center_y))
         if self._point_in_polygon(fallback_x, fallback_y):
-            return fallback_x, fallback_y
-        for distance in range(1, int(math.ceil(radius)) + 1):
+            point = fallback_x, fallback_y
+        else:
+            point = self._nearest_integer_point(fallback_x, fallback_y)
+        state['focus_click_counts'][index] += 1
+        state['click_count'] += 1
+        self._record_task_click(point)
+        return point
+
+    def _nearest_integer_point(self, center_x: float, center_y: float) -> tuple[int, int]:
+        # 临时中心即使在框外，搜索半径也必须能覆盖整个多边形。
+        limit = int(math.ceil(max(
+            math.hypot(center_x - x, center_y - y)
+            for x, y in self.polygon
+        ))) + 1
+        for distance in range(1, limit + 1):
             for offset in range(-distance, distance + 1):
                 candidates = (
-                    (fallback_x + offset, fallback_y - distance),
-                    (fallback_x + offset, fallback_y + distance),
-                    (fallback_x - distance, fallback_y + offset),
-                    (fallback_x + distance, fallback_y + offset),
+                    (center_x + offset, center_y - distance),
+                    (center_x + offset, center_y + distance),
+                    (center_x - distance, center_y + offset),
+                    (center_x + distance, center_y + offset),
                 )
                 for click_x, click_y in candidates:
-                    if math.hypot(
-                        click_x - center_x,
-                        click_y - center_y,
-                    ) > radius:
-                        continue
                     if self._point_in_polygon(click_x, click_y):
                         return click_x, click_y
-        raise ValueError('RuleScatter clipped circle contains no integer point')
+        raise ValueError('RuleScatter polygon contains no integer point')
 
     def _point_in_polygon(self, x: float, y: float) -> bool:
         inside = False

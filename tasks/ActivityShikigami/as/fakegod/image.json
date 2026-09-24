@@ -69,6 +69,7 @@
     "roiBack": "1080,530,192,190",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "More",
     "description": "活动挑战按钮"
   }
 ]

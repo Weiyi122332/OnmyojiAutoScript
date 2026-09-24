@@ -67,6 +67,7 @@
   "costume_battle_10": "流焰蝶舞",
   "costume_battle_11": "辰烁奇夜",
   "costume_battle_14": "茸茨跃动",
+  "costume_battle_15": "灵狐寄愿",
   "enable_courtyard_affairs": "庭院事务",
   "GuildActivityMonitor": "寮活动监控",
   "guild_activity_monitor_combat_time": "监控时间设置",
@@ -255,6 +256,10 @@
   "guild_donate_notify_help": "当碎片不足/好友搜索不到时启用通知",
   "harvest_guild_max_times": "寮奖励最大尝试次数",
   "harvest_guild_max_times_help": "多次尝试收取, 防止寮资金/体力/抽奖/...有遗漏没做",
+  "box_ap_enable": "收取体力食盒",
+  "box_ap_enable_help": "仅控制结界中的体力食盒，不影响寮奖励收取。",
+  "box_exp_enable": "收取经验酒壶",
+  "box_exp_enable_help": "仅控制结界中的经验酒壶，不影响寄养收获或寮奖励。",
   "utilize_enable": "是否蹭卡",
   "utilize_enable_help": "关闭则不会蹭卡, 但是其他操作会执行(例如收取寮奖励等)",
   "lazy_mode": "怠惰模式",
@@ -280,8 +285,6 @@
   "general_config": "通用设置",
   "task_sequence": "任务启用项",
   "activity_task_sequence_help": "勾选执行，顺序：探索 → 大富翁 → 伪神 → 爬塔。",
-  "exploration_modes": "探索模式",
-  "exploration_modes_help": "勾选执行，顺序：主线 → 遭遇战 → 支线。",
   "enable_switch_exp_encounter": "遭遇战切换御魂",
   "exp_encounter_group_team": "遭遇战御魂预设组号,队伍号",
   "enable_switch_exp_encounter_by_name": "遭遇战按名称切换御魂",
@@ -385,5 +388,7 @@
   "Secret": "秘闻之境",
   "WeeklyTrifles": "每周琐事",
   "MysteryShop": "神秘商店",
-  "Duel": "斗技"
+  "Duel": "斗技",
+  "save_touch_fish": "惠比寿的摸鱼行动",
+  "save_touch_fish_help": "默认使用全部存储按钮，主要目的是为了配合真蛇每周打一次即可获得俩次奖励(并不会节省体力)"
 }

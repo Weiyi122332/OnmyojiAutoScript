@@ -69,6 +69,7 @@
     "roiBack": "1117,585,121,76",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "More",
     "description": ""
   },
   {
@@ -105,6 +106,7 @@
     "roiBack": "1117,585,121,76",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "More",
     "description": ""
   },
   {

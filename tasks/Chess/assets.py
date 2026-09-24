@@ -158,10 +158,6 @@ class ChessAssets:
 	O_GRIGRI_OPTION_NAME_3 = RuleOcr(roi=(825,370,191,45), area=(825,370,191,45), mode="Single", method="Default", keyword="", name="grigri_option_name_3")
 	#  
 	O_FREE_REFRESH_COUNT = RuleOcr(roi=(1183,392,38,24), area=(1183,392,38,24), mode="Digit", method="Default", keyword="", name="free_refresh_count")
-
-
 	# Scatter Rule Assets
 	#  
-	C_C_REWARD_RANDOM_CLICK = RuleScatter(roi_front=(20,19,1239,683), roi_back=(20,19,1239,683), polygon=[(1252, 58), (1258, 537), (1104, 541), (1110, 698), (20, 701), (20, 20), (67, 19), (75, 664), (539, 657), (540, 598), (763, 597), (760, 397), (570, 391), (565, 234), (245, 231), (247, 402), (101, 405), (102, 60), (452, 54), (454, 121), (1087, 117), (1087, 58)], name="c_reward_random_click")
-
-
+	C_C_REWARD_RANDOM_CLICK = RuleScatter(roi_front=(20,19,1239,683), roi_back=(20,19,1239,683), polygon=[(1252, 58), (1258, 537), (1104, 541), (1110, 698), (20, 701), (20, 20), (67, 19), (75, 664), (539, 657), (540, 598), (763, 597), (760, 397), (570, 391), (565, 234), (245, 231), (247, 402), (101, 405), (102, 60), (452, 54), (454, 121), (1087, 117), (1087, 58)], focus_count=16, functional=False, name="c_reward_random_click")

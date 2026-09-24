@@ -24,6 +24,7 @@
     "roiBack": "1043,543,106,54",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "More",
     "description": "战斗"
   },
   {
@@ -52,15 +53,6 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "式神助战"
-  },
-  {
-    "itemName": "event_reward_reward",
-    "imageName": "exploration_event_reward_reward.png",
-    "roiFront": "481,183,318,46",
-    "roiBack": "457,165,363,81",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "宝箱奖励"
   },
   {
     "itemName": "event_fight_lock",

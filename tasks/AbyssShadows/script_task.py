@@ -295,6 +295,11 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
         # 前往当前区域 的某个 敌人
         logger.info(f"Goto enemy: {item_code}")
         click_area = item_code.get_enemy_click()
+        enemy_number = int(item_code.split('-')[1])
+        defeated_ocr = (
+            self.O_1_DIED, self.O_2_DIED, self.O_3_DIED,
+            self.O_4_DIED, self.O_5_DIED, self.O_6_DIED,
+        )[enemy_number - 1]
         logger.info(f"Click emeny area: {click_area.name}")
         # 点击前往按钮的次数，阴阳师BUG:点击后不动，
         # 所以如果失败了，在点击前，尝试使用左下方的摇杆移动一点点
@@ -322,6 +327,10 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
                 if self.appear(self.I_ABYSS_GOTO_ENEMY):
                     logger.info(f"{self.I_ABYSS_GOTO_ENEMY} appear")
                     break
+                # 导航图中该位置标有“已击破”时直接跳过；漏识别仍由原有三次点击兜底。
+                if defeated_ocr.match(defeated_ocr.ocr(self.device.image), included=True):
+                    logger.info(f"{item_code} is already defeated ({defeated_ocr.name})")
+                    return False
                 if self.click(click_area, interval=1.5):
                     click_times += 1
                     continue
@@ -704,13 +713,26 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
             logger.info(f"{enemy_type.name} 的预设为 -1,-1，跳过御魂切换")
             return
 
+        # 不同敌人类型可能共用同一御魂预设；此处只跳过装配，不影响对局内独立上阵。
+        preset_key = ','.join(part.strip() for part in preset_str.split(','))
+        if preset_key == self.cur_soul_preset:
+            self.quick_loadout_done_types.add(enemy_type)
+            logger.info(f"{enemy_type.name} 的御魂预设 {preset_key} 已装配，跳过重复装配")
+            return
+
+        # 上一目标找怪失败时，残留的怪物分布弹窗会遮挡式神录入口。
+        self.screenshot()
+        if self.appear(self.I_ABYSS_MAP_EXIT):
+            logger.info('Abyss map navigation popup remains, close it')
+            self.click(self.I_ABYSS_MAP_EXIT, interval=2)
+
         self.goto_page(page_shikigami_records)
         try:
             parts = preset_str.split(',')
             if len(parts) != 2:
                 raise ValueError(f'无效的预设格式: {preset_str}')
             self.run_switch_soul((int(parts[0]), int(parts[1])))
-            self.cur_soul_preset = preset_str
+            self.cur_soul_preset = preset_key
             self.quick_loadout_done_types.add(enemy_type)
             logger.info(f"成功为 {enemy_type.name} 装配御魂预设 {preset_str}")
         except Exception as e:

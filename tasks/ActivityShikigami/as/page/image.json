@@ -36,15 +36,6 @@
     "description": "确认跳过"
   },
   {
-    "itemName": "activity_award",
-    "imageName": "as_activity_award.png",
-    "roiFront": "475,234,324,40",
-    "roiBack": "448,169,372,114",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "活动奖励附属页面"
-  },
-  {
     "itemName": "activity_signin_close",
     "imageName": "as_activity_signin_close.png",
     "roiFront": "1137,179,40,32",
