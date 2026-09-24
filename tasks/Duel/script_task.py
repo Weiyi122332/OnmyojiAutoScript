@@ -74,9 +74,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
         logger.info('Duel battle end')
         self.goto_page(page_main)
         if self._weekly_goal_reached:
-            self.set_next_run_next_monday(
-                task='Duel', scheduler=self.conf.scheduler,
-            )
+            self.set_next_run_next_monday(task='Duel')
         else:
             self.set_next_run(task='Duel', success=True, finish=True)
         raise TaskEnd('Duel')

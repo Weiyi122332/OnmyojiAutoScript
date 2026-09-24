@@ -19,12 +19,12 @@ class ScriptTask(GameUi, GuildBanquetAssets):
     def run(self):
         if not self.check_date(datetime.now()):
             logger.warning("GuildBanquet is not available now")
-            self.set_next_run(task='GuildBanquet', server=False, target=self.get_next_dt(datetime.now()))
+            self.set_next_run(task='GuildBanquet', target=self.get_next_dt(datetime.now()))
             raise TaskEnd
         self.goto_page(pages.page_guild)
         self.screenshot()
         if not self.appear(self.I_BANQUET_FLAG):
-            self.set_next_run(task='GuildBanquet', server=False, target=self.get_next_dt(datetime.now()))
+            self.set_next_run(task='GuildBanquet', target=self.get_next_dt(datetime.now()))
             self.goto_page(pages.page_main)
             raise TaskEnd
         logger.info("Start guild banquet!")
@@ -52,7 +52,7 @@ class ScriptTask(GameUi, GuildBanquetAssets):
                     exp_full_appeared = False
             self.device.stuck_record_clear()
             time.sleep(wait_interval_seconds)
-        self.set_next_run(task='GuildBanquet', server=False, target=self.get_next_dt(datetime.now(), True))
+        self.set_next_run(task='GuildBanquet', target=self.get_next_dt(datetime.now(), True))
         self.goto_page(pages.page_main)
         raise TaskEnd
 
@@ -124,4 +124,3 @@ if __name__ == '__main__':
     d = Device(c)
     t = ScriptTask(c, d)
     t.run()
-

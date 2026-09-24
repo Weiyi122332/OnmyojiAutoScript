@@ -45,9 +45,8 @@
       "priority": 0,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:05:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "restart_config": {
       "enable_daily": true
@@ -102,9 +101,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "boss": {
       "boss_number": 3,
@@ -143,9 +141,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "experience_youkai": {
       "buff_exp_50_click": false,
@@ -166,9 +163,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "gold_youkai": {
       "buff_gold_50_click": false,
@@ -189,9 +185,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "nian_config": {
       "buff_gold_50_click": false,
@@ -212,9 +207,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "raid_config": {
       "number_attack": 30,
@@ -254,9 +248,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "raid_config": {
       "limit_time": "00:30:00",
@@ -296,9 +289,8 @@
       "priority": 2,
       "success_interval": "00 06:00:00",
       "failure_interval": "00 06:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "utilize_config": {
       "utilize_rule": "default",
@@ -323,9 +315,8 @@
       "priority": 2,
       "success_interval": "01 00:00:00",
       "failure_interval": "00 10:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "activation_config": {
       "card_type": "太鼓",
@@ -345,9 +336,8 @@
       "priority": 2,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "box_buy_config": {
       "box_buy_sushi": false
@@ -419,9 +409,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "trifles_config": {
       "courtyard_affairs": true,
@@ -459,9 +448,8 @@
       "priority": 5,
       "success_interval": "00 06:00:00",
       "failure_interval": "00 06:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "talisman": {
       "get_flower": false,
@@ -476,9 +464,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "pets_config": {
       "pets_feast": true,
@@ -493,9 +480,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "simple_tidy": {
       "enable_greed": true,
@@ -509,9 +495,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "delegation_config": {
       "miyoshino_painting": false,
@@ -529,9 +514,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "exploration_config": {
       "buff_gold_50_click": false,
@@ -588,9 +572,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "wanted_quests_config": {
       "before_end": "00:00:00",
@@ -608,9 +591,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "tako_config": {
       "enable": false,
@@ -634,9 +616,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "checkin_config": {
       "usage": ""
@@ -649,9 +630,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "orochi_config": {
       "user_status": "leader",
@@ -702,9 +682,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     }
   },
   "sougenbi": {
@@ -714,9 +693,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "sougenbi_config": {
       "sougenbi_class": "痴",
@@ -758,9 +736,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "fallen_sun_config": {
       "user_status": "leader",
@@ -804,9 +781,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "eternity_sea_config": {
       "user_status": "leader",
@@ -857,9 +833,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "six_realms_gate": {
       "limit_time": "00:30:00",
@@ -888,9 +863,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "other_world_twilight_config": {
       "user_status": "leader",
@@ -933,9 +907,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "general_config": {
       "task_sequence": [
@@ -1098,9 +1071,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "general_climb": {
       "limit_time": "00:30:00",
@@ -1166,9 +1138,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
       "float_time": "00:00:00",
+      "cron": "",
       "wait_interval": "00 01:40:00"
     },
     "meta_demon_config": {
@@ -1203,9 +1174,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "frog_boss_config": {
       "before_end_frog": "00:15:00",
@@ -1219,9 +1189,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "float_parade": {
       "collect_placement_reward": true,
@@ -1235,9 +1204,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "quiz_config": {
       "quiz_cnt": 1,
@@ -1251,9 +1219,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "kitty_shop_config": {
       "kitty_attempts": 1,
@@ -1267,9 +1234,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "switch_soul_config": {
       "enable": false,
@@ -1286,9 +1252,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "general_battle_config": {
       "lock_team_enable": false,
@@ -1320,9 +1285,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "bondling_config": {
       "user_status": "alone",
@@ -1377,9 +1341,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "evo_zone_config": {
       "user_status": "leader",
@@ -1425,9 +1388,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "goryou_config": {
       "limit_time": "00:30:00",
@@ -1464,9 +1426,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "hyakkiyakou_config": {
       "hya_limit_time": "00:20:00",
@@ -1511,9 +1472,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "herotest": {
       "layer": "鬼兵演武",
@@ -1553,9 +1513,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "find_jade_config": {
       "invite_info_count": 1,
@@ -1585,9 +1544,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "memory_scrolls_config": {
       "auto_contribute_memoryscrolls": true,
@@ -1608,9 +1566,8 @@
       "priority": 10,
       "success_interval": "03 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "true_orochi_config": {
       "find_true_orochi": true,
@@ -1632,9 +1589,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "special_room": {
       "enable": false,
@@ -1718,9 +1674,8 @@
       "priority": 5,
       "success_interval": "07 00:00:00",
       "failure_interval": "07 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "secret_config": {
       "secret_gold_50": false,
@@ -1758,9 +1713,8 @@
       "priority": 5,
       "success_interval": "07 00:00:00",
       "failure_interval": "07 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "trifles": {
       "share_collect": true,
@@ -1776,9 +1730,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "shop_config": {
       "time_of_mystery": "00:00:00",
@@ -1801,9 +1754,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "duel_config": {
       "switch_enabled": true,
@@ -1840,9 +1792,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "chess_config": {
       "lineup_bond": "荒川",
@@ -1860,9 +1811,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "missions_config": {
       "missions_select": "觉醒一"
@@ -1875,9 +1825,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "hunt_time": {
       "kirin_time": "19:00:00",
@@ -1925,9 +1874,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "dokan_config": {
       "dokan_run_time": "20:00:00",
@@ -1999,9 +1947,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "abyss_shadows_time": {
       "abyss_shadows_4": "20:00:00",
@@ -2036,9 +1983,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "guild_banquet_config": {
       "auto_switch_shikigami": false,
@@ -2055,9 +2001,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "demon_retreat_time": {
       "custom_run_time": "10:00:00"
@@ -2092,9 +2037,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "guild_activity_monitor_combat_time": {
       "detection_interval": 30,
@@ -2117,9 +2061,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "group_config": {
       "task_1": "不设置",
@@ -2143,9 +2086,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "group_config": {
       "task_1": "不设置",
@@ -2169,9 +2111,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "group_config": {
       "task_1": "不设置",
@@ -2195,9 +2136,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "group_config": {
       "task_1": "不设置",
@@ -2221,9 +2161,8 @@
       "priority": 5,
       "success_interval": "01 00:00:00",
       "failure_interval": "01 00:00:00",
-      "server_update": "09:00:00",
-      "delay_date": 1,
-      "float_time": "00:00:00"
+      "float_time": "00:00:00",
+      "cron": ""
     },
     "group_config": {
       "task_1": "不设置",

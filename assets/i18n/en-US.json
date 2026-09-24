@@ -32,5 +32,9 @@
   "custom_preset_enable": "Enable Custom Preset Deployment",
   "custom_preset": "Custom Preset Deployment",
   "quick_loadout_custom_preset_enable_help": "Select quick-loadout presets by stage name; deploy the preset and equip its souls once for each new boss challenge",
-  "quick_loadout_custom_preset_help": "Format: boss_name:(\"group number or name\",\"preset number or name\"); separate entries with semicolons; ALL matches every monster not explicitly configured; OCR mode treats both values as names"
+  "quick_loadout_custom_preset_help": "Format: boss_name:(\"group number or name\",\"preset number or name\"); separate entries with semicolons; ALL matches every monster not explicitly configured; OCR mode treats both values as names",
+  "Cron": "Cron schedule",
+  "cron_help": "Crontab expression: minute hour day month weekday. Leave empty to keep the original success/failure interval behaviour; when set, the task only starts at the times matched by the expression (the random float below still applies). Examples: 0 5 * * * (daily 05:00), 30 20 * * 1 (Monday 20:30), */30 9-23 * * * (every 30 minutes between 09:00 and 23:00), 0 5 1 * * (1st day of each month 05:00). Supports * , - / and names (sun..sat, jan..dec); Sunday is 0 or 7; macros like @daily and @weekly are accepted too.",
+  "Float Time": "Random float",
+  "float_time_help": "Random float: the final run time = the computed time + a random 0..this-many seconds. Empty or 00:00:00 disables it; it also applies to crontab rules (e.g. 00:10:00 makes a 05:00 task start somewhere between 05:00 and 05:10)."
 }

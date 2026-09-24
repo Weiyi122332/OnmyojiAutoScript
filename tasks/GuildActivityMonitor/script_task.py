@@ -35,14 +35,11 @@ class ScriptTask(GameUi, GuildActivityMonitorAssets):
         delta_days = min((day - today) % 7 for day in candidate_days)
         next_date = now + timedelta(days=delta_days or 7)
 
-        server_update = self.config.guild_activity_monitor.scheduler.server_update
-        use_server_time = (server_update.hour, server_update.minute, server_update.second) != (9, 0, 0)
-        next_target = datetime.combine(next_date.date(), server_update) if use_server_time else next_date
         status = '在' if in_run_days else '不在'
         action = '本次继续执行' if in_run_days else '跳过 GuildActivityMonitor'
         logger.info(f"今天是周{today}，{status}配置运行日期({monitor_config.run_days})内，"
-                    f"{action}，下次运行时间: {next_target}")
-        self.set_next_run(task='GuildActivityMonitor', success=None, finish=False, server=False, target=next_target)
+                    f"{action}，下次运行时间: {next_date}")
+        self.set_next_run(task='GuildActivityMonitor', success=None, finish=False, target=next_date)
         return in_run_days
 
     def build_keyword_map(self) -> dict:
@@ -114,8 +111,8 @@ class ScriptTask(GameUi, GuildActivityMonitorAssets):
         """检测到活动关键字后拉起对应任务并结束监控"""
         logger.info(f"检测到关键字 '{keyword}'，启动任务: {task_name}")
         monitor_config = self.config.guild_activity_monitor.guild_activity_monitor_combat_time
-        self.set_next_run(task=task_name, success=False, finish=False, server=False, target=datetime.now())
-        self.set_next_run(task='GuildActivityMonitor', success=False, finish=False, server=False,
+        self.set_next_run(task=task_name, success=False, finish=False, target=datetime.now())
+        self.set_next_run(task='GuildActivityMonitor', success=False, finish=False,
                           target=datetime.now() + timedelta(minutes=monitor_config.recheck_interval))
         raise TaskEnd('GuildActivityMonitor')
 

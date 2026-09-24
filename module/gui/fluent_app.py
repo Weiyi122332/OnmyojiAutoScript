@@ -74,8 +74,8 @@ class FluentApp():
         qmlRegisterType(Class, "Oas", 1, 0, qml_class)
 
 
-# 任务组相关界面文字的中文（.qm 里还没有这些新字符串，这里直接兜底）
-_TASK_GROUP_ZH = {
+# 新增界面文字的中文兜底（module/config/i18n/zh_CN.qm 里还没有这些字符串）
+_FALLBACK_ZH = {
     'Task Group': '任务组',
     'TaskGroup1': '任务组 1',
     'TaskGroup2': '任务组 2',
@@ -94,15 +94,20 @@ _TASK_GROUP_ZH = {
     'Task 10': '第 10 个任务',
     'task_group_name_help': '给这个任务组起个名字，方便自己认（例如「日常」「御魂」「活动」）。',
     'task_group_slot_help': '按顺序从上往下执行：第 1 个任务、第 2 个任务……不需要的任务留「不设置」即可。',
+    # 定时规则（crontab）
+    'Cron': '定时规则',
+    'cron_help': 'crontab 表达式：分 时 日 月 周。留空表示按「成功/失败间隔」的原逻辑运行；填了就只在表达式命中的时刻启动任务（仍会叠加随机浮动）。例：0 5 * * *（每天 5:00）、30 20 * * 1（每周一 20:30）、*/30 9-23 * * *（9 点到 23 点之间每 30 分钟）。支持 * , - / 和英文缩写（sun..sat、jan..dec），星期日可写 0 或 7，也支持 @daily、@weekly 这类简写。',
+    'Float Time': '随机浮动时间',
+    'float_time_help': '随机浮动：最终运行时间 = 算出来的时间 + 0~此设置的随机秒数。留空或 00:00:00 表示不浮动；对 crontab 规则同样生效（例如设 00:10:00，5:00 的任务会在 5:00~5:10 之间随机启动）。',
 }
 
 
-class TaskGroupTranslator(QTranslator):
+class FallbackTranslator(QTranslator):
     """
-    把菜单里的 TaskGroup1..5 显示成任务组的自定义名称。
+    兜底翻译：.qm 里还没有的字符串（任务组、定时规则等）。
 
     QML 里的菜单项是 qsTr(任务名)，所以这里接管这几个任务名的翻译，
-    名称来自各配置实例里「任务组名称」设置。
+    名称来自各配置实例里「任务组名称」设置；其余用 _FALLBACK_ZH。
     """
 
     def translate(self, context, source_text, disambiguation=None, n=-1):
@@ -115,7 +120,7 @@ class TaskGroupTranslator(QTranslator):
         if name:
             return name
         if getattr(self, 'language', '简体中文') == '简体中文':
-            return _TASK_GROUP_ZH.get(source_text, '')
+            return _FALLBACK_ZH.get(source_text, '')
         return ''
 
     def set_language(self, language: str) -> None:
@@ -133,7 +138,7 @@ class Translator(QObject):
 
         self.translator = QTranslator()
         # 任务组自定义名称：装在 .qm 之后，Qt 会用后装的
-        self.task_group_translator = TaskGroupTranslator()
+        self.task_group_translator = FallbackTranslator()
         QGuiApplication.installTranslator(self.task_group_translator)
 
     @Slot(str)

@@ -3,6 +3,7 @@
 # github https://github.com/runhey
 import os
 import json
+import random
 import yaml
 
 from filelock import FileLock
@@ -245,33 +246,19 @@ def dict_to_kv(dictionary, allow_none=True):
     return ', '.join([f'{k}={repr(v)}' for k, v in dictionary.items() if allow_none or v is not None])
 
 
-def parse_tomorrow_server(server_update: time, delay_date: int = 1, float_seconds: int = 0) -> datetime:
+def random_float_seconds(float_time: time) -> int:
     """
-    获取明天的日期，给这个日期加上server_update的时间，返回datetime
-    :param server_update:
-    :param float_seconds: 浮动的秒数，可为正或负值
-    :return:
-    """
-    if isinstance(server_update, str):
-        server_update = time.fromisoformat(server_update)
-    now = datetime.now()
-    tomorrow = now + timedelta(days=delay_date)
-    next_run = datetime.combine(tomorrow, server_update)
-    
-    # 应用浮动时间
-    if float_seconds !=0:
-        next_run += timedelta(seconds=float_seconds)
+    随机浮动秒数：0 ~ float_time 之间的随机值，用来给下次运行时间加抖动。
 
-        # 确保时间在第二天内，不回退到前一天，不跨越到第三天（考虑任务时间，最早 00:00，最晚 23:50）
-        start_of_tomorrow = datetime.combine(tomorrow, time.min)
-        end_of_tomorrow = datetime.combine(tomorrow, time(hour=23, minute=50))
-    
-        if next_run < start_of_tomorrow:
-            next_run = start_of_tomorrow
-        elif next_run > end_of_tomorrow:
-            next_run = end_of_tomorrow
-    
-    return next_run
+    :param float_time: Scheduler 里的 Float Time
+    :return: 秒数，未配置或为零时返回 0
+    """
+    if not isinstance(float_time, time):
+        return 0
+    total = float_time.hour * 3600 + float_time.minute * 60 + float_time.second
+    if total <= 0:
+        return 0
+    return random.randint(0, total)
 
 def deep_get(d, keys, default=None):
     """
@@ -332,4 +319,4 @@ def deep_pop(d, keys, default=None):
 
 
 if __name__ == '__main__':
-    print(parse_tomorrow_server("09:01:00"))
+    print(random_float_seconds(time(hour=0, minute=1, second=0)))

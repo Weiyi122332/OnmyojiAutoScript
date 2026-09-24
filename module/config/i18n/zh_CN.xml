@@ -360,7 +360,6 @@ window_background >>> DroidCast_raw >  ADB_nc >> DroidCast > uiautomator2 ~= ADB
 	<message><source>Priority</source><translation>任务优先级</translation></message>
 	<message><source>Success Interval</source><translation>执行任务成功后设定下次执行的间隔时间</translation></message>
 	<message><source>Failure Interval</source><translation>执行任务失败后设定下次执行的间隔时间</translation></message>
-	<message><source>Server Update</source><translation>强制设定服务时间</translation></message>
 	<message><source>enable_help</source><translation>将这个任务加入调度器</translation></message>
 	<message><source>next_run_help</source><translation>会根据下面的间隔时间自动计算时间，清空后回车即可设置为当前</translation></message>
 	<message><source>priority_help</source><translation>如果设置调度规则为基于优先级，则该选项有效
@@ -370,8 +369,10 @@ window_background >>> DroidCast_raw >  ADB_nc >> DroidCast > uiautomator2 ~= ADB
 	<message><source>interval_minutes_help</source><translation>可取[0~60]</translation></message>
 	<message><source>success_interval_help</source><translation>一般默认，时间格式:"[days] [hours]:[minutes]:[seconds]"</translation></message>
 	<message><source>failure_interval_help</source><translation>一般默认即可，时间格式同上，不按照格式输入会无法正确设置</translation></message>
-	<message><source>server_update_help</source><translation>如果设定不是默认的 "09:00:00",该任务每次执行完毕后会强制设定下次运行时间为第二天的设定值
-格式 hh:mm:ss </translation></message>
+	<message><source>Cron</source><translation>定时规则</translation></message>
+	<message><source>cron_help</source><translation>crontab 表达式：分 时 日 月 周。留空表示按「成功/失败间隔」的原逻辑运行；填了就只在表达式命中的时刻启动任务（仍会叠加下面的随机浮动）。例：0 5 * * *（每天 5:00）、30 20 * * 1（每周一 20:30）、*/30 9-23 * * *（9 点到 23 点之间每 30 分钟）。支持 * , - / 和英文缩写（sun..sat、jan..dec），星期日可写 0 或 7，也支持 @daily、@weekly 这类简写。</translation></message>
+	<message><source>Float Time</source><translation>随机浮动时间</translation></message>
+	<message><source>float_time_help</source><translation>随机浮动：最终运行时间 = 算出来的时间 + 0~此设置的随机秒数。留空或 00:00:00 表示不浮动；对 crontab 规则同样生效（例如设 00:10:00，5:00 的任务会在 5:00~5:10 之间随机启动）。</translation></message>
 </context>
 <context>
     <name>Args</name>

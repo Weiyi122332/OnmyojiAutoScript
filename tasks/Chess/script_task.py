@@ -212,9 +212,7 @@ class ChessLegacyScriptTask(
             f'rank_protection={rank_protection}'
         )
         if coin_limit_reached:
-            self.set_next_run_next_monday(
-                task='Chess', scheduler=self.config.chess.scheduler,
-            )
+            self.set_next_run_next_monday(task='Chess')
         else:
             self.set_next_run(task='Chess', success=True, finish=True)
         raise TaskEnd('Chess')

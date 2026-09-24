@@ -493,7 +493,6 @@ class ScriptTask(GameUi, ReplaceShikigami, KekkaiUtilizeAssets):
             self.set_next_run(
                 task='KekkaiUtilize',
                 finish=True,
-                server=False,
                 target=datetime.now() + timedelta(minutes=10),
             )
             self.utilize_terminal_failure = True
@@ -512,7 +511,6 @@ class ScriptTask(GameUi, ReplaceShikigami, KekkaiUtilizeAssets):
         self.set_next_run(
             task='KekkaiUtilize',
             finish=True,
-            server=False,
             target=datetime.now() + timedelta(minutes=10),
         )
         self.utilize_terminal_failure = True
@@ -546,7 +544,6 @@ class ScriptTask(GameUi, ReplaceShikigami, KekkaiUtilizeAssets):
         self.set_next_run(
             task='KekkaiUtilize',
             finish=True,
-            server=False,
             target=datetime.now() + timedelta(minutes=20),
         )
         self.utilize_terminal_failure = True

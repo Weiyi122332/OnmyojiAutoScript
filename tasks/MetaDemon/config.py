@@ -4,7 +4,7 @@
 from datetime import timedelta, time
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 
-from tasks.Component.config_base import ConfigBase, TimeDelta, Time, dynamic_hide
+from tasks.Component.config_base import ConfigBase, TimeDelta, Time
 from pydantic import Field
 from enum import IntEnum
 from tasks.Component.config_scheduler import Scheduler
@@ -111,8 +111,6 @@ class MetaDemonSwitchSoulConfig(ConfigBase):
 
 class MetaDemonScheduler(Scheduler):
     wait_interval: TimeDelta = Field(default=TimeDelta(hours=1, minutes=40), description='疲劳度满时等多长时间后再次运行本任务,建议设置等待完全恢复疲劳度所需的时间\n例:100分钟恢复100点疲劳度,再次运行必定可以继续战斗')
-
-    hide_fields = dynamic_hide('server_update', 'delay_date')
 
 
 class MetaDemon(ConfigBase):

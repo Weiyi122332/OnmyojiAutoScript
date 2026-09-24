@@ -29,7 +29,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DemonRetreatAssets, AbyssSha
         cfg: DemonRetreat = self.config.demon_retreat
         if not self.check_date(datetime.now()):
             logger.warning("Demon retreat is not available now")
-            self.set_next_run(task='DemonRetreat', server=False, target=self.get_next_dt(datetime.now()))
+            self.set_next_run(task='DemonRetreat', target=self.get_next_dt(datetime.now()))
             raise TaskEnd
         if cfg.switch_soul_config.enable:
             self.goto_page(page_shikigami_records)
@@ -44,7 +44,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DemonRetreatAssets, AbyssSha
             if self.appear_then_click(self.I_DEMON_BACK_CHECK, interval=1):
                 pass
             self.goto_page(page_main)
-            self.set_next_run(task='DemonRetreat', server=False, target=self.get_next_dt(datetime.now()))
+            self.set_next_run(task='DemonRetreat', target=self.get_next_dt(datetime.now()))
             raise TaskEnd
 
         # 首领退治战斗
@@ -69,7 +69,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DemonRetreatAssets, AbyssSha
 
         self.goto_page(page_main)
         # 设置下次运行时间
-        self.set_next_run(task='DemonRetreat', server=False, target=self.get_next_dt(datetime.now(), success))
+        self.set_next_run(task='DemonRetreat', target=self.get_next_dt(datetime.now(), success))
         raise TaskEnd
 
     def goto_demon_retreat(self) -> bool:
@@ -244,4 +244,3 @@ if __name__ == '__main__':
     t.screenshot()
 
     t.run()
-

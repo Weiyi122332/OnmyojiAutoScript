@@ -69,7 +69,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
         cfg: AbyssShadows = self.config.abyss_shadows
         if not self.check_date(datetime.now()):
             logger.warning("Abyss shadows is not available now")
-            self.set_next_run(task='AbyssShadows', server=False, target=self.get_next_dt(datetime.now()))
+            self.set_next_run(task='AbyssShadows', target=self.get_next_dt(datetime.now()))
             raise TaskEnd
 
         # 进入狭间
@@ -98,7 +98,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
             if not self.select_boss(area_enter):
                 logger.warning("Failed to enter abyss shadows")
                 self.goto_page(page_main)
-                self.set_next_run(task='AbyssShadows', server=False, target=self.get_next_dt(datetime.now()))
+                self.set_next_run(task='AbyssShadows', target=self.get_next_dt(datetime.now()))
                 raise TaskEnd
 
             # 集结中图片
@@ -130,7 +130,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
         self.goto_page(page_main)
 
         # 设置下次运行时间
-        self.set_next_run(task='AbyssShadows', server=False, target=self.get_next_dt(datetime.now(), success=True))
+        self.set_next_run(task='AbyssShadows', target=self.get_next_dt(datetime.now(), success=True))
 
         self.clear_saved_params()
 

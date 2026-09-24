@@ -140,7 +140,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, RyouToppaAssets):
                 self.start_ryou_toppa()
             else:
                 logger.info("The ryou toppa is not open and you are a ryou member.")
-                self.set_next_run(task='RyouToppa', finish=True, server=True, success=False)
+                self.set_next_run(task='RyouToppa', finish=True, success=False)
                 raise TaskEnd
 
         # 100% 攻破, 第二天再执行
@@ -184,9 +184,9 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, RyouToppaAssets):
                 continue
 
         if success:
-            self.set_next_run(task='RyouToppa', finish=True, server=True, success=True)
+            self.set_next_run(task='RyouToppa', finish=True, success=True)
         else:
-            self.set_next_run(task='RyouToppa', finish=True, server=True, success=False)
+            self.set_next_run(task='RyouToppa', finish=True, success=False)
         self.goto_page(page_main)
         raise TaskEnd
 

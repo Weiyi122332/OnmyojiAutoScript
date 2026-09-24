@@ -5,7 +5,7 @@
 from time import sleep, time
 
 import random
-from datetime import datetime, time as clock_time, timedelta
+from datetime import datetime, timedelta
 from module.atom.animate import RuleAnimate
 from module.atom.click import RuleClick
 from module.atom.gif import RuleGif
@@ -640,11 +640,10 @@ class BaseTask(GlobalGameAssets, CostumeBase):
         return False
 
     def set_next_run(self, task: str, finish: bool = False,
-                     success: bool = None, server: bool = True, target: datetime = None) -> None:
+                     success: bool = None, target: datetime = None) -> None:
         """
         设置下次运行时间  当然这个也是可以重写的
         :param target: 可以自定义的下次运行时间
-        :param server: True
         :param success: 判断是成功的还是失败的时间间隔
         :param task: 任务名称，大驼峰的
         :param finish: 是完成任务后的时间为基准还是开始任务的时间为基准
@@ -654,22 +653,21 @@ class BaseTask(GlobalGameAssets, CostumeBase):
             start_time = datetime.now().replace(microsecond=0)
         else:
             start_time = self.start_time
-        self.config.task_delay(task, start_time=start_time, success=success, server=server, target=target)
+        self.config.task_delay(task, start_time=start_time, success=success, target=target)
 
-    def set_next_run_next_monday(self, task: str, scheduler) -> None:
-        """周目标达成后改到下周一，保留显式配置的运行时刻。"""
+    def set_next_run_next_monday(self, task: str) -> None:
+        """
+        周目标达成后改到下周一同一时刻。
+
+        设置了 cron 的任务，会由调度器取该时刻之后最近的 cron 时间。
+        """
         finished_at = datetime.now().replace(microsecond=0)
-        configured_time = scheduler.server_update
-        run_time = (
-            finished_at.time()
-            if configured_time == clock_time(hour=9)
-            else configured_time
-        )
+        run_time = finished_at.time()
         next_monday = finished_at.date() + timedelta(
             days=7 - finished_at.weekday()
         )
         target = datetime.combine(next_monday, run_time)
-        self.set_next_run(task=task, server=False, target=target)
+        self.set_next_run(task=task, target=target)
 
     def custom_next_run(self, task: str, custom_time: Time = None, time_delta: float = 1) -> None:
         """

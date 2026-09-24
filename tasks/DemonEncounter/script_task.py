@@ -167,7 +167,7 @@ class ScriptTask(GameUi, GeneralBattle, DemonEncounterAssets, SwitchSoul):
                     break
                 if boss_fire_count >= 3:
                     logger.warning('Boss battle already done')
-                    self.set_next_run(task='DemonEncounter', success=False, finish=True, server=True)
+                    self.set_next_run(task='DemonEncounter', success=False, finish=True)
                     self.ui_click_until_disappear(self.I_UI_BACK_RED)
                     raise TaskEnd('DemonEncounter')
 

@@ -82,7 +82,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, AreaBossAssets):
         if time_not_passed:
             logger.error("It's not time to challenge boss")
             self.goto_page(page_main)
-            self.set_next_run(task='AreaBoss', server=False, target=datetime.now().replace(hour=10))
+            self.set_next_run(task='AreaBoss', target=datetime.now().replace(hour=10))
             raise TaskEnd
 
     def boss(self, battle: RuleImage, collect: bool = False):

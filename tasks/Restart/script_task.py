@@ -63,7 +63,7 @@ class ScriptTask(BaseTask):
         self.app_start()
 
     def finish_recovery(self):
-        self.set_next_run(task='Restart', success=True, finish=True, server=True)
+        self.set_next_run(task='Restart', success=True, finish=True)
         if self.config.model.restart.restart_config.enable_daily:
             self.config.task_call('DailyTrifles')
         self._set_runtime_outcome(status='recovered')

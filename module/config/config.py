@@ -5,7 +5,6 @@ import copy
 import datetime
 import operator
 import threading
-import random
 
 from datetime import datetime, timedelta
 from cached_property import cached_property
@@ -13,6 +12,7 @@ from threading import Lock
 
 from module.base.filter import Filter
 from module.config.config_updater import ConfigUpdater
+from module.config.cron import cron_error, try_parse_cron
 from module.config.config_manual import ConfigManual
 from module.config.config_watcher import ConfigWatcher
 from module.config.config_menu import ConfigMenu
@@ -36,15 +36,19 @@ class Function:
             self.enable = False
             self.command = "Unknown"
             self.next_run = DEFAULT_TIME
+            self.cron = ''
             return
         if data.get("scheduler") is None:
             self.enable = False
             self.command = "Unknown"
             self.next_run = DEFAULT_TIME
+            self.cron = ''
             return
 
         self.enable: bool = data['scheduler']['enable']
         self.command: str = ConfigModel.type(key)
+        # 定时规则（crontab），留空表示按间隔运行
+        self.cron: str = str(data['scheduler'].get('cron') or '')
         next_run = data['scheduler']['next_run']
         if isinstance(next_run, str):
             next_run = datetime.strptime(next_run, "%Y-%m-%d %H:%M:%S")
@@ -327,11 +331,10 @@ class Config(ConfigState, ConfigManual, ConfigWatcher, ConfigMenu):
             return False
 
     def task_delay(self, task: str, start_time: datetime = None,
-                   success: bool = None, server: bool = True, target: datetime = None) -> None:
+                   success: bool = None, target: datetime = None) -> None:
         """
         设置下次运行时间  当然这个也是可以重写的
         :param target: 可以自定义的下次运行时间
-        :param server: True
         :param success: 判断是成功的还是失败的时间间隔
         :param task: 任务名称，大驼峰的
         :param finish: 是完成任务后的时间为基准还是开始任务的时间为基准
@@ -367,14 +370,12 @@ class Config(ConfigState, ConfigManual, ConfigWatcher, ConfigMenu):
             if isinstance(interval, str):
                 interval = timedelta(interval)
             run.append(start_time + interval)
-        # if server is not None:
-        #     if server:
-        #         server = scheduler.server_update
-        #         run.append(get_server_next_update(server))
+        target_time = None
         if target is not None:
             target = [target] if not isinstance(target, list) else target
             target = nearest_future(target)
             run.append(target)
+            target_time = target
 
         next_run = None
         # 排序
@@ -386,23 +387,30 @@ class Config(ConfigState, ConfigManual, ConfigWatcher, ConfigMenu):
         run = min(run).replace(microsecond=0)
         next_run = run
 
-        if server and hasattr(scheduler, 'server_update'):
-            # 加入随机延迟时间
-            float_seconds = (scheduler.float_time.hour * 3600 +
-                             scheduler.float_time.minute * 60 +
-                             scheduler.float_time.second)
-            random_float = random.randint(0, float_seconds)
-            # 如果有强制运行时间
-            if scheduler.server_update == time(hour=9):
-                next_run += timedelta(seconds=random_float)
+        # 定时规则（crontab）：填了就由它决定下次运行时间
+        cron_text = str(getattr(scheduler, 'cron', '') or '').strip()
+        if cron_text:
+            expression = try_parse_cron(cron_text)
+            if expression is None:
+                logger.warning(f'{task}: cron `{cron_text}` is invalid '
+                               f'({cron_error(cron_text)}), fallback to the interval schedule')
             else:
-                next_run = parse_tomorrow_server(scheduler.server_update, scheduler.delay_date, random_float)
+                # 以「任务开始/结束的时刻」为基准往后找，任务跑得比较久时不会重复排期；
+                # 有明确的延后目标（例如「下周再跑」）时，从目标时间开始往后找
+                base = max(start_time.replace(microsecond=0),
+                           datetime.now().replace(microsecond=0))
+                if isinstance(target_time, datetime) and target_time > base:
+                    next_run = expression.next_after(target_time, inclusive=True)
+                else:
+                    next_run = expression.next_after(base)
+
+        # 随机浮动：最终时间 = 上面的时间 + 0~float_time 的随机秒数（cron 规则同样生效）
+        next_run += timedelta(seconds=random_float_seconds(getattr(scheduler, 'float_time', None)))
 
         # 将这些连接起来，方便日志输出
         kv = dict_to_kv(
             {
                 "success": success,
-                "server_update": server,
                 "target": target,
             },
             allow_none=False,

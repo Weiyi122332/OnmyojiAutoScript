@@ -648,33 +648,33 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         run_time_dt = datetime.combine(now.date(), run_time)
         if skip_today:
             if self.conf.dokan_config.monday_to_thursday and now.weekday() >= 4:  # 直接设置下周一的道馆时间
-                self.set_next_run(task="Dokan", server=False,
+                self.set_next_run(task="Dokan",
                                   target=datetime.combine(now.date() + timedelta(days=7 - now.weekday()), run_time))
                 return
-            self.set_next_run(task="Dokan", server=False, target=datetime.combine(now.date() + timedelta(days=1), run_time))
+            self.set_next_run(task="Dokan", target=datetime.combine(now.date() + timedelta(days=1), run_time))
             return
         # 道馆没有开启
         if not is_dokan_activated:
             # 在服务器时间之前,设置为服务器时间
             if now < run_time_dt:
-                self.set_next_run(task="Dokan", server=False, target=run_time_dt)
+                self.set_next_run(task="Dokan", target=run_time_dt)
                 return
             # 在服务器时间之后,如超过1小时,则直接当作成功;未超过则当作失败
             if now - run_time_dt > timedelta(hours=1):
-                self.set_next_run(task="Dokan", server=False,
+                self.set_next_run(task="Dokan",
                                   target=datetime.combine(now.date() + timedelta(days=1), run_time))
                 return
             # 时间在道馆开启时间附近，failure_interval后执行
-            self.set_next_run(task="Dokan", server=False, target=now + self.config.dokan.scheduler.failure_interval)
+            self.set_next_run(task="Dokan", target=now + self.config.dokan.scheduler.failure_interval)
             return
         # 道馆已开启
         # 如果打两次,当前是第一次,设置为failure_interval后运行
         if self.config.dokan.attack_count_config.remain_attack_count == 1 and \
                 self.config.dokan.attack_count_config.daily_attack_count == 2:
-            self.set_next_run(task="Dokan", server=False, target=now + self.config.dokan.scheduler.failure_interval)
+            self.set_next_run(task="Dokan", target=now + self.config.dokan.scheduler.failure_interval)
             return
         # 其余情况当作成功
-        self.set_next_run(task="Dokan", server=False, target=datetime.combine(now.date() + timedelta(days=1), run_time))
+        self.set_next_run(task="Dokan", target=datetime.combine(now.date() + timedelta(days=1), run_time))
 
 
 if __name__ == '__main__':

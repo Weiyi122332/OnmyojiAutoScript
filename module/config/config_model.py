@@ -13,6 +13,7 @@ from pathlib import Path
 from pydantic import BaseModel, ValidationError, Field
 
 from module.config.utils import *
+from module.config.cron import CronError, cron_error, try_parse_cron
 from module.logger import logger
 
 # 导入配置的Python文件
@@ -491,12 +492,64 @@ class ConfigModel(ConfigBase):
             candidate = group_object.model_validate({**group_object.model_dump(), argument: value})
             value = getattr(candidate, argument)
             setattr(group_object, argument, value)
+            # 改了定时规则或者刚打开任务时，让 cron 立刻生效
+            if group == 'scheduler' and (argument == 'cron' or (argument == 'enable' and value)):
+                self.apply_cron_schedule(task)
             logger.info(f'Set arg {self.config_name}.{task}.{group}.{argument}.{value}')
             self.save()  # 我是没有想到什么方法可以使得属性改变自动保存的
             return True
         except ValidationError as e:
             logger.error(e)
             return False
+
+    def apply_cron_schedule(self, task: str) -> bool:
+        """
+        按任务的 cron 定时规则对齐 next_run，让规则立刻生效。
+
+        只在 next_run 已经不满足当前规则（刚打开任务、刚改过规则、已经过期）时改写，
+        避免覆盖手动指定的运行时间。
+
+        :param task: 任务名，大驼峰和下划线都可以
+        :return: 是否改写了 next_run
+        """
+        task = convert_to_underscore(task)
+        task_object = getattr(self, task, None)
+        scheduler = getattr(task_object, 'scheduler', None)
+        if scheduler is None:
+            return False
+
+        cron_text = str(getattr(scheduler, 'cron', '') or '').strip()
+        if not cron_text:
+            return False
+        expression = try_parse_cron(cron_text)
+        if expression is None:
+            logger.warning(f'{task}.scheduler.cron `{cron_text}` is invalid '
+                           f'({cron_error(cron_text)}), next_run is not adjusted')
+            return False
+
+        now = datetime.now().replace(microsecond=0)
+        next_run = scheduler.next_run
+        if isinstance(next_run, str):
+            try:
+                next_run = datetime.fromisoformat(next_run)
+            except ValueError:
+                next_run = None
+
+        try:
+            if isinstance(next_run, datetime) and expression.matches(next_run) \
+                    and expression.next_after(next_run) > now:
+                # 现在的下次运行时间仍然符合规则，保持不动
+                return False
+            target = expression.next_after(now)
+        except CronError as e:
+            logger.warning(f'{task}.scheduler.cron `{cron_text}`: {e}')
+            return False
+
+        # 和任务运行结束时一样，叠加 0~float_time 的随机浮动
+        target += timedelta(seconds=random_float_seconds(getattr(scheduler, 'float_time', None)))
+        scheduler.next_run = target
+        logger.info(f'{task}: cron `{cron_text}` -> next_run {target}')
+        return True
 
     def copy_script_task(self, task_name: str, source_task: BaseModel) -> bool:
         model_task_name = convert_to_underscore(task_name)

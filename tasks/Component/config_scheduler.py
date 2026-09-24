@@ -12,9 +12,10 @@ class Scheduler(ConfigBase):
 
     success_interval: TimeDelta = Field(default=TimeDelta(days=1), description='success_interval_help')
     failure_interval: TimeDelta = Field(default=TimeDelta(days=1), description='failure_interval_help')
-    server_update: Time = Field(default=Time(hour=9, minute=0, second=0), description='server_update_help')
-    delay_date: int = Field(default=1, description='delay_date_help', ge=1, le=31)
+    # 随机浮动：最终运行时间 = 下面算出来的时间 + 0~float_time 的随机秒数（对 cron 规则同样生效）
     float_time: Time = Field(default=Time(hour=0, minute=0, second=0), description='float_time_help')
+    # 定时规则（crontab）。留空时按「成功/失败间隔」运行
+    cron: str = Field(default='', description='cron_help')
 
 
 if __name__ == "__main__":
@@ -24,11 +25,9 @@ if __name__ == "__main__":
         "priority": 5,
         "success_interval": "10 00:00:01",
         "failure_interval": "10 00:00:01",
-        "server_update": "09:03:00",
-        "float_time": "02:00:05"
+        "float_time": "02:00:05",
+        "cron": "0 5 * * *"
     }
     s = Scheduler(**dict_s)
     print(s.model_dump())
-
-
 

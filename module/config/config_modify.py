@@ -64,6 +64,9 @@ class ConfigModify(Config):
             setattr(group_object, argument, value)
             argument_object = getattr(group_object, argument, None)
             logger.info(f'gui_set_task {task}.{group}.{argument}.{argument_object}')
+            # 改了定时规则或者刚打开任务时，让 cron 立刻生效
+            if group == 'scheduler' and (argument == 'cron' or (argument == 'enable' and argument_object)):
+                self.model.apply_cron_schedule(task)
             super().save()  # 我是没有想到什么方法可以使得属性改变自动保存的
             return True
         except ValidationError as e:

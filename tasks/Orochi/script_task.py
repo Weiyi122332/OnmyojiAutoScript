@@ -107,7 +107,7 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
             self.screenshot()
             if self.appear(self.I_FIND_TS):
                 logger.info('Find true orochi after orochi battle, set TrueOrochi task to run now')
-                self.set_next_run(task='TrueOrochi', success=False, finish=False, server=False, target=datetime.now())
+                self.set_next_run(task='TrueOrochi', success=False, finish=False, target=datetime.now())
         self.goto_page(page_main)
         # 记得关掉
         if config.orochi_config.soul_buff_enable:

@@ -45,8 +45,8 @@ def delay_pending_tasks_for_server_update(config, reason: str) -> datetime:
             continue
         if not isinstance(task.next_run, datetime) or task.next_run >= delay_target:
             continue
-        config.task_delay(task=command, server=False, target=delay_target)
+        config.task_delay(task=command, target=delay_target)
         delayed.add(command)
 
-    config.task_delay(task='Restart', success=True, server=True)
+    config.task_delay(task='Restart', success=True)
     return delay_target
