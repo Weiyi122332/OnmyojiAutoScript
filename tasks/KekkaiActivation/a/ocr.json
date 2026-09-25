@@ -6,7 +6,16 @@
     "mode": "Duration",
     "method": "Default",
     "keyword": "",
-    "description": "这张卡一共有多少小时"
+    "description": "当前挂着这张卡的剩余时间"
+  },
+  {
+    "itemName": "card_duration",
+    "roiFront": "435,153,90,481",
+    "roiBack": "435,153,90,481",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "",
+    "description": "结界卡总时长,列表每行右侧的 N小时"
   },
   {
     "itemName": "check_card_number",

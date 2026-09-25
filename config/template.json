@@ -322,7 +322,7 @@
       "card_type": "太鼓",
       "min_taiko_num": 8,
       "min_fish_num": 16,
-      "min_star": 4,
+      "max_star": 5,
       "exchange_before": true,
       "exchange_max": true,
       "auto_fill": false,

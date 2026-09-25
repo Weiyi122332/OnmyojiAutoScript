@@ -74,8 +74,10 @@ class KekkaiActivationAssets:
 
 
 	# Ocr Rule Assets
-	# 这张卡一共有多少小时 
+	# 当前挂着这张卡的剩余时间 
 	O_CARD_ALL_TIME = RuleOcr(roi=(926,262,95,31), area=(926,262,95,31), mode="Duration", method="Default", keyword="", name="card_all_time")
+	# 结界卡总时长,列表每行右侧的 N小时 
+	O_CARD_DURATION = RuleOcr(roi=(435,153,90,481), area=(435,153,90,481), mode="Single", method="Default", keyword="", name="card_duration")
 	# 识别结界卡每小时收益 
 	O_CHECK_CARD_NUMBER = RuleOcr(roi=(305,153,107,481), area=(305,153,107,481), mode="Single", method="Default", keyword="", name="check_card_number")
 
@@ -114,5 +116,4 @@ class KekkaiActivationAssets:
 	I_CARDS_MOON_2 = RuleImage(roi_front=(189,355,91,60), roi_back=(180,162,108,484), threshold=0.8, method="Template matching", file="./tasks/KekkaiActivation/cards/cards_cards_moon_2.png")
 	# description 
 	I_CARDS_MOON_1 = RuleImage(roi_front=(190,430,93,74), roi_back=(173,156,123,492), threshold=0.8, method="Template matching", file="./tasks/KekkaiActivation/cards/cards_cards_moon_1.png")
-
 

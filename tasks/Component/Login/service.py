@@ -23,6 +23,28 @@ class LoginService(
         self.character = self.config.restart.login_character_config.character
         self.O_LOGIN_SPECIFIC_SERVE.keyword = self.character
 
+    def _courtyard_visible(self) -> bool:
+        """判断当前是否已经进入庭院。
+
+        登录流程在看不到「跳过/进入游戏」时会盲点屏幕中央来跳过登录动画，
+        但游戏自动续连时会直接进入庭院：此时屏幕中央正是站着的阴阳师，
+        点一下会弹出「闲庭模式/切换角色/姿度配饰」菜单（庭院背景随之变为
+        展示场景），导致后续所有页面识别失败并抛 GamePageUnknownError。
+        因此点中央之前先确认是否已经在庭院。
+
+        Returns:
+            命中任意一个庭院判据即返回 True。
+        """
+
+        # 底部导航属于固定 UI，不随庭院皮肤变化，因此优先使用；
+        # 阈值取 0.85，避免登录动画的中间帧被误判成庭院而提前停止跳过动画。
+        if self.appear(self.I_MAIN_GOTO_SHIKIGAMI_RECORDS, threshold=0.85):
+            return True
+        if self.appear(self.I_MAIN_GOTO_COLLECTION, threshold=0.85):
+            return True
+        # 最后再退回导航器使用的庭院标志（依赖庭院皮肤，可能失配）。
+        return bool(self.appear(self.I_CHECK_MAIN))
+
     def _app_handle_login(self) -> bool:
         """
         最终是在庭院界面
@@ -137,6 +159,10 @@ class LoginService(
                 continue
 
             if self.appear(self.I_LOGIN_8, interval=0.6): # 进入登录页面后不再处理登录动画逻辑
+                skip_login_animation = False
+            if skip_login_animation and self._courtyard_visible():
+                # 已经在庭院：屏幕中央是站着的阴阳师，盲点会点开姿度菜单。
+                logger.info('Already in courtyard, skip clicking screen center')
                 skip_login_animation = False
             if skip_login_animation:
                 if self.ocr_appear_click(self.O_LOGIN_ANIMATION_SKIP, interval=2.5):  # 点击跳过登录动画

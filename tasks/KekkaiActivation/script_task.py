@@ -86,7 +86,8 @@ class ScriptTask(KU, KekkaiActivationAssets):
     def run_activation(self, _config: ActivationConfig) -> bool:
         """
         执行挂卡，要求在结界的界面
-        顺便把下一次执行也设置了
+        顺便把下一次执行也设置了：
+        下次运行时间 = 结界卡持续时间 + 15~30 分钟随机值
         :return: 挂卡成功（）返回True，失败(时间没到提前来了)返回False
         退出的时候还是在挂卡界面而不是结界界面
         """
@@ -94,6 +95,9 @@ class ScriptTask(KU, KekkaiActivationAssets):
         # 太诡异了 为什么有这么长的动画, 那么长的动画先休息一会
         logger.hr('Start activation')
         time.sleep(0.5)
+        # 每轮重新记录本次选中的卡片信息
+        self.picked_card_desc = ''
+        self.picked_card_duration = None
         while 1:
             self.screenshot()
             card_status = self.check_card_status()
@@ -113,7 +117,7 @@ class ScriptTask(KU, KekkaiActivationAssets):
             if card_status and card_effect:
                 logger.info('Card is using')
                 interval = self.ocr_time()
-                self.set_next_run("KekkaiActivation", target=interval+datetime.now())
+                self.set_next_run_by_card_time(interval)
                 return False
             # 如果已经选中这张卡了， 那就激活这张卡
             if card_status and not card_effect:
@@ -128,12 +132,68 @@ class ScriptTask(KU, KekkaiActivationAssets):
                     if self.appear_then_click(self.I_A_ACTIVATE_YELLOW, interval=1):
                         continue
                 interval = self.ocr_time(True)
-                self.set_next_run("KekkaiActivation", target=interval + datetime.now())
+                self.set_next_run_by_card_time(interval, self.picked_card_duration)
                 return True
             # 如果是什么都没有，那就是可以开始挂卡了
             if not card_status and not card_effect:
                 logger.info('Card is not selected also not using')
                 self.screening_card(_config.card_type)
+
+    # 挂卡后下一次运行：结界卡持续时间 + 15~30 分钟随机值
+    NEXT_RUN_EXTRA_MINUTES = (15, 30)
+    # 结界卡列表里每一行都写着卡片的总时长（例如“24小时”）
+    CARD_DURATION_KEYWORD = '小时'
+    # 同一行内的“每小时收益”和“总时长”两段文字允许的垂直偏差
+    DURATION_ROW_TOLERANCE = 70
+    # 最近一次选中的卡片总时长
+    picked_card_duration = None
+
+    @staticmethod
+    def format_hours(delta: timedelta) -> str:
+        return f'{delta.total_seconds() / 3600:g}小时'
+
+    def ocr_card_duration(self, row_y: float = None) -> timedelta or None:
+        """
+        读取结界卡的总时长（列表每行右侧的“N小时”）
+        :param row_y: 该行在屏幕上的 y 中心，传 None 表示不按行匹配
+        :return: 卡片总时长，读不到返回 None
+        """
+        results = self.O_CARD_DURATION.detect_and_ocr(self.device.image)
+        rows = []
+        for result in results:
+            if self.CARD_DURATION_KEYWORD not in result.ocr_text:
+                continue
+            match = re.search(r'(\d+)\s*小\s*时', result.ocr_text)
+            if match is None:
+                logger.warning(f'无法解析结界卡总时长: {result.ocr_text}')
+                continue
+            y_center = self.O_CARD_DURATION.roi[1] + (float(result.box[0][1]) + float(result.box[2][1])) / 2
+            rows.append((int(match.group(1)), y_center))
+        if not rows:
+            logger.warning('未识别到结界卡总时长')
+            return None
+        if row_y is None:
+            return timedelta(hours=rows[0][0])
+        hours, y_center = min(rows, key=lambda item: abs(item[1] - row_y))
+        if abs(y_center - row_y) > self.DURATION_ROW_TOLERANCE:
+            logger.warning(f'总时长 {hours}小时 不在当前行上(y={y_center:.0f} 行 y={row_y:.0f})')
+            return None
+        return timedelta(hours=hours)
+
+    def set_next_run_by_card_time(self, interval: timedelta, card_duration: timedelta = None) -> None:
+        """
+        下次运行时间 = 结界卡持续时间 + 15~30 分钟随机值
+        :param interval: 面板上识别到的卡片剩余时间（O_CARD_ALL_TIME）
+        :param card_duration: 卡片本身的总时长（O_CARD_DURATION），刚挂上的卡用它
+        """
+        base, base_text = interval, f'剩余时间 {interval}'
+        if card_duration is not None and card_duration > interval:
+            base = card_duration
+            base_text = f'总时长 {self.format_hours(card_duration)}（面板剩余 {interval}）'
+        extra_minutes = random.randint(*self.NEXT_RUN_EXTRA_MINUTES)
+        next_run = datetime.now() + base + timedelta(minutes=extra_minutes)
+        logger.info(f'结界卡{base_text}，随机延后 {extra_minutes} 分钟，下次运行时间 {next_run}')
+        self.set_next_run("KekkaiActivation", target=next_run)
 
     def check_card_status(self, screenshot=False) -> bool:
         """
@@ -326,11 +386,12 @@ class ScriptTask(KU, KekkaiActivationAssets):
             logger.error('Unknown utilize rule')
             raise ValueError('Unknown utilize rule')
 
-        # 星级要求：最低星级设为 1 表示不做星级限制
-        min_star = con.min_star
-        need_star = min_star >= 2
+        # 星级要求：最高星级设为 6 表示不做星级限制
+        max_star = con.max_star
+        need_star = max_star <= 5
         star_miss_count = 0
         self.picked_card_desc = ''
+        self.picked_card_duration = None
 
         ocr_count = 0
         while 1:
@@ -369,8 +430,8 @@ class ScriptTask(KU, KekkaiActivationAssets):
                     if star is None:
                         logger.warning(f'⏭️ 跳过无法判断星级的卡: {result.ocr_text}')
                         continue
-                    if star < min_star:
-                        logger.info(f'⏭️ 跳过{star}星卡: {result.ocr_text}（要求≥{min_star}星）')
+                    if star > max_star:
+                        logger.info(f'⏭️ 跳过{star}星卡: {result.ocr_text}（最高{max_star}星）')
                         continue
                     logger.info(f'✅ {star}星卡满足要求: {result.ocr_text}')
                 numeric_results.append((numbers[0], result, star))  # 按第一个数字排序
@@ -387,9 +448,15 @@ class ScriptTask(KU, KekkaiActivationAssets):
                 roi = int(x_min), int(y_min), int(width), int(height)
 
                 target = RuleClick(roi_front=roi, roi_back=roi, name="tmpclick")
+                # 顺手读一下这张卡的总时长，挂卡成功后用它来排下次运行时间
+                self.picked_card_duration = self.ocr_card_duration(roi[1] + roi[3] / 2)
+                duration_text = (
+                    f' 总时长{self.format_hours(self.picked_card_duration)}'
+                    if self.picked_card_duration else ''
+                )
                 star_text = f'{star}星 ' if star else ''
-                self.picked_card_desc = f'{rule.value} {star_text}{card_num}/时'
-                logger.info(f"选择挂卡: [{max_result.ocr_text}] {roi} {star_text}{card_num}/时")
+                self.picked_card_desc = f'{rule.value} {star_text}{card_num}/时{duration_text}'
+                logger.info(f"选择挂卡: [{max_result.ocr_text}] {roi} {star_text}{card_num}/时{duration_text}")
 
                 return target
             else:

@@ -23,7 +23,8 @@ class ActivationConfig(BaseModel):
     card_type: CardType = Field(default=CardType.TAIKO, description='card_rule_help')
     min_taiko_num: int = Field(default=8, description='挂卡太鼓每小时最少收益,低于则不挂卡')
     min_fish_num: int = Field(default=16, description='挂卡斗鱼每小时最少收益,低于则不挂卡')
-    min_star: int = Field(title='挂卡最低星级', default=4, ge=1, le=6, description='min_star_help')
+    max_star: int = Field(title='挂卡最高星级', default=5, ge=1, le=6,
+                          description='挂卡最高星级,高于该星级的结界卡不使用（默认5星，也就是不使用6星结界卡；设为6表示不限制星级）')
     exchange_before: bool = Field(default=True, description='exchange_before_help')
     exchange_max: bool = Field(default=True, description='exchange_max_help')
     auto_fill: bool = Field(default=False, description='auto_fill_help')
