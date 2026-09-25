@@ -63,13 +63,11 @@ def settlement_random_click(area=None) -> RuleClick:
             GeneralBattleAssets.C_RANDOM_RIGHT,
         )
         area = random.choice(enabled_areas)
-    # 浅拷贝隔离单次结算的连点属性；scatter 沿用进入任务时生成的重心。
+    # 浅拷贝隔离单次结算的点击属性；scatter 沿用进入任务时生成的重心。
+    # 只点一下：结算界面第一下就会被关掉，连点会让后续点击落到结算之后的界面上，
+    # 可能点开其它面板，导致紧随其后的页面识别或 OCR 读不出数字。
     click = copy(area)
     click.name = 'SETTLEMENT_RANDOM_CLICK'
-    click.burst_count = 1
-    click.burst_interval = (0.1, 0.2)
-    if random.random() < 0.15:
-        click.burst_count = random.randint(2, 3)
     return click
 
 

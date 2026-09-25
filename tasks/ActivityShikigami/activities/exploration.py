@@ -64,8 +64,6 @@ class ExplorationAct:
         ):
             if not self.appear(marker):
                 continue
-            # 每次只点一下；连点属性不能继承通用结算的概率连点。
-            click.burst_count = 1
             self.click(click, interval=0.8)
             if not self._wait_exp(lambda: not self.appear(marker), timeout=5):
                 raise GameStuckError(f'Exploration reward did not close: {marker.name}')
@@ -106,7 +104,6 @@ class ExplorationAct:
             logger.info(f'Exploration {mode}: no entry after scanning, mode complete')
             return False
         # 入口仅点击一次，等待事件最多5秒。
-        entry.burst_count = 1
         self.click(entry, interval=0)
         if self._wait_exp(lambda: self.appear(self.I_EVENT_REWARD)
                           or self._exp_normal_fight_appear()
