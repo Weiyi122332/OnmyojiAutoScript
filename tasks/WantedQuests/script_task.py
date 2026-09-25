@@ -40,7 +40,7 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
             self.unwanted_boss_name_list = re.split(r"[，,]", unwanted_boss_names)
 
         # 优先使用本任务自己的御魂方案，未配置时复用探索和秘闻的预设。
-        self.switch_souls()
+        self.switch_soul_presets()
 
         preSuc = False
         if (self.get_config()).cooperation_only:
@@ -98,11 +98,14 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         self.next_run()
         raise TaskEnd('WantedQuests')
 
-    def switch_souls(self) -> None:
+    def switch_soul_presets(self) -> None:
         """执行悬赏封印前切换御魂。
 
         优先使用「悬赏封印 → 执行任务前切换御魂」里配置的方案；
         没有配置时沿用旧行为：复用探索与秘闻任务里已配置的御魂预设。
+
+        注意：方法名不能叫 `switch_souls`，那会遮蔽御魂切换组件的同名 API
+        （SwitchSoul.switch_souls），导致 `run_switch_soul()` 内部调用时参数数量不匹配。
         """
         soul_config = self.config.model.wanted_quests.switch_soul_config
         if soul_config.enable:
