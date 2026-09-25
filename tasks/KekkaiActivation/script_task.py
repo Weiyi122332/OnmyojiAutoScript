@@ -229,23 +229,108 @@ class ScriptTask(KU, KekkaiActivationAssets):
                     if not self.appear(self.I_A_EMPTY):
                         self.config.kekkai_activation.activation_config.card_not_found_count = 0
                         self.config.save()
-                        message = f'✅ 确认挂卡: {rule}'
+                        message = f'✅ 确认挂卡: {self.picked_card_desc}'
                         self.save_image(content=message, push_flag=False, wait_time=0)
                         return
                     if self.click(target, interval=1):
                         continue
 
-    def check_card_num(self):
-        rule = self.config.kekkai_activation.activation_config.card_type
+    # ---------- 结界卡星级识别 ---------- #
+    # 图片模板自带卡片底部的星级图标，所以匹配位置可以用来推算星级图标中心
+    STAR_ICON_HEIGHT = 24
+    # 收益文字行与星级图标中心的允许偏差（列表一行高约 100 像素，取半行高）
+    STAR_ROW_TOLERANCE = 60
+    # 最近一次选中的卡片描述，用于日志与截图说明
+    picked_card_desc = ''
+
+    def star_targets_of_type(self, rule: CardType) -> dict:
+        """当前卡种可用的星级模板 {星级: RuleImage}；太鼓/斗鱼只有 3 星及以上的模板"""
         if rule == CardType.TAIKO:
-            min_card_num = self.config.kekkai_activation.activation_config.min_taiko_num
+            card_classes = (
+                CardClass.TAIKO3, CardClass.TAIKO4, CardClass.TAIKO5, CardClass.TAIKO6
+            )
+        elif rule == CardType.FISH:
+            card_classes = (
+                CardClass.FISH3, CardClass.FISH4, CardClass.FISH5, CardClass.FISH6
+            )
+        else:
+            return {}
+        images = self.dict_card_image
+        return {
+            int(card_class.value.split('_')[-1]): images[card_class]
+            for card_class in card_classes
+            if card_class in images
+        }
+
+    def detect_card_stars(self, rule: CardType) -> list:
+        """
+        识别结界卡列表界面里每张卡的星级
+        :return: [{'star': 星级, 'center': (x, y)}]，按从上到下排序；没有识别到返回 []
+        """
+        targets = self.star_targets_of_type(rule)
+        if not targets:
+            return []
+
+        matches = []
+        for star, image in targets.items():
+            result = image.match_all_any(
+                self.device.image,
+                frame_id=self.device.image_frame_id,
+            )
+            for score, x, y, w, h in result:
+                # 星级图标固定绘制在卡片最底部
+                center = (x + w / 2, y + h - min(h, self.STAR_ICON_HEIGHT) / 2)
+                matches.append({'star': star, 'score': score, 'center': center})
+
+        # 同一张卡可能同时命中多个星级模板，保留置信度最高的那个
+        rows = []
+        for match in sorted(matches, key=lambda item: item['center'][1]):
+            for row in rows:
+                if abs(row['center'][0] - match['center'][0]) <= 35 \
+                        and abs(row['center'][1] - match['center'][1]) <= 25:
+                    if match['score'] > row['score']:
+                        row.update(match)
+                    break
+            else:
+                rows.append(dict(match))
+        rows.sort(key=lambda item: item['center'][1])
+        if rows:
+            logger.info(f'识别到星级: {[row["star"] for row in rows]}')
+        return rows
+
+    def match_star_of_row(self, star_rows: list, result) -> int or None:
+        """
+        把 OCR 到的一行收益匹配到距离最近的卡片，返回其星级
+        :return: 无法判断星级时返回 None
+        """
+        if not star_rows:
+            return None
+        box = result.box
+        y_center = self.O_CHECK_CARD_NUMBER.roi[1] + (float(box[0][1]) + float(box[2][1])) / 2
+        nearest = min(star_rows, key=lambda item: abs(item['center'][1] - y_center))
+        if abs(nearest['center'][1] - y_center) > self.STAR_ROW_TOLERANCE:
+            logger.warning(f'未能把收益行匹配到卡片: {result.ocr_text}')
+            return None
+        return nearest['star']
+
+    def check_card_num(self):
+        con = self.config.kekkai_activation.activation_config
+        rule = con.card_type
+        if rule == CardType.TAIKO:
+            min_card_num = con.min_taiko_num
             check_card = "勾玉"
         elif rule == CardType.FISH:
-            min_card_num = self.config.kekkai_activation.activation_config.min_fish_num
+            min_card_num = con.min_fish_num
             check_card = "体力"
         else:
             logger.error('Unknown utilize rule')
             raise ValueError('Unknown utilize rule')
+
+        # 星级要求：最低星级设为 1 表示不做星级限制
+        min_star = con.min_star
+        need_star = min_star >= 2
+        star_miss_count = 0
+        self.picked_card_desc = ''
 
         ocr_count = 0
         while 1:
@@ -256,20 +341,43 @@ class ScriptTask(KU, KekkaiActivationAssets):
             filtered_results = [result for result in results if check_card in result.ocr_text]
             logger.info(f"识别到卡: {[result.ocr_text for result in filtered_results]}")
 
-            # 第二步：提取数字并按数字排序
+            # 第二步：识别每张卡的星级（星级图标在卡片底部）
+            star_rows = self.detect_card_stars(rule) if need_star else []
+            if star_rows:
+                star_miss_count = 0
+            elif need_star and filtered_results:
+                star_miss_count += 1
+                logger.warning(f'⚠️ 未识别到结界卡星级（第{star_miss_count}次），无法判断卡片星级')
+                if star_miss_count >= 2:
+                    # 星级模板可能和当前游戏版本不匹配，此时保留原有的按收益选择
+                    logger.warning('⚠️ 连续多次未识别到星级，本次运行降级为仅按每小时收益选择结界卡')
+                    need_star = False
+
+            # 第三步：提取数字，并过滤掉不满足星级要求的卡片
             numeric_results = []
             for result in filtered_results:
                 # 使用正则表达式提取所有数字
                 numbers = [int(num) for num in re.findall(r'\d+', result.ocr_text)]
-                if numbers:  # 如果提取到数字
-                    if numbers[0] < min_card_num:
+                if not numbers:  # 没有提取到数字
+                    continue
+                if numbers[0] < min_card_num:
+                    logger.info(f'⏭️ 跳过收益不达标的卡: {result.ocr_text}（要求≥{min_card_num}）')
+                    continue
+                star = None
+                if need_star:
+                    star = self.match_star_of_row(star_rows, result)
+                    if star is None:
+                        logger.warning(f'⏭️ 跳过无法判断星级的卡: {result.ocr_text}')
                         continue
-                    numeric_results.append((numbers[0], result))  # 按第一个数字排序
+                    if star < min_star:
+                        logger.info(f'⏭️ 跳过{star}星卡: {result.ocr_text}（要求≥{min_star}星）')
+                        continue
+                    logger.info(f'✅ {star}星卡满足要求: {result.ocr_text}')
+                numeric_results.append((numbers[0], result, star))  # 按第一个数字排序
 
             if numeric_results:
                 # 按数字大到小排序
-                sorted_results = [result for _, result in sorted(numeric_results, key=lambda x: x[0], reverse=True)]
-                max_result = sorted_results[0]  # 获取数字最大的结果对象
+                card_num, max_result, star = max(numeric_results, key=lambda x: x[0])
 
                 box = max_result.box  # 获取边界框坐标
                 x_min = self.O_CHECK_CARD_NUMBER.roi[0] + box[0][0]
@@ -279,7 +387,9 @@ class ScriptTask(KU, KekkaiActivationAssets):
                 roi = int(x_min), int(y_min), int(width), int(height)
 
                 target = RuleClick(roi_front=roi, roi_back=roi, name="tmpclick")
-                logger.info(f"选择挂卡: [{max_result.ocr_text}] {roi}")
+                star_text = f'{star}星 ' if star else ''
+                self.picked_card_desc = f'{rule.value} {star_text}{card_num}/时'
+                logger.info(f"选择挂卡: [{max_result.ocr_text}] {roi} {star_text}{card_num}/时")
 
                 return target
             else:

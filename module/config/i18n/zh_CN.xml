@@ -575,6 +575,8 @@ mode_3策略是刷到五个契灵后开始结契，选择高级、中级盘来�
 	<message><source>Exchange Max</source><translation>收取经验后更换下来满级的式神</translation></message>
 	<message><source>Exchange Before</source><translation>收取经验前更换下来满级的式神</translation></message>
 	<message><source>card_rule_help</source><translation>保持默认auto即可，具体的规则请翻阅文档[任务列表]</translation></message>
+	<message><source>Min Star</source><translation>挂卡最低星级</translation></message>
+	<message><source>min_star_help</source><translation>只有星级不低于该值的结界卡才会被挂上，低于该星级则不挂卡（星级依次为1~6星）。设为1表示不做星级限制。太鼓和斗鱼只有3星及以上的卡片模板，所以设为2和设为3的效果一样。</translation></message>
 	<message><source>exchange_before_help</source><translation>必选项</translation></message>
 	<message><source>exchange_max_help</source><translation>必选项</translation></message>
 </context>	
