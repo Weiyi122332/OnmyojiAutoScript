@@ -271,6 +271,10 @@ async def script_task(script_name: str, task: str, group: str, argument: str, ty
             case 'multi_enum':
                 from module.config.multi_select import normalize_multi_select
                 value = normalize_multi_select(value)
+            case 'task_list':
+                # 任务组的任务列表：前端传的是 JSON 数组，也可能是旧的分隔符文本
+                from module.config.multi_select import normalize_multi_select
+                value = normalize_multi_select(value)
             case 'integer':
                 value = int(value)
             case 'number':

@@ -2066,16 +2066,8 @@
       "cron": ""
     },
     "group_config": {
-      "task_1": "不设置",
-      "task_2": "不设置",
-      "task_3": "不设置",
-      "task_4": "不设置",
-      "task_5": "不设置",
-      "task_6": "不设置",
-      "task_7": "不设置",
-      "task_8": "不设置",
-      "task_9": "不设置",
-      "task_10": "不设置",
+      "tasks": [],
+      "start_index": 1,
       "stop_on_error": true
     }
   },
@@ -2091,16 +2083,8 @@
       "cron": ""
     },
     "group_config": {
-      "task_1": "不设置",
-      "task_2": "不设置",
-      "task_3": "不设置",
-      "task_4": "不设置",
-      "task_5": "不设置",
-      "task_6": "不设置",
-      "task_7": "不设置",
-      "task_8": "不设置",
-      "task_9": "不设置",
-      "task_10": "不设置",
+      "tasks": [],
+      "start_index": 1,
       "stop_on_error": true
     }
   },
@@ -2116,16 +2100,8 @@
       "cron": ""
     },
     "group_config": {
-      "task_1": "不设置",
-      "task_2": "不设置",
-      "task_3": "不设置",
-      "task_4": "不设置",
-      "task_5": "不设置",
-      "task_6": "不设置",
-      "task_7": "不设置",
-      "task_8": "不设置",
-      "task_9": "不设置",
-      "task_10": "不设置",
+      "tasks": [],
+      "start_index": 1,
       "stop_on_error": true
     }
   },
@@ -2141,16 +2117,8 @@
       "cron": ""
     },
     "group_config": {
-      "task_1": "不设置",
-      "task_2": "不设置",
-      "task_3": "不设置",
-      "task_4": "不设置",
-      "task_5": "不设置",
-      "task_6": "不设置",
-      "task_7": "不设置",
-      "task_8": "不设置",
-      "task_9": "不设置",
-      "task_10": "不设置",
+      "tasks": [],
+      "start_index": 1,
       "stop_on_error": true
     }
   },
@@ -2166,16 +2134,8 @@
       "cron": ""
     },
     "group_config": {
-      "task_1": "不设置",
-      "task_2": "不设置",
-      "task_3": "不设置",
-      "task_4": "不设置",
-      "task_5": "不设置",
-      "task_6": "不设置",
-      "task_7": "不设置",
-      "task_8": "不设置",
-      "task_9": "不设置",
-      "task_10": "不设置",
+      "tasks": [],
+      "start_index": 1,
       "stop_on_error": true
     }
   }

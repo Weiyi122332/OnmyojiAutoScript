@@ -99,6 +99,11 @@ function parseArgument(definitions, group){
             arg["type"] = argName.type
         }
 
+        // 任务组的任务列表：桌面端没有拖动的列表，用「一行一个任务」的文本框代替
+        if(arg["type"] === "array" && argName["x-ui-type"] === "task_list"){
+            arg["type"] = "multi_line"
+        }
+
         if(arg["type"] === "enum"){
             arg["options"] = definitions[arg.title]["enum"]
         }
@@ -119,7 +124,12 @@ function mergeArgument(argument, values){
     for(let key in argument){
         const name = argument[key].name
         if(name in values){
-            argument[key]["value"] = values[name]
+            let value = values[name]
+            // 列表字段（任务组的任务列表）在桌面端用一行一个的文本框编辑
+            if(Array.isArray(value)){
+                value = value.join("\n")
+            }
+            argument[key]["value"] = value
         }
     }
     return argument

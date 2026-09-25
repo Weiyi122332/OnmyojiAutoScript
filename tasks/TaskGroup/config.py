@@ -7,7 +7,7 @@ from enum import Enum
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_serializer, model_validator
 
 from module.config.multi_select import normalize_multi_select
 from module.logger import logger
@@ -19,7 +19,7 @@ GROUP_MODULE_DIR = 'TaskGroup'
 # 每个任务组最多放多少个任务、项目里一共有几个任务组
 TASKS_PER_GROUP = 10
 GROUP_COUNT = 5
-# 下拉框里「不设置」的取值
+# 旧版固定 10 个下拉框时，空位写的是这个值，读旧配置时跳过
 NONE_CHOICE = '不设置'
 
 _missing_warned = False
@@ -27,12 +27,11 @@ _missing_warned = False
 
 class GroupTaskChoice(str, Enum):
     """
-    任务组下拉框里可以选的任务。
+    任务组里可以添加的任务。
 
-    新增任务后，把任务名也加到这里（默认值就是任务名本身），下拉框里才会出现；
+    新增任务后，把任务名也加到这里（默认值就是任务名本身），界面上才会出现；
     运行时如果发现漏了会打日志提醒。
     """
-    NONE = NONE_CHOICE
     # Script
     Restart = 'Restart'
     # Soul Zones
@@ -139,11 +138,15 @@ def available_task_names() -> tuple:
     return tuple(names)
 
 
-def resolve_group_tasks(value) -> list:
+def normalize_task_names(value) -> list:
     """
-    把「一行一个任务名」的文本（旧配置或手写）解析成任务名列表。
+    把界面上 / 配置里的任务名整理成一份任务名列表。
 
-    支持中文名和英文名，顺序即填写顺序，重复的只保留第一次。
+    任务名的顺序就是填写（拖动）的顺序；支持中文名和英文名，
+    不认识的、重复的、旧版的「不设置」都会跳过，只保留第一次出现的任务名。
+
+    :param value: 任务名列表，也可以是一行一个 / 逗号分隔的文本（旧配置或手写）
+    :return: 任务名列表，例如 ['DailyTrifles', 'Pets']
     """
     if value is None:
         return []
@@ -157,17 +160,29 @@ def resolve_group_tasks(value) -> list:
     aliases = _task_aliases()
     result = []
     for item in items:
-        key = str(item).strip()
-        if not key:
+        key = str(getattr(item, 'value', item) or '').strip()
+        if not key or key == NONE_CHOICE:
             continue
-        command = aliases.get(key.lower()) or aliases.get(key.replace(' ', '').lower())
-        if command is None:
+        # 已经是任务名就直接用；否则按中文名 / 别名翻译一次。
+        # 这里不依赖任务扫描的结果，免得在别的目录读配置时把手写的任务名吃掉。
+        command = key if key in GroupTaskChoice._value2member_map_ \
+            else aliases.get(key.lower()) or aliases.get(key.replace(' ', '').lower())
+        if not command:
             logger.warning(f'Task group: unknown task `{key}`, skipped')
             continue
-        if command in result:
+        if command == GROUP_MODULE_DIR or command in result:
             continue
         result.append(command)
     return result
+
+
+def resolve_group_tasks(value) -> list:
+    """
+    把「一行一个任务名」的文本（旧配置或手写）解析成任务名列表。
+
+    支持中文名和英文名，顺序即填写顺序，重复的只保留第一次。
+    """
+    return normalize_task_names(value)
 
 
 @lru_cache(maxsize=1)
@@ -209,40 +224,55 @@ def _task_aliases() -> dict:
 
 
 class TaskGroupConfigBase(BaseModel):
-    """任务组的设置：名称 + 按 task_1、task_2 …… 顺序执行的任务 + 出错策略。"""
+    """任务组的设置：名称 + 一份按顺序执行的任务列表 + 出错策略。"""
     name: str = Field(default='任务组', description='task_group_name_help')
-    task_1: GroupTaskChoice = Field(default=GroupTaskChoice.NONE, description='task_group_slot_help')
-    task_2: GroupTaskChoice = Field(default=GroupTaskChoice.NONE, description='task_group_slot_help')
-    task_3: GroupTaskChoice = Field(default=GroupTaskChoice.NONE, description='task_group_slot_help')
-    task_4: GroupTaskChoice = Field(default=GroupTaskChoice.NONE, description='task_group_slot_help')
-    task_5: GroupTaskChoice = Field(default=GroupTaskChoice.NONE, description='task_group_slot_help')
-    task_6: GroupTaskChoice = Field(default=GroupTaskChoice.NONE, description='task_group_slot_help')
-    task_7: GroupTaskChoice = Field(default=GroupTaskChoice.NONE, description='task_group_slot_help')
-    task_8: GroupTaskChoice = Field(default=GroupTaskChoice.NONE, description='task_group_slot_help')
-    task_9: GroupTaskChoice = Field(default=GroupTaskChoice.NONE, description='task_group_slot_help')
-    task_10: GroupTaskChoice = Field(default=GroupTaskChoice.NONE, description='task_group_slot_help')
+    # 组内任务：界面上可以「新增任务」加进来、拖动改顺序，跑的时候从上往下执行。
+    # 默认是空列表（不加任务这一组就什么都不跑）。
+    # x-ui-type 是给前端看的：让界面用可拖动排序的列表（task_list）来渲染这个字段，
+    # 而不是默认的多选下拉框（multi_enum）。
+    tasks: list[GroupTaskChoice] = Field(default=[], max_length=TASKS_PER_GROUP,
+                                         title='Tasks',
+                                         description='task_group_tasks_help',
+                                         json_schema_extra={'x-ui-type': 'task_list'})
+    # 从第几项开始运行：平时是 1（整组从头跑）；上一次在第 N 项出错停下时会被写成 N，
+    # 下次就从第 N 项接着跑；整组跑完自动改回 1。运行状态，也可以自己手动填。
+    start_index: int = Field(default=1, ge=1, le=TASKS_PER_GROUP,
+                             description='task_group_start_index_help')
     stop_on_error: bool = Field(default=True, description='task_group_stop_on_error_help')
 
     @model_validator(mode='before')
     @classmethod
-    def sanitize_slots(cls, data):
-        """兼容手改配置：不认识的任务名按「不设置」处理，避免整份配置读不出来。"""
+    def migrate_tasks(cls, data):
+        """
+        整理组内任务列表，顺便兼容旧配置和手改配置。
+
+        - 旧版是 task_1 ~ task_10 十个下拉框，这里按原来的顺序收成一份列表；
+        - 手写成一行一个 / 逗号分隔的文本时也能认出来；
+        - 不认识的任务名直接跳过，避免整份配置读不出来。
+        """
         if not isinstance(data, dict):
             return data
         data = dict(data)
+        slots = []
         for index in range(1, TASKS_PER_GROUP + 1):
             key = f'task_{index}'
-            value = data.get(key)
-            if value is None or isinstance(value, GroupTaskChoice):
-                continue
-            if str(value) not in GroupTaskChoice._value2member_map_:
-                # 手写成中文名 / 别名时，尽量翻译成任务名
-                resolved = resolve_group_tasks([value])
-                if len(resolved) == 1:
-                    data[key] = resolved[0]
-                    continue
-                logger.warning(f'Task group: unknown task `{value}` in {key}, reset to {NONE_CHOICE}')
-                data[key] = NONE_CHOICE
+            if key in data:
+                slots.append(data.pop(key))
+
+        value = data.get('tasks')
+        if value is None:
+            items = []
+        elif isinstance(value, (list, tuple, set)):
+            items = list(value)
+        else:
+            items = [value]
+        # 两个都有时以新的 tasks 为准，旧的 slot 排在后面（重复的会被去掉）
+        tasks = normalize_task_names(items + slots)
+        if len(tasks) > TASKS_PER_GROUP:
+            logger.warning(f'Task group: at most {TASKS_PER_GROUP} tasks, '
+                           f'these are ignored: {tasks[TASKS_PER_GROUP:]}')
+            tasks = tasks[:TASKS_PER_GROUP]
+        data['tasks'] = tasks
         return data
 
     @model_validator(mode='after')
@@ -261,24 +291,32 @@ class TaskGroupConfigBase(BaseModel):
     @property
     def task_list(self) -> list:
         """
-        按 task_1 -> task_10 的顺序取出设置了任务的名字。
+        按界面上的顺序取出组内任务名。
 
-        这里会把中文名 / 别名再翻译一次，防止手写或别的接口塞进来的是中文。
-
-        :return: 任务名列表（未设置和重复的会被跳过）
+        :return: 任务名列表（不认识的和重复的会被跳过）
         """
-        aliases = _task_aliases()
-        result = []
-        for index in range(1, TASKS_PER_GROUP + 1):
-            choice = getattr(self, f'task_{index}', GroupTaskChoice.NONE)
-            name = str(getattr(choice, 'value', choice) or '').strip()
-            if not name or name == NONE_CHOICE:
-                continue
-            command = aliases.get(name.lower()) or aliases.get(name.replace(' ', '').lower()) or name
-            if command in result:
-                continue
-            result.append(command)
-        return result
+        return normalize_task_names(self.tasks)
+
+    @field_serializer('tasks')
+    def serialize_tasks(self, value) -> list:
+        """
+        保存配置 / 传给前端时，tasks 永远是一份任务名列表。
+
+        桌面端（老 GUI）把这个字段当文本框填，直接写进来的是多行文本，
+        这里统一转成列表，免得配置文件里留下一个字符串。
+        """
+        return normalize_task_names(value)
+
+    def set_task_list(self, value) -> list:
+        """
+        直接换掉整份任务列表（界面上新增 / 拖动 / 删除后回写用）。
+
+        :param value: 任务名列表，也可以是一行一个 / 逗号分隔的文本
+        :return: 真正写进去的任务名列表
+        """
+        tasks = normalize_task_names(value)[:TASKS_PER_GROUP]
+        self.tasks = [GroupTaskChoice(name) for name in tasks]
+        return tasks
 
 
 class TaskGroupConfig1(TaskGroupConfigBase):
@@ -340,11 +378,10 @@ def migrate_legacy_group(old) -> dict:
     if not isinstance(old, dict):
         return {}
     group_config = dict(old.get('group_config') or {})
-    legacy_tasks = resolve_group_tasks(group_config.pop('tasks', ''))
     group_config.pop('schedule_mode', None)
     group_config.setdefault('name', old.get('name') or '任务组 1')
-    for index, task in enumerate(legacy_tasks[:TASKS_PER_GROUP], start=1):
-        group_config[f'task_{index}'] = task
+    # 旧版把任务名写成多行文本，新的 tasks 列表在读配置时会自动把它认成一份列表
+    group_config.setdefault('tasks', [])
     return {
         'scheduler': old.get('scheduler') or {},
         'group_config': group_config,

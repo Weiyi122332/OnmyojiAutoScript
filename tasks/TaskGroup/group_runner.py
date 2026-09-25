@@ -36,6 +36,11 @@ class TaskGroupRunner(BaseTask):
     定时由任务组自己决定（启用开关 + 下次运行时间 + 成功/失败间隔），
     每次启动都把组内任务从头到尾按配置的顺序跑一遍；
     组内任务自己的「启动方案」失效，调度器不会再单独调度它们。
+
+    从哪一项开始跑由配置里的「从第几项开始运行」（start_index）决定：
+    平时是 1（整组从头跑）；跑到第 3 项时出错，就会把它改成 3，
+    重开游戏后再跑本组时直接从第 3 项接着跑，不再重复前面已经跑完的任务；
+    整组跑完自动改回 1。
     """
 
     # 子类填自己的任务名，例如 'TaskGroup1'
@@ -51,14 +56,19 @@ class TaskGroupRunner(BaseTask):
         conf = group.group_config
         tasks = conf.task_list
         title = conf.name or self.command
+        stop_on_error = bool(conf.stop_on_error)
         logger.info(f'Task group `{title}` ({self.command}) starts, {len(tasks)} task(s): {tasks}')
         if not tasks:
             logger.warning(f'任务组「{title}」里还没有选任务，请在配置里把任务加到列表')
+            self._set_start_index(1)
             self.set_next_run(task=self.command, success=False, finish=True)
             raise TaskEnd(self.command)
 
+        first = self._first_task_index(conf, title, tasks)
         success = True
-        for index, task in enumerate(tasks, start=1):
+        stopped_early = False
+        for index in range(first, len(tasks) + 1):
+            task = tasks[index - 1]
             try:
                 finished = self._run_task(index, len(tasks), task)
             except TaskEnd:
@@ -67,8 +77,11 @@ class TaskGroupRunner(BaseTask):
                 fatal = isinstance(error, FATAL_EXCEPTIONS)
                 logger.exception(error)
                 logger.error(f'Task group `{title}`: `{task}` raised {type(error).__name__}')
-                if fatal or conf.stop_on_error:
-                    logger.warning(f'Task group `{title}` stops at `{task}`')
+                if fatal or stop_on_error:
+                    logger.warning(f'Task group `{title}` stops at [{index}/{len(tasks)}] `{task}`, '
+                                   f'next run continues from it')
+                    # 记下出错的是第几项：重开游戏后会从这里接着跑
+                    self._set_start_index(index)
                     raise
                 logger.warning(f'Task group `{title}` skips `{task}` and runs the next task')
                 success = False
@@ -77,17 +90,74 @@ class TaskGroupRunner(BaseTask):
             if not finished:
                 success = False
                 self._mark_task_failed(task)
-                if conf.stop_on_error:
-                    logger.warning(f'Task group `{title}` stops at `{task}` because of the error above')
+                if stop_on_error:
+                    logger.warning(f'Task group `{title}` stops at [{index}/{len(tasks)}] `{task}` '
+                                   f'because of the error above')
+                    self._set_start_index(index)
+                    stopped_early = True
                     break
                 logger.warning(f'Task group `{title}` skips `{task}` and runs the next task')
 
+        if not stopped_early:
+            # 整组跑完了，下次从第 1 项开始
+            self._set_start_index(1)
         self.set_next_run(task=self.command, success=success, finish=True)
         if success:
             logger.info(f'Task group `{title}` finished: {tasks}')
         else:
             logger.warning(f'Task group `{title}` finished with error: {tasks}')
         raise TaskEnd(self.command)
+
+    def _first_task_index(self, conf, title: str, tasks: list) -> int:
+        """
+        本次从第几项开始跑：就是配置里的「从第几项开始运行」。
+
+        平时是 1（整组从头跑）；上一次是在第 3 项出错停下的，配置里就是 3，
+        这一次直接从第 3 项接着跑，不再重复前面的任务。
+
+        :param conf: 任务组的 group_config
+        :param title: 任务组名字，只用于日志
+        :param tasks: 本次要跑的任务名列表
+        :return: 起始下标（从 1 开始）
+        """
+        index = self._read_start_index(conf)
+        if index <= 1:
+            return 1
+        if index > len(tasks):
+            logger.warning(f'Task group `{title}`: 配置里要从第 {index} 项开始跑，'
+                           f'但这一组只填了 {len(tasks)} 项，本次从第 1 项开始')
+            return 1
+        logger.info(f'Task group `{title}`: start from [{index}/{len(tasks)}] `{tasks[index - 1]}`, '
+                    f'the earlier task(s) are kept as finished')
+        return index
+
+    @staticmethod
+    def _read_start_index(conf) -> int:
+        """读配置里的「从第几项开始运行」，读不出来时当作 1。"""
+        try:
+            index = int(getattr(conf, 'start_index', 1))
+        except (TypeError, ValueError):
+            return 1
+        return index if index >= 1 else 1
+
+    def _set_start_index(self, index: int) -> None:
+        """
+        把「从第几项开始运行」写回配置。
+
+        :param index: 出错时写第几项出的错；整组跑完写回 1
+        """
+        field = convert_to_underscore(self.command)
+        # 配置是整份写回去的，所以先重新读一遍，避免覆盖界面上刚改的其它设置
+        self.config.reload()
+        group = getattr(self.config.model, field, None)
+        if group is None:
+            return
+        conf = group.group_config
+        if self._read_start_index(conf) == index:
+            return
+        conf.start_index = index
+        self.config.save()
+        logger.info(f'Task group `{self.command}`: start_index -> {index}')
 
     def _mark_task_failed(self, task: str) -> None:
         """

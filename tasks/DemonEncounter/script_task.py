@@ -95,11 +95,23 @@ class ScriptTask(GameUi, GeneralBattle, DemonEncounterAssets, SwitchSoul):
             boss_name = 'best boss' if self.best_demon_enable else 'normal boss'
 
             # 最多重新执行两轮“逢魔/极逢魔 -> 地图中央首领”的完整流程。
-            for search_attempt in range(1, 3):
+            search_attempt = 1
+            demon_box_count = 0
+            compass_clicked = False
+            while search_attempt <= 2:
                 self.device.click_record_clear()
                 self.screenshot()
                 if self.appear(self.I_BOSS_FIRE) or self.appear(self.I_BEST_BOSS_FIRE):
                     return True
+                if not compass_clicked:
+                    # 第一次寻找首领前先点一下左下角的指南针，把地图位置复位，
+                    # 免得逢魔宝箱刚好停在地图中央、把集结区域挡住。
+                    compass_clicked = True
+                    if self.appear_then_click(self.I_DE_LOCATION, interval=0):
+                        logger.info('Click compass before searching boss')
+                        time.sleep(1)
+                    else:
+                        logger.warning('Compass not found before searching boss')
                 if not self.appear_then_click(search_button, interval=0):
                     raise GameStuckError(f'Cannot find {boss_name} search button')
                 logger.info(f'Finding {boss_name}, attempt {search_attempt}/2...')
@@ -107,7 +119,13 @@ class ScriptTask(GameUi, GeneralBattle, DemonEncounterAssets, SwitchSoul):
 
                 # 每轮点击地图中央框选的红色“集结”区域至多两次，
                 # 每次等待集结挑战标志5秒。
+                blocked_by_box = False
                 for center_attempt in range(1, 3):
+                    # 逢魔宝箱会刷在地图中央，正好压住集结区域：点上去会弹出50勾玉购买界面，
+                    # 之后画面就识别不出来了。这里先关掉宝箱购买界面，再重新寻找位置。
+                    if self.dismiss_demon_box_panel():
+                        blocked_by_box = True
+                        break
                     self.click(self.C_DM_BOSS_CLICK, interval=0)
                     deadline = time.monotonic() + 5
                     while time.monotonic() < deadline:
@@ -118,11 +136,30 @@ class ScriptTask(GameUi, GeneralBattle, DemonEncounterAssets, SwitchSoul):
                                 f'{center_attempt}/2'
                             )
                             return True
+                        if self.dismiss_demon_box_panel():
+                            blocked_by_box = True
+                            break
                         time.sleep(0.2)
+                    if blocked_by_box:
+                        logger.warning(f'{boss_name} center click hit the demon box, searching again')
+                        break
                     logger.warning(
                         f'{boss_name} gather did not appear after center click '
                         f'{center_attempt}/2'
                     )
+
+                if blocked_by_box:
+                    # 中央被逢魔宝箱挡住，重新寻找位置；这种情况不计入失败轮次。
+                    demon_box_count += 1
+                    if demon_box_count > 3:
+                        raise GameStuckError(
+                            f'Cannot enter {boss_name}, the demon box keeps blocking the gather area'
+                        )
+                    logger.info(
+                        f'Demon box blocked the gather area, searching again '
+                        f'({demon_box_count}/3)'
+                    )
+                    continue
 
                 # 本轮失败，返回逢魔地图，重新点击逢魔/极逢魔进行下一轮搜寻。
                 self.screenshot()
@@ -134,6 +171,7 @@ class ScriptTask(GameUi, GeneralBattle, DemonEncounterAssets, SwitchSoul):
                         if self.appear(search_button):
                             break
                         time.sleep(0.2)
+                search_attempt += 1
 
             raise GameStuckError(f'Cannot enter {boss_name} after 2 search attempts')
 
@@ -234,6 +272,30 @@ class ScriptTask(GameUi, GeneralBattle, DemonEncounterAssets, SwitchSoul):
             if self.appear_then_click(self.I_BOSS_BACK_WHITE, interval=1):
                 continue
         # 返回到封魔主界面
+
+    def dismiss_demon_box_panel(self) -> bool:
+        """
+        地图中央会刷出逢魔宝箱，正好压在“集结”区域上：点到它会弹出50勾玉购买界面，
+        之后的画面就无法识别，任务直接卡死。
+        这里点“寻找”按钮把购买界面关掉，交给上层重新寻找首领位置。
+
+        :return: True 表示当前处于宝箱购买界面并已处理
+        """
+        self.screenshot()
+        if not self.appear(self.I_JADE_50):
+            return False
+        logger.warning('Demon box panel appeared on the gather area, close it first')
+        timer = Timer(8)
+        timer.start()
+        while 1:
+            self.screenshot()
+            if not self.appear(self.I_JADE_50):
+                break
+            if timer.reached():
+                logger.warning('Demon box panel did not close in time')
+                break
+            self.appear_then_click(self.I_DE_FIND, interval=1)
+        return True
 
     def execute_lantern(self):
         """

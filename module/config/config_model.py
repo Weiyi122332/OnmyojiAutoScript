@@ -412,8 +412,12 @@ class ConfigModel(ConfigBase):
                     enum_key = re.search(r"/([^/]+)$", value['items']['$ref']).group(1)
                     enum_values = definitions.get(enum_key, {}).get('enum')
                     if enum_values:
-                        item["type"] = "multi_enum"
+                        # 列表字段默认是「多选下拉框」；配置里写了 x-ui-type 就用指定的控件，
+                        # 例如任务组的 task_list：可以新增任务、拖动改顺序的列表
+                        item["type"] = str(value.get('x-ui-type') or "multi_enum")
                         item["enumEnum"] = enum_values
+                        if value.get('maxItems'):
+                            item["maxItems"] = value['maxItems']
                 # if 'allOf' in value:
                 #     enum_key = re.search(r"/([^/]+)$", value['allOf'][0]['$ref']).group(1)
                 #     item["enumEnum"] = definitions[enum_key]["enum"]
