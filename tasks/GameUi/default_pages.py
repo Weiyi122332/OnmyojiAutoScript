@@ -71,6 +71,18 @@ def settlement_random_click(area=None) -> RuleClick:
     return click
 
 
+def challenge_click(target, burst_count: int | None = None):
+    """「挑战/准备」按钮专用点击：连点 2~3 下，避免第一下没点进去。
+
+    只有开战按钮适合连点：结算、弹窗等界面第一下就会切屏，连点会把后续点击打到
+    下一个界面上（例如点开其它面板导致页面识别或 OCR 失败），所以不要复用本函数。
+    """
+    click = copy(target)
+    click.burst_count = random.randint(2, 3) if burst_count is None else int(burst_count)
+    click.burst_interval = (0.1, 0.2)
+    return click
+
+
 def random_click(
     low: int | None = None,
     high: int | None = None,

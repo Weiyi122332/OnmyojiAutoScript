@@ -11,6 +11,7 @@ from module.base.timer import Timer
 
 from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.page import page_main, page_hunt, page_shikigami_records, page_guild
+from tasks.GameUi.default_pages import challenge_click
 from tasks.Component.GeneralBattle.general_battle import GeneralBattle
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 from tasks.Component.GeneralInvite.general_invite import GeneralInvite
@@ -166,7 +167,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DemonRetreatAssets, AbyssSha
                 self.screenshot()
                 if not self.appear(self.I_BUFF):
                     break
-                if self.appear_then_click(self.I_PREPARE_HIGHLIGHT, interval=1.5):
+                if self.appear_then_click(challenge_click(self.I_PREPARE_HIGHLIGHT), interval=1.5):
                     continue
 
             logger.info("Click prepare ensure button")
@@ -204,7 +205,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DemonRetreatAssets, AbyssSha
                 self.ui_click_until_disappear(self.I_WIN)
                 return True
             # 战斗过程中出现准备
-            if self.appear_then_click(self.I_PREPARE_HIGHLIGHT, interval=1.5):
+            if self.appear_then_click(challenge_click(self.I_PREPARE_HIGHLIGHT), interval=1.5):
                 self.device.stuck_record_clear()
                 self.device.stuck_record_add('BATTLE_STATUS_S')
             # 如果出现失败 就点击，返回False

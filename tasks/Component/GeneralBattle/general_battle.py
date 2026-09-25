@@ -8,7 +8,8 @@ import random
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from tasks.GameUi.default_pages import close_reward_details, random_click, settlement_random_click
+from tasks.GameUi.default_pages import (challenge_click, close_reward_details, random_click,
+                                        settlement_random_click)
 from typing import Callable, Union
 
 from module.atom.gif import RuleGif
@@ -632,7 +633,8 @@ class GeneralBattle(GeneralBuff, GeneralBattleAssets):
             action=lambda: self.check_and_open_buff(context.buff),
         )
         if self._prepare_click_ready(context, config):
-            self.appear_then_click(self.I_PREPARE_HIGHLIGHT, interval=0.8)
+            # 「挑战/准备」按钮点一下有时不生效，用连点提高开战成功率
+            self.appear_then_click(challenge_click(self.I_PREPARE_HIGHLIGHT), interval=0.8)
         return BattleAction.CONTINUE
 
     def _handle_in_battle(self, context: BattleContext, config: GeneralBattleConfig) -> BattleAction:

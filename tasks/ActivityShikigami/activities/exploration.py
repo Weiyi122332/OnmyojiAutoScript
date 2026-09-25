@@ -7,7 +7,7 @@ from module.exception import GameStuckError
 from module.logger import logger
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 from tasks.Component.GeneralBattle.general_battle import BattleAction
-from tasks.GameUi.default_pages import settlement_random_click
+from tasks.GameUi.default_pages import challenge_click, settlement_random_click
 import tasks.ActivityShikigami.page as pages
 
 
@@ -39,7 +39,7 @@ class ExplorationAct:
 
     def _handle_prepare(self, context, config):
         if self.current_action_type in ('exp_main', 'exp_branch'):
-            self.appear_then_click(self.I_PREPARE_HIGHLIGHT, interval=0.8)
+            self.appear_then_click(challenge_click(self.I_PREPARE_HIGHLIGHT), interval=0.8)
             return BattleAction.CONTINUE
         return super()._handle_prepare(context, config)
 

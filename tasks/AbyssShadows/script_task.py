@@ -24,6 +24,7 @@ from tasks.Component.QuickLoadout.quick_loadout import QuickLoadout
 from tasks.Component.QuickLoadout.config import QuickLoadoutConfig
 from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.page import page_main
+from tasks.GameUi.default_pages import challenge_click
 
 # 单个首领/副将/精英 一次无法完成目标（一般是一次没打掉） 的情况下，最大战斗次数
 MAX_BATTLE_COUNT = 2
@@ -589,7 +590,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
         # 点击准备
         _timer_battle = Timer(180)
         self.wait_until_appear(self.I_PREPARE_HIGHLIGHT, wait_time=3)
-        self.ui_click_until_disappear(self.I_PREPARE_HIGHLIGHT, interval=0.6)
+        self.ui_click_until_disappear(challenge_click(self.I_PREPARE_HIGHLIGHT), interval=0.6)
         _timer_battle.start()
 
         # 生成退出条件
@@ -627,7 +628,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
                 self.device.screenshot_interval_set()
                 self.quit_battle()
                 break
-            if self.appear_then_click(self.I_PREPARE_HIGHLIGHT, interval=3):
+            if self.appear_then_click(challenge_click(self.I_PREPARE_HIGHLIGHT), interval=3):
                 # 正常来讲，此处不应该出现准备按钮，以防万一
                 self.device.stuck_record_add("BATTLE_STATUS_S")
                 _timer_battle.reset()

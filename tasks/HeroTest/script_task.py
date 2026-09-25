@@ -7,7 +7,7 @@ from module.atom.image import RuleImage
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 
 from tasks.Component.GeneralBattle.general_battle import BattleAction, BattleContext, ExitMatcher, GeneralBattle
-from tasks.GameUi.default_pages import page_battle_result
+from tasks.GameUi.default_pages import challenge_click, page_battle_result
 from tasks.GameUi.matcher import any_of
 from tasks.HeroTest.assets import HeroTestAssets
 from tasks.GameUi.game_ui import GameUi
@@ -111,7 +111,7 @@ class ScriptTask(GameUi, GeneralBattle, HeroTestAssets, SwitchSoul):
             if self.appear(self.I_REAL_MONEY, interval=1):  # 这里因为门票不够而不是其他异常所以success默认还是true
                 logger.warning('Ticket is not enough')
                 return False
-            if self.appear_then_click(self.O_FIRE, interval=1.2):  # 挑战按钮
+            if self.appear_then_click(challenge_click(self.O_FIRE), interval=1.2):  # 挑战按钮
                 self.device.stuck_record_clear()
                 click_cnt += 1
                 continue
