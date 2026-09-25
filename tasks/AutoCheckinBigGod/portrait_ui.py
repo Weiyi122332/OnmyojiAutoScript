@@ -137,11 +137,50 @@ class PortraitUIMixin(BaseTask):
         except Exception as e:
             logger.warning(f'杀死大神APP失败: {e}')
         # 把阴阳师游戏重新拉到前台（竖屏app已杀死，恢复游戏界面）
-        pkg = self.config.script.device.package_name
-        component = self._resolve_main_activity(pkg)
-        if component:
-            try:
-                logger.info(f'恢复阴阳师前台: {component}')
-                self._adb_shell(['am', 'start', '-n', component])
-            except Exception as e:
-                logger.warning(f'恢复阴阳师前台失败: {e}')
+        self._restore_game_foreground()
+
+    def _game_package(self):
+        """获取阴阳师包名。
+
+        配置项 `script.device.package_name` 一般是 `auto`，此时必须使用设备已解析出的
+        包名，否则会把 `auto` 当作包名传给 adb，恢复前台会静默失败。
+        """
+        package = str(getattr(self.device, 'package', '') or '').strip()
+        if package and package.lower() != 'auto':
+            return package
+        raw = getattr(self.config.script.device, 'package_name', None)
+        package = str(getattr(raw, 'value', raw) or '').strip()
+        if package and package.lower() != 'auto':
+            return package
+        logger.warning('无法确定阴阳师包名，跳过恢复游戏前台')
+        return None
+
+    def _is_game_in_foreground(self):
+        """判断阴阳师是否已经处于前台。
+
+        检测失败时按「不在前台」处理：宁可多恢复一次，也不要留下游戏被顶在后台、
+        导致后续任务中断的隐患。
+        """
+        try:
+            return bool(self.device.app_is_running())
+        except Exception as e:
+            logger.warning(f'检测游戏前台状态失败: {e}')
+            return False
+
+    def _restore_game_foreground(self, timeout=30):
+        """把阴阳师切回前台。
+
+        大神APP需要前台启动时会按 HOME 键，阴阳师会被顶到后台；收尾不恢复的话，
+        任务组里后续任务会检测到「游戏未运行」（GameNotRunningError）而中断整个任务组。
+        """
+        try:
+            package = self._game_package()
+            if not package:
+                return False
+            if self._is_game_in_foreground():
+                return True
+            logger.info(f'恢复阴阳师前台: {package}')
+            return bool(self._launch_app_foreground(package, timeout=timeout))
+        except Exception as e:
+            logger.warning(f'恢复阴阳师前台失败: {e}')
+            return False

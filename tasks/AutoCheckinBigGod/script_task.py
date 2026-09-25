@@ -48,6 +48,18 @@ _NO_WINDOW = subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
 class ScriptTask(ManualClaimMixin):
 
     def run(self):
+        """大神签到入口。
+
+        大神APP需要前台启动时会按 HOME 键，阴阳师会被顶到后台；无论本次流程成功还是
+        失败，收尾都必须把游戏切回前台，否则任务组里后续任务会检测到「游戏未运行」
+        （GameNotRunningError）而中断，恢复后又从头重跑，形成循环。
+        """
+        try:
+            self._run_checkin()
+        finally:
+            self._restore_game_foreground()
+
+    def _run_checkin(self):
         self.gl_uid = ""
         self.gl_token = ""
         self.gl_deviceid = ""
