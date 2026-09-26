@@ -4,6 +4,7 @@
 from time import sleep
 from datetime import timedelta, datetime, time
 from cached_property import cached_property
+import numpy as np
 
 from module.exception import TaskEnd
 from module.logger import logger
@@ -18,7 +19,7 @@ from tasks.Component.GeneralInvite.general_invite import GeneralInvite
 from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.DemonRetreat.assets import DemonRetreatAssets
 from tasks.AbyssShadows.assets import AbyssShadowsAssets
-from tasks.DemonRetreat.config import DemonRetreat
+from tasks.DemonRetreat.config import DemonRetreat, DemonRetreatStart
 
 
 class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DemonRetreatAssets, AbyssShadowsAssets):
@@ -79,6 +80,9 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DemonRetreatAssets, AbyssSha
         """
         cfg: DemonRetreat = self.config.demon_retreat
         logger.info("Entering demon_retreat")
+        self.screenshot()
+        if self.appear(self.I_START_CONFIRM) or (self.appear(self.I_DIFFICULTY_SELECT) and self.appear(self.I_START)):
+            return self.start_demon_retreat(cfg.demon_retreat_start)
         self.goto_page(page_guild)
 
         goto_demon_retreat_num = 0
@@ -95,9 +99,12 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DemonRetreatAssets, AbyssSha
             # 确保不离开退治
             if self.appear_then_click(self.I_QUIT_BACK, interval=1):
                 pass
-            if self.appear(self.I_HUNT_CHECK):
+            opening_screen = self.appear(self.I_DIFFICULTY_SELECT) and self.appear(self.I_START)
+            if self.appear(self.I_HUNT_CHECK) or opening_screen:
                 if self.appear_then_click(self.I_QUIT_BACK, interval=1):
                     pass
+                if not self.start_demon_retreat(cfg.demon_retreat_start):
+                    return False
                 logger.info("Enter demon_retreat success")
                 return True
 
@@ -118,6 +125,101 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DemonRetreatAssets, AbyssSha
             # 超过五次没有进入进入认为失败
             if goto_demon_retreat_num >= 3:
                 break
+        return False
+
+    def start_demon_retreat(self, config: DemonRetreatStart) -> bool:
+        """在开启界面按配置选择难度并开启；已开启的退治直接继续。"""
+        self.screenshot()
+        if self.appear(self.I_START_CONFIRM):
+            if not config.auto_start:
+                logger.warning('Demon retreat auto start is disabled')
+                return False
+            return self.confirm_demon_retreat(config.difficulty)
+
+        for _ in range(5):
+            self.screenshot()
+            has_difficulty = self.appear(self.I_DIFFICULTY_SELECT)
+            has_start = self.appear(self.I_START)
+            if has_difficulty and has_start:
+                break
+            if self.appear(self.I_DEMON_GATHER) or self.appear(self.I_ENTER_FIRE):
+                return True
+            sleep(0.5)
+        else:
+            if not has_difficulty and not has_start:
+                return True
+            logger.warning('Demon retreat opening controls are incomplete')
+            return False
+
+        if not config.auto_start:
+            logger.warning('Demon retreat needs to be opened; enable auto start to proceed')
+            return False
+
+        # 美术字形可能被 OCR 误读。先退到灰色减号所表示的第 1 档，再逐档增加。
+        for _ in range(8):
+            self.screenshot()
+            if self.appear(self.I_DIFFICULTY_MIN):
+                break
+            self.click(self.C_DIFFICULTY_MINUS)
+            sleep(0.6)
+        else:
+            logger.warning('Cannot find demon retreat difficulty 1')
+            return False
+
+        for level in range(1, config.difficulty):
+            before = self.device.image[580:650, 875:930].copy()
+            self.click(self.C_DIFFICULTY_PLUS)
+            for _ in range(3):
+                sleep(0.5)
+                self.screenshot()
+                current = self.device.image[580:650, 875:930]
+                difference = np.abs(current.astype(np.int16) - before.astype(np.int16)).mean()
+                if difference > 2:
+                    break
+            else:
+                logger.warning(f'Cannot select demon retreat difficulty {level + 1}')
+                return False
+        logger.info(f'Demon retreat difficulty: {config.difficulty}')
+
+        self.screenshot()
+        if not self.appear_then_click(self.I_START):
+            logger.warning('Demon retreat start button disappeared before opening')
+            return False
+
+        return self.confirm_demon_retreat(config.difficulty)
+
+    def confirm_demon_retreat(self, difficulty: int) -> bool:
+        """核对开启弹窗中的难度，确认消耗勋章并等待进入退治。"""
+        opening_timer = Timer(20).start()
+        confirmed = False
+        stable_frames = 0
+        while not opening_timer.reached():
+            self.screenshot()
+            if not confirmed and self.appear(self.I_START_CONFIRM):
+                selected = self.O_CONFIRM_DIFFICULTY.ocr(self.device.image)
+                if selected == 0:
+                    sleep(0.5)
+                    continue
+                if selected != difficulty:
+                    logger.warning(f'Demon retreat confirmation difficulty {selected} differs from configured {difficulty}')
+                    return False
+                self.click(self.I_START_CONFIRM)
+                confirmed = True
+                sleep(0.5)
+                continue
+
+            if self.appear(self.I_DEMON_GATHER) or self.appear(self.I_ENTER_FIRE):
+                return True
+
+            if confirmed and not self.appear(self.I_START_CONFIRM):
+                if not self.appear(self.I_DIFFICULTY_SELECT) and not self.appear(self.I_START):
+                    stable_frames += 1
+                    if stable_frames >= 2:
+                        return True
+                else:
+                    stable_frames = 0
+            sleep(0.5)
+        logger.warning('Demon retreat confirmation did not finish within 20 seconds')
         return False
 
     def demon_retreat(self):

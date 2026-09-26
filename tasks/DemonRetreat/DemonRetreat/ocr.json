@@ -7,5 +7,14 @@
     "method": "Default",
     "keyword": "",
     "description": "检查是否迟到"
+  },
+  {
+    "itemName": "confirm_difficulty",
+    "roiFront": "719,330,55,42",
+    "roiBack": "719,330,55,42",
+    "mode": "Digit",
+    "method": "Default",
+    "keyword": "",
+    "description": "确认弹窗中的当前难度"
   }
 ]

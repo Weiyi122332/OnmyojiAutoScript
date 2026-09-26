@@ -88,5 +88,41 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "祈愿"
+  },
+  {
+    "itemName": "difficulty_select",
+    "imageName": "DemonRetreat_difficulty_select.png",
+    "roiFront": "628,526,122,37",
+    "roiBack": "610,515,160,60",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "难度选择"
+  },
+  {
+    "itemName": "difficulty_min",
+    "imageName": "DemonRetreat_difficulty_min.png",
+    "roiFront": "767,583,58,60",
+    "roiBack": "760,575,75,76",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "description": "最低难度时不可点击的减号"
+  },
+  {
+    "itemName": "start",
+    "imageName": "DemonRetreat_start.png",
+    "roiFront": "1134,549,100,67",
+    "roiBack": "1110,520,145,115",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "开启"
+  },
+  {
+    "itemName": "start_confirm",
+    "imageName": "DemonRetreat_start_confirm.png",
+    "roiFront": "674,391,134,66",
+    "roiBack": "660,380,160,90",
+    "method": "Template matching",
+    "threshold": 0.7,
+    "description": "消耗勋章开启退治的确认按钮"
   }
 ]

@@ -15,8 +15,14 @@ class DemonRetreatTime(ConfigBase):
     custom_run_time: Time = Field(default=Time(hour=10, minute=0, second=0), description='demon_retreat_time_help')
 
 
+class DemonRetreatStart(ConfigBase):
+    auto_start: bool = Field(default=False, description='demon_retreat_auto_start_help')
+    difficulty: int = Field(default=1, ge=1, le=8, description='demon_retreat_difficulty_help')
+
+
 class DemonRetreat(ConfigBase):
     scheduler: Scheduler = Field(default_factory=Scheduler)
     demon_retreat_time: DemonRetreatTime = Field(default_factory=DemonRetreatTime)
+    demon_retreat_start: DemonRetreatStart = Field(default_factory=DemonRetreatStart)
     general_battle: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
     switch_soul_config: SwitchSoulConfig = Field(default_factory=SwitchSoulConfig)

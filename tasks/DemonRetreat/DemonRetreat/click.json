@@ -1,0 +1,14 @@
+[
+  {
+    "itemName": "difficulty_minus",
+    "roiFront": "787,605,18,20",
+    "roiBack": "787,605,18,20",
+    "description": "降低一档难度"
+  },
+  {
+    "itemName": "difficulty_plus",
+    "roiFront": "991,605,18,20",
+    "roiBack": "991,605,18,20",
+    "description": "提高一档难度"
+  }
+]
