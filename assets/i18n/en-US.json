@@ -10,7 +10,7 @@
   "name": "Task group name",
   "task_group_name_help": "Name of this task group, only used for display and logs (e.g. Daily, Souls, Event).",
   "Tasks": "Tasks",
-  "task_group_tasks_help": "Tasks run from top to bottom in the order shown: use Add task to append one, drag the handle to reorder, and click the cross to remove one. Tasks in the group need no own configuration - their own schedule is ignored and the group drives them.",
+  "task_group_tasks_help": "Tasks run from top to bottom in the order shown: use Add task to append one, drag the handle to reorder, and click the cross to remove one. Group tasks do not need to be enabled individually; if enabled, they also enter the scheduler on their own schedule.",
   "stop_on_error": "Stop the group on error",
   "task_group_stop_on_error_help": "Enabled: stop the remaining tasks when a task in the group fails. Disabled: skip the failed task, keep running the rest and mark the group run as failed.",
   "start_index": "Start from item",

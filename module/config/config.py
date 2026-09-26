@@ -178,30 +178,6 @@ class Config(ConfigState, ConfigManual, ConfigWatcher, ConfigMenu):
         """
         self.model.write_json(self.config_name, self.model.dict())
 
-    def task_group_members(self) -> set:
-        """
-        当前生效的所有任务组里的任务名。
-
-        被加进任务组的任务由任务组接管调度，其中的「启动方案」失效，
-        调度器不会再单独调度它们。
-
-        :return: 任务名的集合，没有生效的任务组时返回空集合
-        """
-        members = set()
-        try:
-            from tasks.TaskGroup.config import GROUP_COUNT
-        except Exception:
-            GROUP_COUNT = 5
-        for index in range(1, GROUP_COUNT + 1):
-            try:
-                group = getattr(self.model, f'task_group_{index}', None)
-                if group is None or not group.scheduler.enable:
-                    continue
-                members.update(group.group_config.task_list)
-            except Exception as e:
-                logger.warning(f'Can not read the task group {index}: {e}')
-        return members
-
     def update_scheduler(self) -> None:
         """
         更新调度器， 设置pending_task and waiting_task
@@ -211,7 +187,6 @@ class Config(ConfigState, ConfigManual, ConfigWatcher, ConfigMenu):
         waiting_task = []
         error = []
         self.scheduler_update_dt = datetime.now()
-        group_members = self.task_group_members()
         for key, value in self.model.dict().items():
             func = Function(key, value)
             if not func.enable:
@@ -222,18 +197,6 @@ class Config(ConfigState, ConfigManual, ConfigWatcher, ConfigMenu):
                 pending_task.append(func)
             else:
                 waiting_task.append(func)
-
-        # 子任务组里的任务不再单独调度，统一由子任务组按顺序执行
-        if group_members:
-            suppressed = sorted({f.command for f in pending_task + waiting_task
-                                 if f.command in group_members})
-            if suppressed != self.__dict__.get('_task_group_suppressed'):
-                self._task_group_suppressed = suppressed
-                if suppressed:
-                    logger.info(f'Tasks {suppressed} are in the task group, '
-                                f'their own schedule is ignored')
-            pending_task = [f for f in pending_task if f.command not in group_members]
-            waiting_task = [f for f in waiting_task if f.command not in group_members]
 
         # f = Filter(regex=r"(.*)", attr=["command"])
         # f.load(self.SCHEDULER_PRIORITY)
