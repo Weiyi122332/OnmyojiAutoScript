@@ -21,6 +21,10 @@ class LoginCharacterConfig(BaseModel):
 
 class RestartConfig(ConfigBase):
     enable_daily: bool = Field(default=True, description='是否重启之后启动每日琐事任务')
+    error_restart_limit: int = Field(
+        default=3, ge=0, title='异常重启容忍次数',
+        description='每次启动脚本允许的异常重启次数，用尽后再次报错停止脚本；0 表示不自动重启。',
+    )
 
 
 class Restart(ConfigBase):

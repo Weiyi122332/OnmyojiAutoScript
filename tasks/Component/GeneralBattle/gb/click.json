@@ -3,240 +3,280 @@
     "itemName": "preset_team_1",
     "roiFront": "195,235,464,44",
     "roiBack": "195,235,465,44",
+    "profile": "Default",
     "description": "预设队伍1"
   },
   {
     "itemName": "preset_team_2",
     "roiFront": "195,355,465,44",
     "roiBack": "195,355,465,44",
+    "profile": "Default",
     "description": "预设队伍2"
   },
   {
     "itemName": "preset_team_3",
     "roiFront": "195,475,465,44",
     "roiBack": "195,475,465,44",
+    "profile": "Default",
     "description": "预设队伍3"
   },
   {
     "itemName": "preset_team_4",
     "roiFront": "195,595,465,35",
     "roiBack": "195,595,465,35",
+    "profile": "Default",
     "description": "预设队伍4"
   },
   {
     "itemName": "preset_group_1",
     "roiFront": "35,240,25,50",
     "roiBack": "35,240,25,50",
+    "profile": "Default",
     "description": "预设组1"
   },
   {
     "itemName": "preset_group_2",
     "roiFront": "35,305,25,50",
     "roiBack": "35,305,25,50",
+    "profile": "Default",
     "description": "预设组2"
   },
   {
     "itemName": "preset_group_3",
     "roiFront": "35,365,25,50",
     "roiBack": "35,365,25,50",
+    "profile": "Default",
     "description": "预设组3"
   },
   {
     "itemName": "preset_group_4",
     "roiFront": "35,430,25,50",
     "roiBack": "35,430,25,50",
+    "profile": "Default",
     "description": "预设组4"
   },
   {
     "itemName": "preset_group_5",
     "roiFront": "35,495,25,50",
     "roiBack": "35,495,25,50",
+    "profile": "Default",
     "description": "预设组5"
   },
   {
     "itemName": "preset_group_6",
     "roiFront": "35,555,25,50",
     "roiBack": "35,555,25,50",
+    "profile": "Default",
     "description": "预设组6"
   },
   {
     "itemName": "preset_group_7",
     "roiFront": "35,615,25,50",
     "roiBack": "35,615,25,50",
+    "profile": "Default",
     "description": "预设组7"
   },
   {
     "itemName": "green_left_1",
     "roiFront": "183,506,125,108",
     "roiBack": "183,506,125,108",
+    "profile": "Default",
     "description": "从左开始第一个绿标"
   },
   {
     "itemName": "green_left_2",
     "roiFront": "407,474,100,100",
     "roiBack": "407,474,100,100",
+    "profile": "Default",
     "description": "从左开始第二个绿标"
   },
   {
     "itemName": "green_left_3",
     "roiFront": "608,446,64,44",
     "roiBack": "608,446,64,44",
+    "profile": "Default",
     "description": "从左开始第三个绿标"
   },
   {
     "itemName": "green_left_4",
     "roiFront": "769,475,81,98",
     "roiBack": "769,475,81,98",
+    "profile": "Default",
     "description": "从左开始第四个绿标"
   },
   {
     "itemName": "green_left_5",
     "roiFront": "932,473,132,108",
     "roiBack": "932,473,132,108",
+    "profile": "Default",
     "description": "从左开始第五个绿标"
   },
   {
     "itemName": "green_main",
     "roiFront": "565,555,104,81",
     "roiBack": "565,555,104,81",
+    "profile": "Default",
     "description": "绿标阴阳师"
   },
   {
     "itemName": "green_mark_area",
     "roiFront": "0,0,1280,720",
     "roiBack": "0,0,1280,720",
+    "profile": "Default",
     "description": "绿标点击 区域,默认为全屏，需要在代码中更新其区域"
   },
   {
     "itemName": "random_click",
     "roiFront": "104,79,1050,507",
     "roiBack": "255,65,100,100",
+    "profile": "More",
     "description": "战斗的时候有一定的概率随机点击"
   },
   {
     "itemName": "random_left",
-    "roiFront": "17,104,55,370",
-    "roiBack": "17,104,55,370",
+    "roiFront": "17,105,57,368",
+    "roiBack": "17,105,57,368",
+    "profile": "High",
     "description": "左边随机点击"
   },
   {
     "itemName": "random_right",
-    "roiFront": "1185,115,79,388",
-    "roiBack": "1185,115,79,388",
+    "roiFront": "1186,113,81,388",
+    "roiBack": "1186,113,81,388",
+    "profile": "High",
     "description": "右边随机点击"
   },
   {
     "itemName": "random_top",
     "roiFront": "250,58,868,68",
     "roiBack": "250,58,868,68",
+    "profile": "More",
     "description": "上边随机点击"
   },
   {
     "itemName": "random_bottom",
-    "roiFront": "462,599,492,78",
-    "roiBack": "462,599,492,78",
+    "roiFront": "462,599,493,77",
+    "roiBack": "462,599,493,77",
+    "profile": "More",
     "description": "下边随机点击"
   },
   {
     "itemName": "random_all",
     "roiFront": "42,94,1207,543",
     "roiBack": "42,94,1207,543",
+    "profile": "Default",
     "description": "整体随机点击"
   },
   {
     "itemName": "random_1",
     "roiFront": "1166,562,100,151",
     "roiBack": "1166,562,100,151",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_2",
     "roiFront": "1179,378,100,151",
     "roiBack": "1179,378,100,151",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_3",
     "roiFront": "1177,275,100,151",
     "roiBack": "1177,275,100,151",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_4",
     "roiFront": "1043,628,134,87",
     "roiBack": "1043,628,134,87",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_5",
     "roiFront": "874,626,134,87",
     "roiBack": "874,626,134,87",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_6",
     "roiFront": "1176,70,100,151",
     "roiBack": "1176,70,100,151",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_7",
     "roiFront": "1083,44,140,103",
     "roiBack": "1083,44,140,103",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_8",
     "roiFront": "912,46,140,103",
     "roiBack": "912,46,140,103",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_9",
     "roiFront": "566,655,188,59",
     "roiBack": "566,655,188,59",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_10",
     "roiFront": "6,117,91,132",
     "roiBack": "6,117,91,132",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_11",
     "roiFront": "0,295,55,192",
     "roiBack": "0,295,55,192",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_12",
     "roiFront": "0,439,100,151",
     "roiBack": "0,439,100,151",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_13",
     "roiFront": "238,685,182,34",
     "roiBack": "238,685,182,34",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_14",
     "roiFront": "668,50,141,102",
     "roiBack": "668,50,141,102",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_15",
     "roiFront": "13,619,99,94",
     "roiBack": "13,619,99,94",
+    "profile": "Default",
     "description": ""
   },
   {
     "itemName": "random_16",
     "roiFront": "89,684,123,35",
     "roiBack": "89,684,123,35",
+    "profile": "Default",
     "description": ""
   }
 ]

@@ -1,5 +1,6 @@
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
+from module.atom.scatter import RuleScatter
 from module.atom.long_click import RuleLongClick
 from module.atom.swipe import RuleSwipe
 from module.atom.ocr import RuleOcr
@@ -11,11 +12,11 @@ class ActivityShikigamiAssets:
 
 
 	# Click Rule Assets
-	#  
+	# 
 	C_CL_SELECT_EASY = RuleClick(roi_front=(1166,171,71,63), roi_back=(1166,171,71,63), name="cl_select_easy")
-	#  
+	# 
 	C_CL_SELECT_HARD = RuleClick(roi_front=(1121,340,71,63), roi_back=(1121,340,71,63), name="cl_select_hard")
-	#
+	# 
 	C_RANDOM_CLOSE_AUTOFIGHT = RuleClick(roi_front=(1204,88,76,449), roi_back=(1204,88,76,449), name="random_close_autofight")
 
 
@@ -48,10 +49,12 @@ class ActivityShikigamiAssets:
 	I_CHECK_CLIMB_HARD = RuleImage(roi_front=(615,413,67,67), roi_back=(610,408,77,77), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/climb_check_climb_hard.png")
 	#  
 	I_CHECK_CLIMB_EASY = RuleImage(roi_front=(615,413,67,67), roi_back=(610,408,77,77), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/climb_check_climb_easy.png")
-	#
+	#  
 	I_USELESS_MESSAGE_CLOSE = RuleImage(roi_front=(1171,95,31,30), roi_back=(1042,68,179,170), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/climb_useless_message_close.png")
-	#
+	#  
 	I_AUTOFIGHT = RuleImage(roi_front=(533,98,207,46), roi_back=(470,73,330,86), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/climb_autofight.png")
+	# 未选御魂 
+	I_ORCHI_SELECT_NONE = RuleImage(roi_front=(180,520,38,39), roi_back=(0,505,240,65), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/climb_orchi_select_none.png")
 
 
 	# Ocr Rule Assets
@@ -80,6 +83,8 @@ class ActivityShikigamiAssets:
 	I_TO_BATTLE_CLIMB = RuleImage(roi_front=(68,98,140,33), roi_back=(32,83,247,97), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/climb_to_battle_climb.png")
 	#  
 	I_CHECK_CLIMB_MAIN = RuleImage(roi_front=(151,18,134,40), roi_back=(141,0,157,67), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/climb_check_climb_main.png")
+
+
 	# Image Rule Assets
 	# 宝箱事件 
 	I_EVENT_REWARD = RuleImage(roi_front=(529,78,222,51), roi_back=(524,73,232,61), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_event_reward.png")
@@ -109,9 +114,9 @@ class ActivityShikigamiAssets:
 	I_EVENT_STORY = RuleImage(roi_front=(1156,32,58,34), roi_back=(1132,14,115,66), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_event_story.png")
 	# 确认跳过剧情 
 	I_STORY_SKIP_ENSURE = RuleImage(roi_front=(716,445,117,34), roi_back=(674,426,203,68), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_story_skip_ensure.png")
-	# 探索Boss战斗事件标志
+	# 探索Boss战斗事件标志 
 	I_EVENT_FIGHT_BOSS = RuleImage(roi_front=(477,70,222,51), roi_back=(472,65,232,61), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_event_fight_boss.png")
-	# 探索奖励关闭按钮
+	# 探索奖励关闭按钮 
 	I_EVENT_REWARD_CLOSE = RuleImage(roi_front=(1203,140,42,38), roi_back=(1184,116,76,87), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/exploration/exploration_event_reward_close.png")
 
 
@@ -136,15 +141,15 @@ class ActivityShikigamiAssets:
 
 
 	# Click Rule Assets
-	# description 
+	# description
 	C_FG_RANDOM_LEFT = RuleClick(roi_front=(17,84,104,356), roi_back=(17,81,106,365), name="fg_random_left")
-	# description 
+	# description
 	C_FG_RANDOM_RIGHT = RuleClick(roi_front=(1133,88,131,361), roi_back=(1131,84,133,363), name="fg_random_right")
-	# description 
+	# description
 	C_FG_RANDOM_TOP = RuleClick(roi_front=(126,66,989,58), roi_back=(123,65,991,58), name="fg_random_top")
-	# description 
+	# description
 	C_FG_RANDOM_BOTTOM = RuleClick(roi_front=(196,598,581,78), roi_back=(194,597,583,81), name="fg_random_bottom")
-	# description 
+	# description
 	C_FG_RANDOM_ALL = RuleClick(roi_front=(42,94,1207,543), roi_back=(42,94,1207,543), name="fg_random_all")
 
 
@@ -221,19 +226,19 @@ class ActivityShikigamiAssets:
 
 
 	# Click Rule Assets
-	#  
+	# 
 	C_RM_ROB_CHOICE_1 = RuleClick(roi_front=(155,436,100,100), roi_back=(155,436,100,100), name="rm_rob_choice_1")
-	#  
+	# 
 	C_RM_ROB_CHOICE_2 = RuleClick(roi_front=(430,527,100,100), roi_back=(430,527,100,100), name="rm_rob_choice_2")
-	#  
+	# 
 	C_RM_ROB_CHOICE_3 = RuleClick(roi_front=(727,526,100,100), roi_back=(727,526,100,100), name="rm_rob_choice_3")
-	#  
+	# 
 	C_RM_ROB_CHOICE_4 = RuleClick(roi_front=(1015,369,100,100), roi_back=(1015,369,100,100), name="rm_rob_choice_4")
-	#  
+	# 
 	C_RM_FIGHT_BOSS_ENTER = RuleClick(roi_front=(561,347,49,73), roi_back=(561,347,49,73), name="rm_fight_boss_enter")
-	#  
+	# 
 	C_RM_RANDOM_CLOSE_SAFE = RuleClick(roi_front=(479,513,326,144), roi_back=(479,513,326,144), name="rm_random_close_safe")
-	#  
+	# 
 	C_RM_RANDOM_CLOSE_SAFE_MAIN = RuleClick(roi_front=(1102,208,153,327), roi_back=(1102,208,153,327), name="rm_random_close_safe_main")
 
 
@@ -290,3 +295,5 @@ class ActivityShikigamiAssets:
 	I_CHECK_RM_MAIN = RuleImage(roi_front=(148,13,174,47), roi_back=(121,0,227,72), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/richman/rm_check_rm_main.png")
 	#  
 	I_CHECK_RM_RICHMAN = RuleImage(roi_front=(148,13,140,47), roi_back=(121,0,227,72), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/richman/rm_check_rm_richman.png")
+
+

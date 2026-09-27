@@ -5,7 +5,7 @@ import re
 from datetime import timedelta, time, datetime
 from time import sleep
 
-from tasks.GameUi.default_pages import page_battle_prepare, page_battle
+from tasks.GameUi.default_pages import page_battle_prepare, page_battle, random_click
 from tasks.GameUi.matcher import any_of
 from typing import List, Callable, Optional
 
@@ -406,6 +406,7 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
                 self.screenshot()
                 if self.get_current_page() in [page_battle_prepare, page_battle]:
                     self.run_general_battle(self.battle_config, exit_matcher=any_of(self.I_UI_BACK_RED, self.I_WQSE_SPECIAL_FIRE))
+                    self._finish_secret_battle_reward()
                     break
                 if self.appear_then_click(self.I_WQSE_FIRE, interval=1):
                     continue
@@ -417,6 +418,20 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
                         click_count = 0
                         self.device.click_record_clear()
         logger.info('Secret mission finished')
+
+    def _finish_secret_battle_reward(self):
+        """秘闻悬赏结算后点击空白区域，直到回到已知挑战界面。"""
+        while True:
+            self.screenshot()
+            if (
+                self.appear(self.I_WQSE_FIRE)
+                or self.appear(self.I_WQSE_SPECIAL_FIRE)
+            ):
+                return
+            self.click(
+                random_click(ltrb=(True, False, True, True)),
+                interval=0.8,
+            )
 
     def invite_random(self, add_button: RuleImage):
         self.screenshot()

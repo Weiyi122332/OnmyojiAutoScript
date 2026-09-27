@@ -60,6 +60,8 @@ class Script:
         # Failure count of tasks
         # Key: str, task name, value: int, failure count
         self.failure_record = {}
+        self._error_restart_count = 0
+        self._error_restart_pending = False
         self.last_task_runtime_outcome: dict[str, Any] | None = None
         # 连续任务休息只统计调度器未进入等待状态的墙钟时间。
         self._continuous_task_started_at: float | None = None
@@ -596,9 +598,9 @@ class Script:
             task = ""
             try:
                 # Get task
-                task = self.get_next_task()
+                task = 'Restart' if self._error_restart_pending else self.get_next_task()
                 # Skip first restart
-                if self.is_first_task and task == 'Restart':
+                if self.is_first_task and task == 'Restart' and not self._error_restart_pending:
                     logger.info('Skip task `Restart` at scheduler start')
                     self.config.task_delay(task='Restart', success=True)
                     del_cached_property(self, 'config')
@@ -634,6 +636,8 @@ class Script:
             self.config.model.running_task = ''
             logger.info(f'Scheduler: End task `{task}`')
             self.is_first_task = False
+            if task == 'Restart' and success:
+                self._error_restart_pending = False
             if self._active_date != date.today():
                 self._active_date = date.today()
                 self._active_seconds_today = 0
@@ -645,17 +649,17 @@ class Script:
             failed = 0 if success else failed + 1
             # deep_set(self.failure_record, keys=task, value=failed)
             self.failure_record[task] = failed
-            if failed >= 3:
-                logger.critical(f"Task `{task}` failed 3 or more times.")
+            if failed > self.config.model.restart.restart_config.error_restart_limit:
+                logger.critical(f"Task `{task}` failed again after recovery.")
                 logger.critical("Possible reason #1: You haven't used it correctly. "
                                 "Please read the help text of the options.")
                 logger.critical("Possible reason #2: There is a problem with this task. "
                                 "Please contact developers or try to fix it yourself.")
                 logger.critical('Request human takeover')
-                # 添加失败三次的推送通知
+                # 恢复后再次失败时停止脚本。
                 self.config.notifier.push(
                     title=f'{I18n.trans_zh_cn(task)}{task}',
-                    content=f"<{self.config_name}> 任务连续失败三次，请上线查看"
+                    content=f"<{self.config_name}> 任务恢复后再次失败，脚本已停止，请上线查看"
                 )
                 # 关闭模拟器
                 if self.config.script.error.error_repeated:
@@ -672,6 +676,21 @@ class Script:
                 continue
             else:
                 break
+
+    def _request_error_restart(self, command: str) -> None:
+        """按重启任务配置限制本次脚本运行的异常重启次数，强制优先调度。"""
+        limit = self.config.model.restart.restart_config.error_restart_limit
+        if self._error_restart_count >= limit:
+            logger.critical(f'Error restart limit reached ({self._error_restart_count}/{limit}): {command}; stop script')
+            self.config.notifier.push(
+                title=f'{I18n.trans_zh_cn(command)}{command}',
+                content=f'<{self.config_name}> 异常重启次数已达上限 {limit} 次，脚本已停止，请上线查看',
+            )
+            raise SystemExit(1)
+        self._error_restart_count += 1
+        logger.warning(f'Error recovery restart {self._error_restart_count}/{limit}: {command}')
+        self._error_restart_pending = True
+        self.config.task_call('Restart')
 
     def _handle_task_exception(self, e: Exception, command: str) -> bool:
         """
@@ -690,7 +709,7 @@ class Script:
         if isinstance(e, GameNotRunningError):
             logger.warning(e)
             self.exception_handler(e=e, command=command)
-            self.config.task_call('Restart')
+            self._request_error_restart(command)
             return True
 
         if isinstance(e, (GameStuckError, GameTooManyClickError)):
@@ -701,7 +720,7 @@ class Script:
             logger.warning('If you are playing by hand, please stop Alas')
             self.config.notifier.push(title=f'{I18n.trans_zh_cn(command)}{command}',
                                       content=f"<{self.config_name}> GameStuckError or GameTooManyClickError")
-            self.config.task_call('Restart')
+            self._request_error_restart(command)
             self.device.sleep(10)
             return False
 
@@ -711,7 +730,7 @@ class Script:
             self.exception_handler(e=e, command=command)
             logger.warning('An error has occurred in Azur Lane game client, Alas is unable to handle')
             logger.warning(f'Restarting {self.device.package} to fix it')
-            self.config.task_call('Restart')
+            self._request_error_restart(command)
             self.device.sleep(10)
             return False
 
@@ -730,7 +749,7 @@ class Script:
                 title=f'{I18n.trans_zh_cn(command)}{command}',
                 content=f"<{self.config_name}> GamePageUnknownError",
             )
-            self.config.task_call('Restart')
+            self._request_error_restart(command)
             self.device.sleep(10)
             return False
 

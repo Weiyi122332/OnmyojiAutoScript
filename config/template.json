@@ -49,7 +49,8 @@
       "cron": ""
     },
     "restart_config": {
-      "enable_daily": true
+      "enable_daily": true,
+      "error_restart_limit": 3
     },
     "tasks_config_reset": {
       "reset_task_datetime_enable": false,

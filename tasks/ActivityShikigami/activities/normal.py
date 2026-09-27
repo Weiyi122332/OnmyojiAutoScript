@@ -95,6 +95,14 @@ class NormalClimbAct:
 
     def _read_shared_climb_tickets(self):
         self.screenshot()
+        if self.appear(self.I_ORCHI_SELECT_NONE):
+            self.climb_consumable_count['pass'] = 0
+            self.climb_pending_consumption['pass'] = 0
+            self.climb_ocr_correction_rounds['pass'] = 0
+            logger.info(
+                'Climb ticket selector is empty; skip all pass modes'
+            )
+            return 0
         return self._update_climb_consumable_count(
             'pass', self.O_REMAIN_PASS.ocr_digit(self.device.image))
 

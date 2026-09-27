@@ -7,5 +7,14 @@
     "method": "Default",
     "keyword": "完成",
     "description": "完成"
+  },
+  {
+    "itemName": "d_done_chat",
+    "roiFront": "282,580,695,140",
+    "roiBack": "282,580,695,140",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "",
+    "description": "完成对话"
   }
 ]

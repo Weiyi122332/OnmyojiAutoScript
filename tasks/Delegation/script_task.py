@@ -5,7 +5,7 @@ from time import sleep
 from datetime import time, datetime, timedelta
 
 from module.logger import logger
-from module.exception import TaskEnd
+from module.exception import GameStuckError, TaskEnd
 from module.base.timer import Timer
 
 from tasks.GameUi.game_ui import GameUi
@@ -75,14 +75,14 @@ class ScriptTask(GameUi, DelegationAssets):
                 continue
         # 进入委派  fefe e  fe
         logger.info(f'Enter Delegation: {name}')
-        ui_click(self.C_D_ALL, self.I_D_SELECT_1)
+        ui_click(self.C_D_ALL, self.I_D_SELECT_FIRST)
         # 委派开始
         logger.info(f'Delegation: {name} start')
         while 1:
             self.screenshot()
             if not self.appear(self.I_D_START):
                 break
-            if self.click(self.C_D_5, interval=0.8):
+            if self.click(self.C_D_ALL, interval=0.8):
                 continue
             if self.appear_then_click(self.I_D_START, interval=1.8):
                 continue
@@ -119,7 +119,26 @@ class ScriptTask(GameUi, DelegationAssets):
             if check_timer.reached():
                 break
             if self.ocr_appear_click(self.O_D_DONE, interval=1):
+                self.wait_delegation_done_reward()
                 check_timer.reset()
+                continue
+
+    def wait_delegation_done_reward(self):
+        """领取已完成委派后推进对话，直到奖励确认按钮出现。"""
+        wait_timer = Timer(5)
+        wait_timer.start()
+        while True:
+            self.screenshot()
+            if self.appear(self.I_REWARDS_DONE):
+                return
+            if wait_timer.reached():
+                raise GameStuckError(
+                    'Delegation reward dialog timed out before rewards done appeared'
+                )
+
+            chat_text = self.O_D_DONE_CHAT.ocr(self.device.image).strip()
+            if chat_text and self.appear(self.I_REWARDS_CHAT):
+                self.click(self.O_D_DONE_CHAT, interval=0.8)
                 continue
 
 
@@ -133,7 +152,5 @@ if __name__ == '__main__':
 
     # t.delegate_one('弥助的画')
     t.run()
-
-
 
 
