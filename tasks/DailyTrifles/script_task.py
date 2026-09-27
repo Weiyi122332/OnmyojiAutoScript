@@ -2,10 +2,12 @@
 # @author runhey
 # github https://github.com/runhey
 import copy
+import random
 from time import sleep
 
 import difflib
 from datetime import time, datetime, timedelta
+from module.atom.click import RuleClick
 from module.atom.image import RuleImage
 from module.ocr.common import BoxedResult
 
@@ -19,7 +21,7 @@ from tasks.DailyTrifles.assets import DailyTriflesAssets
 from tasks.Component.Summon.summon import Summon
 
 from module.logger import logger
-from module.exception import TaskEnd
+from module.exception import GameStuckError, TaskEnd
 from module.base.timer import Timer
 from tasks.DailyTrifles.config import SummonType
 import re
@@ -357,6 +359,7 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
         self.config.daily_trifles.done_record.luck_msg_dt = datetime.now()
 
     def run_store(self):
+        self.close_gift_daily_popup()
         if self.check_store_all_done():
             logger.info('Store all done, skip')
             return
@@ -381,21 +384,41 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
         self.screenshot()
         if not self.appear(self.I_GIFT_SIGN):
             logger.warning('There is no gift sign')
-            return
-
-        if self.ui_get_reward(self.I_GIFT_SIGN, click_interval=2.5):
+        elif self.ui_get_reward(self.I_GIFT_SIGN, click_interval=2.5):
             logger.info('Get reward of gift sign')
+        self.close_gift_daily_popup()
+
+    def close_gift_daily_popup(self):
+        self.screenshot()
+        if not self.appear(self.I_GIFT_DAILY_POPUP):
+            return
+        image_height, image_width = self.device.image.shape[:2]
+        title_x = self.I_GIFT_DAILY_POPUP.roi_front[0]
+        # 标题比弹窗左边缘靠右约 30 像素，留出 40 像素确保点击区在弹窗外。
+        side_margin = max(1, min(title_x - 40, image_width // 4))
+        click_width = max(1, side_margin * 3 // 4)
+        side = random.choice(('left', 'right'))
+        side_x = side_margin - click_width if side == 'left' else image_width - side_margin
+        close_area = (side_x, image_height // 4, click_width, image_height // 2)
+        self.click(RuleClick(roi_front=close_area, roi_back=close_area,
+                            name=f'gift_daily_popup_close_{side}'))
+        sleep(0.5)
+        self.screenshot()
+        if self.appear(self.I_GIFT_DAILY_POPUP):
+            raise GameStuckError('Daily gift popup did not close')
 
     def run_buy_sushi(self):
         logger.hr('store sushi', 2)
         if self.config.daily_trifles.today_is_done('sushi'):
             logger.info('Today is done, skip')
             return
+        self.close_gift_daily_popup()
         # 进入Special
         while 1:
             from tasks.WeeklyPurchase.assets import WeeklyPurchaseAssets
             self.screenshot()
-            if self.appear(WeeklyPurchaseAssets.I_SIDE_CHECK_SPECIAL):
+            if (self.appear(WeeklyPurchaseAssets.I_MALL_SUNDRY_CHECK)
+                    and self.appear(WeeklyPurchaseAssets.I_SIDE_CHECK_SPECIAL)):
                 break
             if self.appear_then_click(WeeklyPurchaseAssets.I_MALL_SUNDRY, interval=1):
                 continue

@@ -27,6 +27,15 @@
     "description": "免费一抽领黑蛋"
   },
   {
+    "itemName": "gift_daily_popup",
+    "imageName": "store_gift_daily_popup.png",
+    "roiFront": "245,100,195,58",
+    "roiBack": "200,80,280,100",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "领取每日礼包后弹出的每日礼包详情页"
+  },
+  {
     "itemName": "special_sushi",
     "imageName": "store_sushi.png",
     "roiFront": "180,130,800,460",
