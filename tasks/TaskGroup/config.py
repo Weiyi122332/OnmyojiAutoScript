@@ -90,6 +90,7 @@ class GroupTaskChoice(str, Enum):
     MetaDemon = 'MetaDemon'
     FrogBoss = 'FrogBoss'
     FloatParade = 'FloatParade'
+    LBS = 'LBS'
     Quiz = 'Quiz'
     KittyShop = 'KittyShop'
     DyeTrials = 'DyeTrials'
