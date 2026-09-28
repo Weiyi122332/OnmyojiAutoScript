@@ -1,0 +1,11 @@
+[
+  {
+    "itemName": "sr_wanxiang_blessing_count",
+    "roiFront": "1174,23,41,35",
+    "roiBack": "1174,23,41,35",
+    "mode": "Digit",
+    "method": "Default",
+    "keyword": "",
+    "description": "六道之门开启界面右上角的万象赐福数量"
+  }
+]

@@ -508,6 +508,8 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
         destination = transition.destination
 
         logger.info(f"Page switch: {source} -> {destination}")
+        if source.key == "page_main":
+            self._ensure_main_scroll_open()
 
         action_timer = Timer(6.0).start()
         action_done = False
@@ -761,10 +763,28 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
 
         self.navigator.current_page = destination
         self._run_enter_success_hooks_if_needed(destination)
+        if destination.key == "page_main":
+            self._ensure_main_scroll_open()
         if confirm_wait > 0:
             Timer(confirm_wait, count=int(confirm_wait // 0.5)).start().wait()
         logger.attr(f'{time.time() - start_time:.1f}s', f"Page arrived {destination}")
         return True
+
+    def _ensure_main_scroll_open(self) -> bool:
+        """在确认位于庭院时，展开收起的导航卷轴。"""
+
+        self.screenshot()
+        if not self.appear(self.I_MAIN_SCROLL_CLOSE):
+            return False
+
+        logger.info("Main scroll is closed; opening it before navigation")
+        self.click(self.I_MAIN_SCROLL_CLOSE)
+        timer = Timer(3).start()
+        while not timer.reached():
+            self.screenshot()
+            if not self.appear(self.I_MAIN_SCROLL_CLOSE):
+                return True
+        raise GamePageUnknownError("Main scroll did not open")
 
     def goto_page(self, destination: Page, confirm_wait: float = 0, skip_first_screenshot: bool = True,
                   timeout: int = 30, *, accepted_pages: tuple[Page, ...] = ()) -> bool | None:
@@ -825,6 +845,11 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
                 progress_timer.reset()
                 last_detected_page_key = current.key
                 reset_repeated_transition_failures()
+
+            if current.key == "page_main" and self._ensure_main_scroll_open():
+                progress_timer.reset()
+                last_progress_signature = ("open_main_scroll", current.key)
+                continue
 
             if current == destination or any(current.key == page.key for page in accepted_pages):
                 # current 来自 _refresh_current_page，其返回已是两帧稳定确认的结果，无需再次 confirm。

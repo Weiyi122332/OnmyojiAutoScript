@@ -101,6 +101,7 @@ OAS 在其基础上进行了如下优化：
 - [用户手册](https://runhey.github.io/OnmyojiAutoScript-website/docs/user-manual/getting-started): 在线手册，不定期更新，包含所有使用说明
 - [安装教程](https://runhey.github.io/OnmyojiAutoScript-website/docs/user-manual/installation): 保姆式安装手册,多翻翻有惊喜
 - [开发文档](https://runhey.github.io/OnmyojiAutoScript-website/docs/development/preamble): 虽然迭代很多、年久失修，但入门开发必读，具体以源码为准
+- [本仓库开发与排障手册](docs/DEVELOPMENT.md): 当前源码结构、扩展步骤与故障定位入口
 
 ## 鸣谢 Acknowledgements
 

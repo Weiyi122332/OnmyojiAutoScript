@@ -4,7 +4,7 @@
 from time import monotonic, sleep
 
 import random
-from datetime import time, datetime, timedelta
+from datetime import date, time, datetime, timedelta
 
 from module.logger import logger
 from module.exception import TaskEnd
@@ -39,8 +39,27 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
     conf: Duel = None
 
     def run(self):
+        self.config.reload()
         self.conf = self.config.duel
-        current_time = datetime.now().time()
+        now = datetime.now()
+        today = now.date()
+        reached_on = self.conf.duel_config.weekly_goal_reached_on.strip()
+        if reached_on:
+            try:
+                reached_date = date.fromisoformat(reached_on)
+            except ValueError:
+                logger.warning(f'Invalid Duel weekly goal date: {reached_on}')
+            else:
+                this_monday = today - timedelta(days=today.weekday())
+                if reached_date < this_monday:
+                    self.conf.duel_config.weekly_goal_reached_on = ''
+                    self.config.save()
+                elif (reached_date <= today
+                      and self.conf.duel_config.skip_when_weekly_goal_reached):
+                    logger.info(f'Duel weekly goal reached on {reached_on}; skip this week')
+                    self.set_next_run_next_monday(task='Duel')
+                    raise TaskEnd('Duel')
+        current_time = now.time()
         if not self.conf.duel_celeb_config.practice_test and not (
             time(12, 00) <= current_time < time(23, 00)
         ):
@@ -74,7 +93,13 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
         logger.info('Duel battle end')
         self.goto_page(page_main)
         if self._weekly_goal_reached:
-            self.set_next_run_next_monday(task='Duel')
+            self.config.reload()
+            self.config.duel.duel_config.weekly_goal_reached_on = date.today().isoformat()
+            self.config.save()
+            if self.config.duel.duel_config.skip_when_weekly_goal_reached:
+                self.set_next_run_next_monday(task='Duel')
+            else:
+                self.set_next_run(task='Duel', success=True, finish=True)
         else:
             self.set_next_run(task='Duel', success=True, finish=True)
         raise TaskEnd('Duel')

@@ -1,7 +1,6 @@
 # This Python file uses the following encoding: utf-8
 # @author runhey
 # github https://github.com/runhey
-import copy
 import random
 from time import sleep
 
@@ -414,60 +413,88 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
             return
         self.close_gift_daily_popup()
         # 进入Special
-        while 1:
+        special_timer = Timer(15).start()
+        while not special_timer.reached():
             from tasks.WeeklyPurchase.assets import WeeklyPurchaseAssets
             self.screenshot()
+            if self.appear(self.I_STORE_COST_TYPE_JADE):
+                break
             if (self.appear(WeeklyPurchaseAssets.I_MALL_SUNDRY_CHECK)
                     and self.appear(WeeklyPurchaseAssets.I_SIDE_CHECK_SPECIAL)):
                 break
             if self.appear_then_click(WeeklyPurchaseAssets.I_MALL_SUNDRY, interval=1):
                 continue
+        else:
+            raise GameStuckError('Cannot enter the Special store to buy sushi')
 
 
-        def detect_buy_count(base_element) -> (int, int):
-            # 返回count,price
-            MAX_PRICE = 9999
-            MAX_COUNT = 9999
-            roi = copy.deepcopy(base_element.roi_front)
-            roi[0] = roi[0] + roi[2]
-            roi[1] = roi[1] + roi[3] - 30
-            roi[2] = 60
-            roi[3] = 30
-            self.O_STORE_SUSHI_PRICE.roi = roi
-            _price = self.O_STORE_SUSHI_PRICE.detect_text(self.device.image)
-            # 保守策略，避免OCR错误购买
-            try:
-                _price = int(_price)
-            except Exception as e:
-                _price = MAX_PRICE
+        target_count = self.config.daily_trifles.trifles_config.buy_sushi_count
+        next_price_after_target = 60 + 20 * target_count
 
-            if _price < 60:
-                return 0, MAX_PRICE
-            _count = (_price - 60) / 20
-            return _count, _price
+        def read_price(base_element, timeout: float = 8) -> int:
+            """从商品或确认按钮右侧读取价格；识别不可靠时停止购买。"""
+            timer = Timer(timeout).start()
+            last_text = None
+            while not timer.reached():
+                self.screenshot()
+                if not self.appear(base_element):
+                    continue
+                x, y, width, height = base_element.roi_front
+                if base_element is self.I_STORE_COST_TYPE_JADE:
+                    self.O_STORE_SUSHI_PRICE.roi = (x + width, y + height - 49, 65, 50)
+                else:
+                    self.O_STORE_SUSHI_PRICE.roi = (x + width, y + height - 30, 60, 30)
+                last_text = self.O_STORE_SUSHI_PRICE.detect_text(self.device.image)
+                try:
+                    price = int(str(last_text).strip())
+                except (TypeError, ValueError):
+                    continue
+                if 60 <= price <= 60 + 20 * max(10, target_count) and (price - 60) % 20 == 0:
+                    return price
+            raise GameStuckError(f'Cannot recognize sushi price beside {base_element.name}: {last_text!r}')
 
-        roi = None
-        # 购买体力
-        while 1:
+        # 第一次 60 勾玉，之后每次增加 20。确认购买只点击一次，并核实下次价格。
+        while True:
             self.screenshot()
-            # count, price = detect_buy_count(roi)
-            # if count >= self.config.model.daily_trifles.trifles_config.buy_sushi_count:
-            #     break
             if self.appear(self.I_STORE_COST_TYPE_JADE):
-                count, price = detect_buy_count(self.I_STORE_COST_TYPE_JADE)
-                if count >= self.config.daily_trifles.trifles_config.buy_sushi_count:
+                # 上次异常后确认框仍可能留在屏幕上，直接从确认框恢复。
+                price = read_price(self.I_STORE_COST_TYPE_JADE)
+                if price >= next_price_after_target:
+                    icon_x, icon_y = self.I_STORE_COST_TYPE_JADE.roi_front[:2]
+                    self.device.click(max(20, icon_x - 350), max(20, icon_y - 150),
+                                      control_name='sushi_purchase_dialog_outside')
+                    close_timer = Timer(3).start()
+                    while not close_timer.reached():
+                        self.screenshot()
+                        if not self.appear(self.I_STORE_COST_TYPE_JADE):
+                            break
+                    else:
+                        raise GameStuckError('Sushi purchase dialog did not close')
                     break
-                self.ui_click_until_disappear(self.I_STORE_COST_TYPE_JADE, interval=2)
-                logger.info(f"Buy Sushi With {price} Jade")
-                continue
+            else:
+                price = read_price(self.I_SPECIAL_SUSHI)
+                if price >= next_price_after_target:
+                    break
+                logger.info(f'Sushi purchase {(price - 60) // 20 + 1}/{target_count}: expect {price} Jade')
+                self.click(self.I_SPECIAL_SUSHI)
+                modal_price = read_price(self.I_STORE_COST_TYPE_JADE)
+                if modal_price != price:
+                    raise GameStuckError(f'Sushi price changed unexpectedly: item={price}, confirm={modal_price}')
 
-            if self.appear(self.I_SPECIAL_SUSHI):
-                # 此处确定当前购买体力所需勾玉数量的位置,用于后续识别
-                count, price = detect_buy_count(self.I_SPECIAL_SUSHI)
-                if count >= self.config.daily_trifles.trifles_config.buy_sushi_count:
+            logger.info(f'Sushi purchase {(price - 60) // 20 + 1}/{target_count}: confirm {price} Jade')
+            self.click(self.I_STORE_COST_TYPE_JADE)
+            timer = Timer(8).start()
+            while not timer.reached():
+                self.screenshot()
+                if not self.appear(self.I_STORE_COST_TYPE_JADE):
                     break
-                self.ui_click(self.I_SPECIAL_SUSHI, stop=self.I_STORE_COST_TYPE_JADE, interval=2)
-                continue
+            else:
+                raise GameStuckError('Sushi purchase dialog did not close after one click')
+
+            next_price = read_price(self.I_SPECIAL_SUSHI)
+            if next_price != price + 20:
+                raise GameStuckError(f'Sushi price did not increase by 20: {price} -> {next_price}')
+            logger.info(f'Bought Sushi With {price} Jade; next price {next_price} Jade')
         self.config.daily_trifles.done_record.sushi_dt = datetime.now()
 
     def run_courtyard_affairs(self):

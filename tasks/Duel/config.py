@@ -23,6 +23,16 @@ class DuelConfig(ConfigBase):
     limit_time: Time = Field(default=Time(minute=30), description='limit_time_help')
     # 目标分数
     target_score: int = Field(default=2000, description='达到目标分数后退出')
+    skip_when_weekly_goal_reached: bool = Field(
+        default=True,
+        title='本周达标后跳过斗技',
+        description='duel_weekly_goal_skip_help',
+    )
+    weekly_goal_reached_on: str = Field(
+        default='',
+        title='本周达标日期',
+        description='duel_weekly_goal_date_help',
+    )
     # 刷满荣誉就退出
     honor_full_exit: bool = Field(
         default=False,

@@ -841,6 +841,7 @@
     "six_realms_gate": {
       "limit_time": "00:30:00",
       "limit_count": 1,
+      "stop_when_wanxiang_exhausted": false,
       "six_realms_type": "MoonSea"
     },
     "switch_soul_config": {
@@ -1803,6 +1804,8 @@
       "switch_all_soul": false,
       "limit_time": "00:30:00",
       "target_score": 2000,
+      "skip_when_weekly_goal_reached": true,
+      "weekly_goal_reached_on": "",
       "honor_full_exit": false,
       "green_enable": false,
       "green_mark": "green_left1",

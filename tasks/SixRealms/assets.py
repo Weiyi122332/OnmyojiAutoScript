@@ -1,5 +1,6 @@
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
+from module.atom.scatter import RuleScatter
 from module.atom.long_click import RuleLongClick
 from module.atom.swipe import RuleSwipe
 from module.atom.ocr import RuleOcr
@@ -11,20 +12,20 @@ class SixRealmsAssets:
 
 
 	# Click Rule Assets
-	# description 
+	# description
 	C_MAIN_ANIMATE_KEEP = RuleClick(roi_front=(565,7,100,215), roi_back=(565,7,100,215), name="main_animate_keep")
-	# description 
+	# description
 	C_STORE_ANIMATE_KEEP = RuleClick(roi_front=(825,87,317,466), roi_back=(825,87,317,466), name="store_animate_keep")
 
 
 	# Click Rule Assets
-	# 左边的 
+	# 左边的
 	C_NPC_FIRE_LEFT = RuleClick(roi_front=(465,258,102,123), roi_back=(465,258,102,123), name="npc_fire_left")
-	# description 
+	# description
 	C_NPC_FIRE_RIGHT = RuleClick(roi_front=(792,278,90,129), roi_back=(792,278,90,129), name="npc_fire_right")
-	# 中间的精英 
+	# 中间的精英
 	C_NPC_FIRE_CENTER = RuleClick(roi_front=(668,211,110,171), roi_back=(668,211,110,171), name="npc_fire_center")
-	# 默认的 
+	# 默认的
 	C_ISLAND_ENTER = RuleClick(roi_front=(1,0,101,101), roi_back=(1,0,101,101), name="island_enter")
 
 
@@ -293,7 +294,7 @@ class SixRealmsAssets:
 
 
 	# Click Rule Assets
-	# 切换式神区域 
+	# 切换式神区域
 	C_SR_SWITCH_SHIKIGAMI = RuleClick(roi_front=(51,614,53,55), roi_back=(51,614,53,55), name="sr_switch_shikigami")
 
 
@@ -332,5 +333,10 @@ class SixRealmsAssets:
 	I_SR_CHECK_BUY_BOX = RuleImage(roi_front=(484,290,295,47), roi_back=(405,230,467,255), threshold=0.8, method="Template matching", file="./tasks/SixRealms/sr/sr_sr_check_buy_box.png")
 	# 不再提醒 
 	I_SR_NOT_TIP = RuleImage(roi_front=(543,342,37,37), roi_back=(405,230,467,255), threshold=0.8, method="Template matching", file="./tasks/SixRealms/sr/sr_sr_not_tip.png")
+
+
+	# Ocr Rule Assets
+	# 六道之门开启界面右上角的万象赐福数量
+	O_SR_WANXIANG_BLESSING_COUNT = RuleOcr(roi=(1174,23,41,35), area=(1174,23,41,35), mode="Digit", method="Default", keyword="", name="sr_wanxiang_blessing_count")
 
 

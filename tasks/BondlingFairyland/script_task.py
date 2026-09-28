@@ -426,6 +426,25 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
         self.set_next_run(task='BondlingFairyland', finish=True, success=True)
         raise TaskEnd
 
+    def _click_stone_modal_control(self, target, point=None, interval: float = 1) -> bool:
+        """刷新画面并确认仍在鸣契石弹窗内，再点击其中的控件。"""
+        self.screenshot()
+        if not self.appear(self.I_STONE_CLOSE):
+            return False
+        if not self.appear(target, interval=interval):
+            return False
+
+        # 弹窗状态短暂变化时先等一帧；第二次确认失败就放弃这次点击。
+        sleep(0.15)
+        self.screenshot()
+        if not self.appear(self.I_STONE_CLOSE) or not self.appear(target):
+            return False
+
+        # 固定点应选在已识别按钮的内部，避免随机采到靠近底部菜单的边缘。
+        x, y = point if point is not None else target.coord()
+        self.device.click(x, y, control_name=target.name)
+        return True
+
     def run_stone(self, bondling_stone_enable: bool):
         """
         使用结契石 进行召唤 契灵
@@ -434,8 +453,12 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
         (0) 不开启使用结契石，(探查界面)返回False
         (1) 没有结契石了，(探查界面)返回False
         """
-        # 没有启用使用石头购买契灵或者当前不在购买界面则直接退出
-        if not bondling_stone_enable or not self.appear(self.I_STONE_SURE):
+        # 没有启用石头购买时关闭可能残留的购买弹窗。
+        if not bondling_stone_enable:
+            self.ui_click_until_disappear(self.I_STONE_CLOSE, interval=1.2)
+            return False
+        self.screenshot()
+        if not self.appear(self.I_STONE_CLOSE) or not self.appear(self.I_STONE_SURE):
             self.ui_click_until_disappear(self.I_STONE_CLOSE, interval=1.2)
             return False
         cu, res, total = self.O_B_STONE_NUMBER.ocr(self.device.image)
@@ -446,16 +469,17 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
             return False
         while 1:
             self.screenshot()
-            if not self.appear(self.I_STONE_SURE):
+            if not self.appear(self.I_STONE_CLOSE) or not self.appear(self.I_STONE_SURE):
                 sleep(random.uniform(1.5, 2))  # 等待购买后的动画, 否则已经买了但是下次再点击还会出现该界面
                 return True
             for i in range(3):
-                if self.appear_then_click(self.I_BUY_PLUS, interval=1):
+                if self._click_stone_modal_control(self.I_BUY_PLUS, point=(786, 563), interval=1):
                     sleep(0.5)
-            if self.appear_then_click(self.I_GI_SURE, interval=1):
+            if self._click_stone_modal_control(self.I_GI_SURE, interval=1):
                 continue
-            if self.appear_then_click(self.I_STONE_SURE, interval=1):
+            if self._click_stone_modal_control(self.I_STONE_SURE, point=(672, 640), interval=1):
                 continue
+            sleep(0.2)
 
     def run_search(self, bondling_config: BondlingConfig, limit_cnt: int = None):
         """

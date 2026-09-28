@@ -47,8 +47,8 @@
   {
     "itemName": "store_cost_type_jade",
     "imageName": "store_cost_type_jade.png",
-    "roiFront": "570,362,81,247",
-    "roiBack": "570,362,81,247",
+    "roiFront": "580,525,110,75",
+    "roiBack": "580,525,110,75",
     "method": "Template matching",
     "threshold": 0.8,
     "description": "购买时货币类型为勾玉"

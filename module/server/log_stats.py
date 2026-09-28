@@ -22,6 +22,21 @@ _EQ_LINE_RE = re.compile(r"^═{15,}\s*$")
 _EQ_TITLE_LINE_RE = re.compile(r"^═{10,}\s+(?P<title>.*?)\s+═{10,}\s*$")
 _TITLE_LINE_RE = re.compile(r"^─{10,}\s*(?P<title>.*?)\s*─{10,}\s*$")
 _TASK_ENDED_RE = re.compile(r"^(?P<title>.+?)\s+task ended\b", re.IGNORECASE)
+_SCHEDULER_TASK_END_RE = re.compile(r"^Scheduler:\s*End task\s+`(?P<task>[A-Za-z0-9_]+)`", re.IGNORECASE)
+_TASK_GROUP_RE = re.compile(r"^TASKGROUP(?:[1-5])?$", re.IGNORECASE)
+_TASK_GROUP_ITEM_RE = re.compile(
+    r"^TASK GROUP \[\d+/\d+\]:\s*(?P<task>[A-Za-z0-9_]+)$", re.IGNORECASE
+)
+_TASK_GROUP_ITEM_FINISHED_RE = re.compile(
+    r"^Task group:\s*`(?P<task>[A-Za-z0-9_]+)` finished\b", re.IGNORECASE
+)
+_TASK_GROUP_ITEM_RAISED_RE = re.compile(
+    r"^Task group(?:\s+`[^`]+`)?\s*:\s*`(?P<task>[A-Za-z0-9_]+)` raised\b",
+    re.IGNORECASE,
+)
+_TASK_GROUP_FINISHED_RE = re.compile(
+    r"^Task group(?:\s+`[^`]+`)? finished(?: with error)?\b", re.IGNORECASE
+)
 _BATTLE_TITLE = "GENERAL BATTLE START"
 _START_TITLE = "START"
 _SIX_REALMS_TITLE = "SIXREALMS"
@@ -29,6 +44,12 @@ _SIX_REALMS_TASK_NAMES = {
     "MOONSEA": "MoonSea",
     "PEACOCKKINGDOM": "PeacockKingdom",
 }
+_TASK_ROOT = Path(__file__).resolve().parents[2] / "tasks"
+_TASK_NAMES = {
+    path.name.upper(): path.name
+    for path in _TASK_ROOT.iterdir()
+    if path.is_dir()
+} if _TASK_ROOT.is_dir() else {}
 
 
 @dataclass
@@ -73,6 +94,8 @@ class LogStatsParser:
         self._six_realms_active = False
         self._six_realms_start_time: datetime | None = None
         self._six_realms_last_time: datetime | None = None
+        self._six_realms_seen_subtask = False
+        self._active_group_item_name: str | None = None
 
     def consume_lines(self, lines: list[str]) -> None:
         index = 0
@@ -188,8 +211,14 @@ class LogStatsParser:
         self._close_active_battle()
         self._close_active_task()
         self._reset_six_realms_state()
+        self._active_group_item_name = None
         if title.upper() == _START_TITLE:
             self._handle_start_boundary()
+            self._pending_task_start_name = None
+            return
+        if _TASK_GROUP_RE.fullmatch(title):
+            # The wrapper schedules the group, but statistics belong to its items.
+            self._pending_task_name = None
             self._pending_task_start_name = None
             return
         if self._is_six_realms_title(title):
@@ -201,26 +230,32 @@ class LogStatsParser:
         self._pending_task_name = None
 
     def _handle_equal_boundary(self, title: str) -> bool:
+        group_item = _TASK_GROUP_ITEM_RE.fullmatch(title)
+        if group_item is not None:
+            self._close_active_battle()
+            self._close_active_task()
+            self._reset_six_realms_state()
+            task_name = _TASK_NAMES.get(group_item.group("task").upper(), group_item.group("task"))
+            self._active_group_item_name = task_name
+            if self._is_six_realms_title(task_name):
+                self._six_realms_active = True
+                self._pending_task_start_name = None
+            else:
+                self._pending_task_start_name = task_name
+            return True
+
         if not self._six_realms_active:
             return False
 
         task_name = self._format_six_realms_task_name(title)
-        if self._active_task is None:
-            self._active_task = TaskRunState(
-                name=task_name,
-                start_time=self._six_realms_start_time,
-                last_time=self._six_realms_last_time,
-            )
-        elif self._normalize_title(self._active_task.name) != self._normalize_title(task_name):
-            self._close_active_battle()
-            self._close_active_task()
-            self._active_task = TaskRunState(
-                name=task_name,
-                start_time=self._six_realms_start_time,
-                last_time=self._six_realms_last_time,
-            )
-
         self._close_active_battle()
+        self._close_active_task()
+        self._active_task = TaskRunState(
+            name=task_name,
+            start_time=self._six_realms_start_time if not self._six_realms_seen_subtask else None,
+            last_time=self._six_realms_last_time if not self._six_realms_seen_subtask else None,
+        )
+        self._six_realms_seen_subtask = True
         self._pending_battle_start = True
         return True
 
@@ -228,6 +263,7 @@ class LogStatsParser:
         self._six_realms_active = False
         self._six_realms_start_time = None
         self._six_realms_last_time = None
+        self._six_realms_seen_subtask = False
 
     def _handle_start_boundary(self) -> None:
         runtime = self.runtime
@@ -282,6 +318,51 @@ class LogStatsParser:
         if task_ended_title is not None:
             self._handle_task_ended(task_ended_title)
 
+        message = line.rsplit("|", 1)[-1].strip()
+        self._handle_task_group_message(message)
+        self._handle_scheduler_task_end(message)
+
+    def _handle_scheduler_task_end(self, message: str) -> None:
+        matched = _SCHEDULER_TASK_END_RE.match(message)
+        if matched is None:
+            return
+
+        task_name = matched.group("task")
+        if self._is_six_realms_title(task_name) and self._six_realms_active:
+            self._close_active_battle()
+            self._close_active_task()
+            self._reset_six_realms_state()
+            return
+
+        if _TASK_GROUP_RE.fullmatch(task_name) and self._active_group_item_name is not None:
+            self._close_active_battle()
+            self._close_active_task()
+            self._reset_six_realms_state()
+            self._active_group_item_name = None
+            return
+
+        if self._active_task is None or self._normalize_title(task_name) != self._normalize_title(self._active_task.name):
+            return
+        self._close_active_battle()
+        self._close_active_task()
+
+    def _handle_task_group_message(self, message: str) -> None:
+        if self._active_group_item_name is None:
+            return
+        item_end = _TASK_GROUP_ITEM_FINISHED_RE.match(message)
+        if item_end is None:
+            item_end = _TASK_GROUP_ITEM_RAISED_RE.match(message)
+        item_matches = (
+            item_end is not None
+            and self._normalize_title(item_end.group("task"))
+            == self._normalize_title(self._active_group_item_name)
+        )
+        if item_matches or _TASK_GROUP_FINISHED_RE.match(message):
+            self._close_active_battle()
+            self._close_active_task()
+            self._reset_six_realms_state()
+            self._active_group_item_name = None
+
     def _consume_runtime_timestamp(self, ts: datetime) -> None:
         runtime = self.runtime
         runtime.region_last = ts
@@ -293,7 +374,7 @@ class LogStatsParser:
             runtime.session_start = ts
 
     def _consume_six_realms_timestamp(self, ts: datetime) -> None:
-        if not self._six_realms_active:
+        if not self._six_realms_active or self._six_realms_seen_subtask:
             return
         if self._six_realms_start_time is None:
             self._six_realms_start_time = ts
@@ -305,6 +386,9 @@ class LogStatsParser:
         if self._normalize_title(title) != self._normalize_title(self._active_task.name):
             return
         self._close_active_battle()
+        self._close_active_task()
+        self._six_realms_start_time = None
+        self._six_realms_last_time = None
 
     def _close_active_battle(self) -> None:
         if self._active_task is None or self._active_battle is None:

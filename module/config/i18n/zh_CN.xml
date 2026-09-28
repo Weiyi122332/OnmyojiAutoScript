@@ -428,6 +428,8 @@ window_background >>> DroidCast_raw >  ADB_nc >> DroidCast > uiautomator2 ~= ADB
 	<message><source>ShikigamiConfig</source><translation>活动</translation></message>
 	<message><source>Limit Time</source><translation>限制运行时间</translation></message>
 	<message><source>Limit Count</source><translation>限制挑战次数</translation></message>
+	<message><source>stop_when_wanxiang_exhausted</source><translation>刷完万象赐福就停止</translation></message>
+	<message><source>stop_when_wanxiang_exhausted_help</source><translation>每局开始前读取右上角万象赐福数量，为 0 时停止；忽略运行次数和时间上限</translation></message>
 	<message><source>limit_time_help</source><translation>时间格式:"[hours]:[minutes]:[seconds]"
 注意没有空格，使用英文的冒号 : 不按照格式输入会无法正确设置</translation></message>
 	<message><source>limit_count_help</source><translation>两个限制需要同时设置，最先达到就会退出。
@@ -781,6 +783,10 @@ Refresh：直接刷新，如果刷新操作进入CD，将标记为失败并退�
 	<message><source>Target Score</source><translation>达到 X 分数后会结束任务</translation></message>
 	<message><source>switch_all_soul_help</source><translation>你应当先进行式神御魂的导入</translation></message>
 	<message><source>Honor Full Exit</source><translation>刷满荣誉就退出</translation></message>
+	<message><source>Skip When Weekly Goal Reached</source><translation>本周达标后跳过斗技</translation></message>
+	<message><source>Weekly Goal Reached On</source><translation>本周达标日期</translation></message>
+	<message><source>duel_weekly_goal_skip_help</source><translation>达到目标分数、名士星数或荣誉目标后，本周不再运行斗技；关闭后，后续达标按正常间隔调度。</translation></message>
+	<message><source>duel_weekly_goal_date_help</source><translation>达标时自动记录 YYYY-MM-DD，跨周运行时自动清空；同一周会在运行前跳过。手动清空后可在本周重跑。</translation></message>
 	<message><source>target_score_help</source><translation>3000以上表示为名士（也是自动斗技的最高）</translation></message>
 	<message><source>honor_full_exit_help</source><translation>这无需关心本周荣誉的上限是什么</translation></message>
 </context>
