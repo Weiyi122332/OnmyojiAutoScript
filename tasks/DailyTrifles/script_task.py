@@ -437,18 +437,6 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
             last_text = None
             while not timer.reached():
                 self.screenshot()
-                if self.appear(self.I_UI_REWARD, threshold=0.6):
-                    logger.info('Sushi purchase reward appeared, dismissing popup')
-                    reward_timer = Timer(8).start()
-                    while not reward_timer.reached():
-                        self.screenshot()
-                        if not self.appear(self.I_UI_REWARD, threshold=0.6):
-                            logger.info('Sushi purchase reward dismissed')
-                            break
-                        self.ui_reward_appear_click()
-                    else:
-                        raise GameStuckError('Sushi purchase reward popup did not close')
-                    continue
                 if not self.appear(base_element):
                     continue
                 x, y, width, height = base_element.roi_front
@@ -464,6 +452,27 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
                 if 60 <= price <= 60 + 20 * max(10, target_count) and (price - 60) % 20 == 0:
                     return price
             raise GameStuckError(f'Cannot recognize sushi price beside {base_element.name}: {last_text!r}')
+
+        def dismiss_purchase_reward(appear_timeout: float = 3, close_timeout: float = 8) -> bool:
+            """购买确认框关闭后，先等待并关闭购买奖励弹窗。"""
+            appear_timer = Timer(appear_timeout).start()
+            while not appear_timer.reached():
+                self.screenshot()
+                if not self.appear(self.I_UI_REWARD, threshold=0.6):
+                    continue
+
+                logger.info('Sushi purchase reward appeared, dismissing popup')
+                close_timer = Timer(close_timeout).start()
+                while not close_timer.reached():
+                    self.screenshot()
+                    if not self.appear(self.I_UI_REWARD, threshold=0.6):
+                        logger.info('Sushi purchase reward dismissed')
+                        return True
+                    self.ui_reward_appear_click()
+                raise GameStuckError('Sushi purchase reward popup did not close')
+
+            logger.info('No sushi purchase reward popup detected; verifying the next price')
+            return False
 
         # 第一次 60 勾玉，之后每次增加 20。确认购买只点击一次，并核实下次价格。
         while True:
@@ -503,6 +512,8 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
             else:
                 raise GameStuckError('Sushi purchase dialog did not close after one click')
 
+            # 先领取奖励并回到商店，再读取价格；涨价幅度用于核实本次购买。
+            dismiss_purchase_reward()
             next_price = read_price(self.I_SPECIAL_SUSHI)
             if next_price != price + 20:
                 raise GameStuckError(f'Sushi price did not increase by 20: {price} -> {next_price}')
