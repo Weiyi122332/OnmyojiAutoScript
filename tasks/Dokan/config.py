@@ -134,6 +134,8 @@ class DokanConfig(BaseModel):
     only_welfare_guild: bool = Field(default=False, description='only_welfare_guild_help')
     # 进入馆主阶段后放弃突破，并选择再战道馆
     skip_owner_battle: bool = Field(default=False, description='skip_owner_battle_help')
+    # 任务结束时推送本次运行的结算截图；关闭时仍保存截图
+    push_reward_images: bool = Field(default=True, description='push_reward_images_help')
     # 道馆系数,赏金/人数 根据喜好配置
     find_dokan_score: float = Field(default=4.6, description='dokan_score_help')
     # 道馆最小人数限制

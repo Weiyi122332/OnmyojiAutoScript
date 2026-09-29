@@ -6,7 +6,9 @@ import time
 
 import re
 from datetime import timedelta
+from pathlib import Path
 from time import sleep
+from uuid import uuid4
 
 from future.backports.datetime import datetime
 
@@ -34,6 +36,9 @@ class DokanFinishedError(Exception):
 
 class DokanNotStartedError(Exception):
     pass
+
+
+DOKAN_REWARD_SCREENSHOT_DIR = Path('log/screenshots/dokan')
 
 
 class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
@@ -84,6 +89,92 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                     return BattleAction.QUICK_EXIT
         return super()._handle_in_battle(context, config)
 
+    def _handle_reward(self, context: BattleContext, config: GeneralBattleConfig) -> BattleAction:
+        """Save the visible dojo reward before the battle handler closes it."""
+        self._capture_dokan_reward_if_visible(context)
+        return super()._handle_reward(context, config)
+
+    def _capture_dokan_reward_if_visible(self, context: BattleContext | None = None) -> None:
+        reward_visible = self.appear(self.I_RYOU_DOKAN_BATTLE_OVER) or self.appear(self.I_UI_REWARD)
+        if not reward_visible:
+            if context is None:
+                self._dokan_reward_captured_outside_battle = False
+                self._dokan_reward_captured_context = None
+                self._dokan_reward_captured_round = None
+            return
+        details_visible = (
+            self.appear(self.I_REWARD_PARTICULARS)
+            or self.appear(self.I_REWARD_PARTICULARS_ORCHI)
+        )
+        if details_visible:
+            return
+        if context is None:
+            if getattr(self, '_dokan_reward_captured_outside_battle', False):
+                return
+        elif (getattr(self, '_dokan_reward_captured_context', None) is context
+              and getattr(self, '_dokan_reward_captured_round', None) == context.continuous_count):
+            return
+        if context is not None:
+            self._dokan_reward_captured_context = context
+            self._dokan_reward_captured_round = context.continuous_count
+        self._dokan_reward_captured_outside_battle = True
+        self._save_reward_image(context)
+
+    def _reward_screenshot_directory(self) -> Path:
+        run_dir = getattr(self, '_dokan_reward_run_directory', None)
+        if run_dir is not None:
+            return run_dir
+        profile = re.sub(r'[^\w-]', '_', str(self.config.config_name)).strip('_') or 'default'
+        run_id = f"{datetime.now():%Y%m%d_%H%M%S_%f}_{uuid4().hex[:8]}"
+        self._dokan_reward_run_directory = DOKAN_REWARD_SCREENSHOT_DIR / profile / run_id
+        return self._dokan_reward_run_directory
+
+    def _save_reward_image(self, context: BattleContext | None) -> None:
+        try:
+            screenshot_dir = self._reward_screenshot_directory()
+            screenshot_dir.mkdir(parents=True, exist_ok=True)
+            battle_key = context.battle_key if context is not None else 'dokan_settlement'
+            filename = f"{datetime.now():%Y%m%d_%H%M%S_%f}_{battle_key}.png"
+            screenshot_file = screenshot_dir / filename
+            self.device.image_save(screenshot_file)
+            logger.info(f'Dokan reward screenshot saved: {screenshot_file}')
+        except Exception as exc:
+            logger.warning(f'Dokan reward screenshot failed: {exc}')
+
+    def _push_current_run_reward_images(self) -> None:
+        """Send this task run's screenshots together, then remove only sent files."""
+        run_dir = getattr(self, '_dokan_reward_run_directory', None)
+        if run_dir is None or not run_dir.exists():
+            return
+        screenshots = sorted(run_dir.glob('*.png'))
+        if not screenshots:
+            return
+        if not self.conf.dokan_config.push_reward_images:
+            logger.info('Dokan reward screenshots kept because dojo notifications are disabled')
+            return
+        notifier = self.config.notifier
+        if not notifier.enable:
+            logger.info('Dokan reward screenshots kept because notifications are disabled')
+            return
+        try:
+            images = [screenshot.read_bytes() for screenshot in screenshots]
+            sent = notifier.push_images(images, title=f'{datetime.now():%Y-%m-%d} 道馆结算奖励')
+        except Exception as exc:
+            logger.warning(f'Dokan reward notification failed: {exc}')
+            return
+        if not sent:
+            logger.warning(f'Dokan reward screenshots kept after failed notification: {run_dir}')
+            return
+        for screenshot in screenshots:
+            try:
+                screenshot.unlink()
+            except OSError as exc:
+                logger.warning(f'Cannot remove sent Dokan screenshot {screenshot}: {exc}')
+        try:
+            run_dir.rmdir()
+        except OSError:
+            pass
+
     def exit_battle(self, skip_first: bool = False) -> bool:
         """
             尝试退出战斗界面
@@ -115,6 +206,10 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         self.first_master_killed = False
         self.found_dokan_cnt = 0
         self.second_dokan_ready = False
+        self._dokan_reward_captured_context = None
+        self._dokan_reward_captured_round = None
+        self._dokan_reward_captured_outside_battle = False
+        self._dokan_reward_run_directory = None
         pages.page_dokan_rank = self.navigator.add_page(pages.Page(self.I_RYOU_DOKAN_TOPPA_RANK, priority=75, register=False))
         pages.page_dokan_rank.connect(pages.page_dokan, pages.random_click, key="page_dokan_rank->page_dokan")
 
@@ -132,6 +227,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         try:
             while True:
                 self.screenshot()
+                self._capture_dokan_reward_if_visible()
                 current_page = self.get_current_page()
                 match current_page:
                     case None:
@@ -158,6 +254,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             is_dokan_activated = False
         self.goto_page(pages.page_main)
         self.next_run(skip_today=False, is_dokan_activated=is_dokan_activated)
+        self._push_current_run_reward_images()
         raise TaskEnd
 
     def run_on_dokan(self):

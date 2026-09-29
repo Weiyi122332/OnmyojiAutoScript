@@ -3,7 +3,9 @@
 # github https://github.com/runhey
 
 import onepush.core
+import requests
 import yaml
+from base64 import b64encode
 from onepush import get_notifier
 from onepush.core import Provider
 from onepush.exceptions import OnePushException
@@ -103,6 +105,60 @@ class Notifier:
             return False
 
         logger.info("Push notify success")
+        return True
+
+    def push_image(self, image: bytes, title: str, content: str = '') -> bool:
+        return self.push_images([image], title=title, content=content)
+
+    def push_images(self, images: list[bytes], title: str, content: str = '') -> bool:
+        """Send one message with all screenshots through go-cqhttp."""
+        if not self.enable:
+            return False
+        if getattr(self, 'provider_name', '').lower() != 'gocqhttp':
+            logger.warning('Image notification requires the go-cqhttp provider')
+            return False
+        if not images:
+            return False
+        endpoint = self.config.get('endpoint')
+        if not endpoint or not (self.config.get('user_id') or self.config.get('group_id')):
+            logger.warning('Image notification target is not configured')
+            return False
+        if any(len(image) > 30 * 1024 * 1024 for image in images):
+            logger.warning('Image notification exceeds the go-cqhttp size limit')
+            return False
+
+        endpoint = str(endpoint)
+        if '://' not in endpoint:
+            endpoint = f'http://{endpoint}'
+        path = str(self.config.get('path') or '/send_msg')
+        url = f"{endpoint.rstrip('/')}/{path.lstrip('/')}"
+        text = f'{self.config_name} {title}'
+        if content:
+            text = f'{text}\n{content}'
+        payload = {
+            'message_type': self.config.get('message_type') or (
+                'private' if self.config.get('user_id') else 'group'),
+            'message': [{'type': 'text', 'data': {'text': text}}] + [
+                {'type': 'image', 'data': {'file': f"base64://{b64encode(image).decode('ascii')}"}}
+                for image in images
+            ],
+        }
+        for key in ('user_id', 'group_id'):
+            if self.config.get(key):
+                payload[key] = self.config[key]
+        token = self.config.get('access_token') or self.config.get('token')
+        headers = {'Authorization': f'Bearer {token}'} if token else {}
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            response.raise_for_status()
+            result = response.json()
+            if str(result.get('status', '')).lower() != 'ok':
+                logger.warning(f"Image notification failed: status={result.get('status')}")
+                return False
+        except Exception as exc:
+            logger.warning(f'Image notification failed: {exc}')
+            return False
+        logger.info('Image notification sent')
         return True
 
 

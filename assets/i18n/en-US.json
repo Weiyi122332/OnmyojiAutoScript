@@ -4,6 +4,8 @@
   "only_welfare_guild_help": "Only select dojos with the Xin emblem that meet the minimum defender count; other filters do not apply. If none is found, do not attack. Requires Try to start dojo.",
   "skip_owner_battle": "Skip dojo owner battle",
   "skip_owner_battle_help": "At the owner stage, abandon the breakthrough without fighting the owner. If another attempt remains, select Battle Again and wait for the selection screen; otherwise keep the bounty.",
+  "push_reward_images": "Send dojo reward screenshots",
+  "push_reward_images_help": "At the end of each dojo task run, send the date and all reward screenshots from that run, then delete them after successful delivery. When disabled, screenshots are saved but not sent or deleted. Requires enabled go-cqhttp notifications.",
   "Task Group": "Task Group",
   "TaskGroup1": "Task Group 1",
   "TaskGroup2": "Task Group 2",
