@@ -189,6 +189,15 @@
     "description": "放弃突破"
   },
   {
+    "itemName": "dokan_abandoned_toppa_right",
+    "imageName": "res_ryou_dokan_abandoned_toppa.png",
+    "roiFront": "1100,600,106,53",
+    "roiBack": "900,500,380,220",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "馆主阶段右下角的放弃突破按钮"
+  },
+  {
     "itemName": "dokan_abandoned_toppa_ensure",
     "imageName": "res_ryou_dokan_abandoned_toppa_ensure.png",
     "roiFront": "0,0,1280,720",
@@ -484,6 +493,15 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "查找道馆时,确认刷新道馆列表按钮"
+  },
+  {
+    "itemName": "rightpad_xin_icon",
+    "imageName": "res_ryou_dokan_rightpad_xin_icon.png",
+    "roiFront": "1143,366,33,38",
+    "roiBack": "1110,20,110,610",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "查找道馆时，右侧列表福利寮的鑫字徽章"
   },
   {
     "itemName": "rightpad_point_bounty",

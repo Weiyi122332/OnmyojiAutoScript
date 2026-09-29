@@ -1927,6 +1927,8 @@
       "random_delay": false,
       "monday_to_thursday": true,
       "try_start_dokan": false,
+      "only_welfare_guild": false,
+      "skip_owner_battle": false,
       "find_dokan_score": 4.6,
       "min_people_num": -1,
       "min_bounty": 0,

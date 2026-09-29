@@ -130,6 +130,10 @@ class DokanConfig(BaseModel):
     monday_to_thursday: bool = Field(default=True, description='monday_to_thursday_help')
     # 是否尝试开启道馆,在道馆未开启时,尝试查找合适道馆并开启,需要有权限
     try_start_dokan: bool = Field(default=False, description='try_start_dokan')
+    # 开启后只选择列表中带“鑫”字徽章的福利寮道馆
+    only_welfare_guild: bool = Field(default=False, description='only_welfare_guild_help')
+    # 进入馆主阶段后放弃突破，并选择再战道馆
+    skip_owner_battle: bool = Field(default=False, description='skip_owner_battle_help')
     # 道馆系数,赏金/人数 根据喜好配置
     find_dokan_score: float = Field(default=4.6, description='dokan_score_help')
     # 道馆最小人数限制

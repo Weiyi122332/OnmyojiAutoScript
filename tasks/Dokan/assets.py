@@ -82,6 +82,8 @@ class DokanAssets:
 	I_RYOU_DOKAN_MASTER_BATTLE = RuleImage(roi_front=(862,69,41,89), roi_back=(640,0,640,360), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_master_battle.png")
 	# 放弃突破 
 	I_DOKAN_ABANDONED_TOPPA = RuleImage(roi_front=(0,550,180,170), roi_back=(0,550,180,170), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_abandoned_toppa.png")
+	# 馆主阶段右下角的放弃突破按钮
+	I_DOKAN_ABANDONED_TOPPA_RIGHT = RuleImage(roi_front=(1100,600,106,53), roi_back=(900,500,380,220), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_abandoned_toppa.png")
 	# 放弃突破 确认按钮 
 	I_DOKAN_ABANDONED_TOPPA_ENSURE = RuleImage(roi_front=(0,0,1280,720), roi_back=(0,0,1280,720), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_abandoned_toppa_ensure.png")
 	# 放弃突破 
@@ -148,6 +150,8 @@ class DokanAssets:
 	I_CHALLENGE_ENSURE = RuleImage(roi_front=(0,0,1280,720), roi_back=(0,0,1280,720), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_challenge_ensure.png")
 	# 查找道馆时,确认刷新道馆列表按钮 
 	I_REFRESH_ENSURE = RuleImage(roi_front=(0,0,1280,720), roi_back=(0,0,1280,720), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_refresh_ensure.png")
+	# 查找道馆时，右侧列表福利寮的鑫字徽章
+	I_RIGHTPAD_XIN_ICON = RuleImage(roi_front=(1143,366,33,38), roi_back=(1110,20,110,610), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_rightpad_xin_icon.png")
 	# 查找道馆时,右侧道馆赏金图标,为了定位该图右侧的 赏金金额 
 	I_RIGHTPAD_POINT_BOUNTY = RuleImage(roi_front=(1125,103,27,29), roi_back=(1077,0,171,602), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_rightpad_point_bounty.png")
 	# 寮境中上部的标志 
