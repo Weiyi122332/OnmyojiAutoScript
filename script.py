@@ -17,7 +17,6 @@ import threading
 from module.device.device import Device
 from typing import Any, Callable
 from datetime import datetime, timedelta
-from pathlib import Path
 from cached_property import cached_property
 from pydantic import BaseModel, ValidationError
 from threading import Thread
@@ -25,7 +24,7 @@ from multiprocessing.queues import Queue
 from module.config.utils import convert_to_underscore
 from module.config.config import Config
 from module.device.env import IS_WINDOWS
-from module.base.utils import load_module
+from module.task_loader import load_task_script, task_script_path
 from module.base.decorator import del_cached_property
 from module.atom.scatter import RuleScatter
 from module.logger import logger
@@ -548,10 +547,9 @@ class Script:
         set_ocr_logging_enabled(self.config.global_game.ocr.save_ocr_log)
         try:
             self.device.screenshot()
-            module_name = 'script_task'
-            module_path = str(Path.cwd() / 'tasks' / command / (module_name + '.py'))
-            logger.info(f'module_path: {module_path}, module_name: {module_name}')
-            task_module = load_module(module_name, module_path)
+            module_path = task_script_path(command)
+            logger.info(f'module_path: {module_path}, module_name: script_task')
+            task_module = load_task_script(command)
             task_module.ScriptTask(config=self.config, device=self.device).run()
         except Exception as e:
             return self._handle_task_exception(e, command)

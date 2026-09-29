@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from module.exception import TaskEnd, RequestHumanTakeover
 from module.logger import logger
+from module.task_loader import task_script_path
 from tasks.Component.SwitchAccount.switch_account import SwitchAccount
 from tasks.FindJade import WantedQuestsEx
 from tasks.FindJade.assets import FindJadeAssets
@@ -65,8 +66,7 @@ class ScriptTask(GameUi, FindJadeAssets):
 
     def CreatObjectFromModule(self, task_name: str, **kwargs):
         module_name = 'script_task'
-        from pathlib import Path
-        module_path = str(Path.cwd() / 'tasks' / task_name / (module_name + '.py'))
+        module_path = str(task_script_path(task_name))
 
         spec = importlib.util.spec_from_file_location(module_name, module_path)
         module = importlib.util.module_from_spec(spec)

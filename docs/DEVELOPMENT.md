@@ -35,12 +35,15 @@ Device（截图、点击、ADB）       GameUi / 通用战斗 / 资源规则 / O
 | `server.py`、`module/server/` | HTTP、WebSocket、脚本进程、日志、统计、标注工具和更新入口 |
 | `script.py`、`module/script/` | 调度主循环、任务准备、模拟器和游戏生命周期、失败恢复 |
 | `module/config/`、`config/` | Pydantic 配置模型、任务菜单、调度、实例 JSON、部署配置 |
-| `tasks/` | 具体业务任务；`tasks/Component/` 是复用组件，`tasks/GameUi/` 是页面导航 |
+| `configs/` | 仓库保留的设备辅助 JSON；不是 `config/<实例名>.json` 运行实例目录 |
+| `tasks/` | 具体业务任务；目录与注册约定见 [`tasks/README.md`](../tasks/README.md)。`tasks/Component/` 是复用组件，`tasks/GameUi/` 是页面导航 |
 | `module/device/` | 设备连接、截图、输入、应用控制与模拟器适配 |
 | `module/atom/`、`module/image/`、`module/ocr/` | 图片、点击、滑动、OCR 等规则对象及其 RPC 运行时 |
 | `assets/i18n/`、`module/server/i18n.py` | 前后端交换的任务名、参数名、帮助文本翻译 |
 | `dev_tools/` | 从规则 JSON 生成 `assets.py` 等开发脚本 |
+| `tests/` | 无设备依赖的回归测试和项目结构检查测试 |
 | `deploy/`、`requirements*.txt` | 安装器、默认部署配置、依赖清单 |
+| `bin/`、`fluentui/` | 运行附带的设备文件与桌面界面资源 |
 | `module/gui/`、`gui.py` | 仓库内的 PySide/QML 界面；与 OASX 是两套界面 |
 | `log/` | 运行日志、错误现场和诊断包；属于运行数据 |
 
@@ -79,7 +82,7 @@ python server.py --host 127.0.0.1 --port 22267
 1. `server.py` 初始化图片和 OCR 服务，并运行 `module/server/app.py:fastapi_app`。
 2. `MainManager` 为每个实例建立 `ScriptProcess`；启动命令来自 WebSocket 的 `start` 消息，也可由部署配置 `Run` 自动启动。
 3. `ScriptProcess` 用 `multiprocessing.get_context("spawn")` 建新进程，通过队列传状态、通过 Pipe 传日志；服务端再广播给 WebSocket 客户端。
-4. `Script.loop()` 让 `Config.get_next()` 选任务，`ScriptRuntimeController` 根据空闲策略准备模拟器/游戏，随后动态加载 `tasks/<大驼峰任务名>/script_task.py` 中的 `ScriptTask(config, device).run()`。
+4. `Script.loop()` 让 `Config.get_next()` 选任务，`ScriptRuntimeController` 根据空闲策略准备模拟器/游戏，随后通过 `module/task_loader.py` 定位并动态加载 `tasks/<大驼峰任务名>/script_task.py` 中的 `ScriptTask(config, device).run()`。任务路径从源码位置解析，不依赖当前工作目录；配置、日志和部分资源路径仍依赖仓库根目录启动。
 5. 任务通常继承 `GameUi` 和所需复用组件，通过 `self.config.<task>` 读参数，通过 `self.device` 截图/操作，通过 `self.goto_page()` 导航。结束时调用 `self.set_next_run(task=..., success=True/False)`，再以 `TaskEnd` 告知调度器正常收尾。不要仅靠 `run()` 返回：`Script.run()` 正常返回值是 `False`，会被计入失败。
 6. 调度器根据新 `next_run` 继续运行。`TaskEnd`、设备/页面异常、`ScriptError` 等由 `Script._handle_task_exception()` 区分处理；部分可恢复错误会触发 `Restart`，错误次数超过限制则停止脚本并按配置通知。
 
@@ -115,10 +118,10 @@ python dev_tools/assets_extract.py
 
 1. 新建 `tasks/<Task>/config.py`：定义参数模型与顶层任务模型，包含 `scheduler`，字段用 `Field(default=..., description='..._help')`。需要页面时新建 `page.py`，需要资源时保存规则 JSON 和截图，再生成 `assets.py`。
 2. 新建 `script_task.py`，导出名为 `ScriptTask` 的类并实现 `run()`。继承 `GameUi`、必要组件和本任务 `*Assets`。设定可观察的完成条件、超时条件与恢复路径；成功/失败时更新 `next_run`，正常结束抛 `TaskEnd`。
-3. 在 `module/config/config_model.py` 导入并新增下划线字段，在 `module/config/config_menu.py` 放到合适菜单，在 `module/config/config_manual.py` 的 Filter 顺序中加入大驼峰任务名。
+3. 在 `module/config/config_model.py` 导入并新增下划线字段，在 `module/config/config_menu.py` 放到合适菜单，在 `module/config/config_manual.py` 的 Filter 顺序中加入大驼峰任务名。还要把任务加到 `tasks/TaskGroup/config.py:GroupTaskChoice`，供任务组选择。
 4. 在 `config/template.json` 放入该任务的默认配置。按当前实际模型检查字段拼写与序列化格式；不要让旧实例丢失其自有参数。
 5. 在 `assets/i18n/zh-CN.json`、`assets/i18n/en-US.json` 补充任务、分组、选项和帮助文本。若还使用仓库内 Qt 界面，对应 `module/config/i18n/*.xml` 也要处理；OASX 自己的界面文案位于独立仓库 `lib/translation/`。
-6. 启动后验证 `/script_menu` 包含任务、`/<实例>/<Task>/args` 可读、任务开关与下次运行可保存；最后在目标模拟器上跑通进入、执行、退出和异常恢复。
+6. 先运行 `python dev_tools/check_structure.py` 检查所有注册点，再验证 `/script_menu` 包含任务、`/<实例>/<Task>/args` 可读、任务开关与下次运行可保存；最后在目标模拟器上跑通进入、执行、退出和异常恢复。
 
 只增加任务内部的一个功能时，沿 `config.py` → `script_task.py` → 规则/页面 → 翻译 → 模板的顺序检查。若改动涉及通用导航、战斗、设备或调度，同时检查使用该组件的其他任务。
 
@@ -155,7 +158,7 @@ OASX 是工作区中的独立 Flutter 仓库。`lib/main.dart` 初始化 GetStor
 
 本仓库没有统一的后端 `pytest`/`unittest` 测试套件或 CI 测试工作流；现有 `*_test.py` 多为设备/组件的独立调试脚本，不能当作全量回归。推荐按变更范围验证：
 
-1. **静态检查**：对修改的 Python 文件运行 `python -m py_compile <文件...>`，检查 JSON 文件可解析；查看 `git diff --check`。
+1. **静态检查**：运行 `python dev_tools/check_structure.py` 检查任务接线；对修改的 Python 文件运行 `python -m py_compile <文件...>`，检查 JSON 文件可解析；查看 `git diff --check`。结构检查器只读源码，不导入游戏依赖，可在没有模拟器的环境运行。
 2. **模型与接口**：验证 `ConfigModel` 能读模板/测试实例，`/script_menu`、`/<实例>/<Task>/args` 和实际修改的接口返回预期数据。配置迁移或导入功能要同时测试旧配置与非法输入。
 3. **资源与页面**：检查规则 JSON、图片路径、生成后的 `assets.py` 一致，并在目标截图上验证识别；页面跳转至少跑进入和退出两个方向。
 4. **实机/模拟器**：只在目标设备上执行受影响的任务，确认成功、超时和典型错误路径会更新下次运行时间，不会无限点击或卡死。

@@ -5,12 +5,12 @@ import json
 import re
 from enum import Enum
 from functools import lru_cache
-from pathlib import Path
 
 from pydantic import BaseModel, Field, field_serializer, model_validator
 
 from module.config.multi_select import normalize_multi_select
 from module.logger import logger
+from module.task_loader import TASKS_DIR
 from tasks.Component.config_base import ConfigBase
 from tasks.Component.config_scheduler import Scheduler
 
@@ -106,7 +106,7 @@ def available_task_names() -> tuple:
     并且 config.py 里定义了 scheduler（也就是能独立调度的任务）。
     """
     scan = set()
-    root = Path.cwd() / 'tasks'
+    root = TASKS_DIR
     try:
         folders = [path for path in root.iterdir() if path.is_dir()]
     except OSError:
@@ -191,14 +191,14 @@ def _chinese_task_names() -> dict:
     """读取「任务名 -> 中文名」对照表（OASX 补充翻译 + 桌面 GUI 的 Qt 翻译）。"""
     names = {}
     try:
-        path = Path.cwd() / 'assets' / 'i18n' / 'zh-CN.json'
+        path = TASKS_DIR.parent / 'assets' / 'i18n' / 'zh-CN.json'
         for key, value in json.loads(path.read_text(encoding='utf-8')).items():
             if isinstance(value, str) and value.strip():
                 names.setdefault(key, value.strip())
     except Exception:
         pass
     try:
-        path = Path.cwd() / 'module' / 'config' / 'i18n' / 'zh_CN.xml'
+        path = TASKS_DIR.parent / 'module' / 'config' / 'i18n' / 'zh_CN.xml'
         text = path.read_text(encoding='utf-8')
         for source, translation in re.findall(
                 r'<source>(.*?)</source>\s*<translation>(.*?)</translation>', text, re.S):

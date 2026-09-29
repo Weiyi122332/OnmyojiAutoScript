@@ -1,11 +1,9 @@
 # This Python file uses the following encoding: utf-8
 """任务组的运行逻辑：按配置的顺序把组内任务跑一遍。"""
 
-from pathlib import Path
-
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
-from module.base.utils import load_module
+from module.task_loader import load_task_script, task_script_path
 from module.config.utils import convert_to_underscore
 from module.exception import (GameBugError,
                               GameNotRunningError,
@@ -177,7 +175,7 @@ class TaskGroupRunner(BaseTask):
         :param task: 任务名
         :return: 任务是否正常运行结束（抛出的异常不在这里吞掉）
         """
-        module_path = Path.cwd() / 'tasks' / task / 'script_task.py'
+        module_path = task_script_path(task)
         if not module_path.exists():
             logger.error(f'Task group: `{task}` has no {module_path}, skipped')
             return False
@@ -189,7 +187,7 @@ class TaskGroupRunner(BaseTask):
         RuleClick.reset_task_points()
         RuleScatter.begin_task(task)
         try:
-            task_module = load_module(f'task_group_{task}', str(module_path))
+            task_module = load_task_script(task, f'task_group_{task}')
             task_module.ScriptTask(config=self.config, device=self.device).run()
         except TaskEnd as end:
             logger.info(f'Task group: `{task}` finished. {end}')
