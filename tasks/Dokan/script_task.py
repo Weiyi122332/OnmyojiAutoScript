@@ -38,7 +38,12 @@ class DokanNotStartedError(Exception):
     pass
 
 
+class DokanRefreshLimitError(Exception):
+    pass
+
+
 DOKAN_REWARD_SCREENSHOT_DIR = Path('log/screenshots/dokan')
+MAX_WELFARE_DOKAN_REFRESH_COUNT = 20
 
 
 class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
@@ -175,6 +180,19 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         except OSError:
             pass
 
+    def _push_dokan_refresh_limit_notification(self) -> None:
+        notifier = self.config.notifier
+        if not notifier.enable:
+            logger.warning('Dokan refresh limit reached, but notifications are disabled')
+            return
+        try:
+            notifier.push(
+                title='道馆达到最大刷新次数',
+                content=f'福利寮道馆已刷新{MAX_WELFARE_DOKAN_REFRESH_COUNT}次，仍未找到符合条件的道馆。任务已结束，今日不再重试。',
+            )
+        except Exception as exc:
+            logger.warning(f'Dokan refresh limit notification failed: {exc}')
+
     def exit_battle(self, skip_first: bool = False) -> bool:
         """
             尝试退出战斗界面
@@ -224,6 +242,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         self.conf.attack_count_config.init_attack_count(callback=self.config.save)
         unknown_page_timer = Timer(10)
         self.goto_page(pages.page_dokan_map)
+        refresh_limit_reached = False
         try:
             while True:
                 self.screenshot()
@@ -250,11 +269,16 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                             self.goto_page(pages.page_dokan)
         except DokanFinishedError:
             is_dokan_activated = True
+        except DokanRefreshLimitError:
+            is_dokan_activated = False
+            refresh_limit_reached = True
         except DokanNotStartedError:
             is_dokan_activated = False
         self.goto_page(pages.page_main)
-        self.next_run(skip_today=False, is_dokan_activated=is_dokan_activated)
+        self.next_run(skip_today=refresh_limit_reached, is_dokan_activated=is_dokan_activated)
         self._push_current_run_reward_images()
+        if refresh_limit_reached:
+            self._push_dokan_refresh_limit_notification()
         raise TaskEnd
 
     def run_on_dokan(self):
@@ -388,6 +412,8 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         """
         self.found_dokan_cnt += 1
         only_welfare_guild = self.config.dokan.dokan_config.only_welfare_guild
+        configured_refresh_count = self.config.dokan.dokan_config.find_dokan_refresh_count
+        max_refresh_count = MAX_WELFARE_DOKAN_REFRESH_COUNT if only_welfare_guild else configured_refresh_count
         # 刷新按钮点击次数
         num_fresh = 0
         # 备份一些重要的ROI区域，以便在循环中恢复
@@ -470,8 +496,11 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                     continue
                 p_num = float(tmp.group())
                 if only_welfare_guild:
-                    if p_num < self.config.dokan.dokan_config.min_people_num:
-                        logger.info("welfare guild people num too small")
+                    min_people_num = self.config.dokan.dokan_config.min_people_num
+                    if num_fresh > configured_refresh_count:
+                        min_people_num /= 2
+                    if p_num < min_people_num:
+                        logger.info(f"welfare guild people num too small: {p_num} < {min_people_num}")
                         continue
                     logger.info(f"find welfare guild: people_num:{p_num}")
                     return True
@@ -508,7 +537,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                     sleep(0.5)
             return False
 
-        while num_fresh < self.config.dokan.dokan_config.find_dokan_refresh_count:
+        while num_fresh < max_refresh_count:
             for i in range(3):
                 sleep(3)
                 if find_challengeable():
@@ -529,10 +558,12 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             self.ui_click_until_disappear(self.I_REFRESH_ENSURE, interval=1)
             logger.info("Refresh Done")
             num_fresh += 1
+            if only_welfare_guild and num_fresh == configured_refresh_count + 1:
+                logger.info('Welfare guild minimum defender count reduced by half')
         if only_welfare_guild:
-            logger.info("no Xin-emblem dojo meets the people limit")
             restore_roi()
-            return False
+            logger.warning(f'No eligible Xin-emblem dojo after {num_fresh} refreshes')
+            raise DokanRefreshLimitError
         # 普通模式刷新次数用完时，选择当前列表中系数最低的道馆。
         if find_challengeable(ignore_score=True):
             logger.warning("can't find challengeable dokan, select lowest-score eligible dojo")

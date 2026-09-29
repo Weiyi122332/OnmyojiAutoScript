@@ -4,7 +4,8 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from tasks.Dokan.script_task import ScriptTask
+from module.exception import TaskEnd
+from tasks.Dokan.script_task import DokanRefreshLimitError, ScriptTask
 
 
 class FakeDokanSelection:
@@ -86,16 +87,57 @@ class WelfareGuildFilterTest(unittest.TestCase):
         selection.O_DOKAN_RIGHTPAD_BOUNTY.ocr.assert_not_called()
 
     @patch('tasks.Dokan.script_task.sleep', return_value=None)
-    def test_other_emblems_and_low_defender_count_never_challenge(self, _sleep):
-        for people, has_xin in ((170, False), (149, True)):
+    def test_defender_threshold_is_halved_after_configured_refreshes(self, _sleep):
+        selection = FakeDokanSelection(people=76, has_xin=True)
+        selection.config.dokan.dokan_config.min_people_num = 151
+
+        self.assertTrue(ScriptTask.find_dokan(selection))
+
+        refreshes = [call for call in selection.ui_click.call_args_list
+                     if call.args[0] is selection.C_DOKAN_REFRESH]
+        self.assertEqual(len(refreshes), 2)
+        selection.config.dokan.attack_count_config.del_attack_count.assert_called_once()
+
+    @patch('tasks.Dokan.script_task.sleep', return_value=None)
+    def test_twenty_refreshes_stop_without_challenging_ineligible_dojos(self, _sleep):
+        for people, has_xin in ((170, False), (74, True)):
             with self.subTest(people=people, has_xin=has_xin):
                 selection = FakeDokanSelection(people, has_xin)
-                self.assertFalse(ScriptTask.find_dokan(selection))
+                with self.assertRaises(DokanRefreshLimitError):
+                    ScriptTask.find_dokan(selection)
+                refreshes = [call for call in selection.ui_click.call_args_list
+                             if call.args[0] is selection.C_DOKAN_REFRESH]
+                self.assertEqual(len(refreshes), 20)
                 selection.config.dokan.attack_count_config.del_attack_count.assert_not_called()
                 self.assertFalse(any(call.args[0] is selection.I_CENTER_CHALLENGE
                                      for call in selection.ui_click.call_args_list))
                 self.assertEqual(selection.I_RIGHTPAD_XIN_ICON.roi_back,
                                  (1110, 20, 110, 610))
+
+    def test_refresh_limit_ends_today_and_sends_alert(self):
+        task = ScriptTask.__new__(ScriptTask)
+        notifier = SimpleNamespace(enable=True, push=Mock(return_value=True))
+        dokan = SimpleNamespace(
+            dokan_config=SimpleNamespace(monday_to_thursday=False),
+            attack_count_config=SimpleNamespace(init_attack_count=Mock()),
+        )
+        task.config = SimpleNamespace(model=SimpleNamespace(dokan=dokan), save=Mock(), notifier=notifier)
+        task.before_run = Mock()
+        task.goto_page = Mock()
+        task.screenshot = Mock()
+        task._capture_dokan_reward_if_visible = Mock()
+        task.get_current_page = Mock(side_effect=DokanRefreshLimitError)
+        task.next_run = Mock()
+        task._push_current_run_reward_images = Mock()
+
+        with self.assertRaises(TaskEnd):
+            task.run()
+
+        task.next_run.assert_called_once_with(skip_today=True, is_dokan_activated=False)
+        notifier.push.assert_called_once()
+        self.assertEqual(notifier.push.call_args.kwargs['title'], '道馆达到最大刷新次数')
+        self.assertIn('20次', notifier.push.call_args.kwargs['content'])
+        task._push_current_run_reward_images.assert_called_once_with()
 
 
 if __name__ == '__main__':

@@ -1,7 +1,11 @@
 {
   "itachi_coin_shop": "Itachi Coin Purchase",
   "only_welfare_guild": "Attack welfare guilds only",
-  "only_welfare_guild_help": "Only select dojos with the Xin emblem that meet the minimum defender count; other filters do not apply. If none is found, do not attack. Requires Try to start dojo.",
+  "only_welfare_guild_help": "Only select dojos with the Xin emblem that meet the minimum defender count. Once refreshes exceed the configured count, halve the defender threshold; stop after 20 refreshes. Other filters do not apply. Requires Try to start dojo.",
+  "min_people_num": "Minimum dojo defenders",
+  "min_people_num_help": "In welfare guild mode, this threshold is halved once refreshes exceed the configured count.",
+  "find_dokan_refresh_count": "Dojo refresh count",
+  "find_dokan_refresh_count_help": "Maximum refreshes in normal mode. In welfare guild mode, halve the minimum defender count once refreshes exceed this value; stop for the day and notify after 20 refreshes if none qualify. Requires global notifications for the alert.",
   "skip_owner_battle": "Skip dojo owner battle",
   "skip_owner_battle_help": "At the owner stage, abandon the breakthrough without fighting the owner. If another attempt remains, select Battle Again and wait for the selection screen; otherwise keep the bounty.",
   "push_reward_images": "Send dojo reward screenshots",
