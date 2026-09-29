@@ -437,6 +437,18 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
             last_text = None
             while not timer.reached():
                 self.screenshot()
+                if self.appear(self.I_UI_REWARD, threshold=0.6):
+                    logger.info('Sushi purchase reward appeared, dismissing popup')
+                    reward_timer = Timer(8).start()
+                    while not reward_timer.reached():
+                        self.screenshot()
+                        if not self.appear(self.I_UI_REWARD, threshold=0.6):
+                            logger.info('Sushi purchase reward dismissed')
+                            break
+                        self.ui_reward_appear_click()
+                    else:
+                        raise GameStuckError('Sushi purchase reward popup did not close')
+                    continue
                 if not self.appear(base_element):
                     continue
                 x, y, width, height = base_element.roi_front
