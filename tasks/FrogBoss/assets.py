@@ -36,8 +36,8 @@ class FrogBossAssets:
 	I_SUCCESS_RIGHT = RuleImage(roi_front=(1098,289,122,116), roi_back=(1040,250,201,260), threshold=0.8, method="Template matching", file="./tasks/FrogBoss/fb/fb_success_right.png")
 	# description 
 	I_FAILURE_LEFT = RuleImage(roi_front=(296,303,100,100), roi_back=(243,245,212,259), threshold=0.8, method="Template matching", file="./tasks/FrogBoss/fb/fb_failure_left.png")
-	# 竞猜失败
-	I_BET_FAILURE = RuleImage(roi_front=(622,272,264,82), roi_back=(496,222,447,211), threshold=0.8, method="Template matching", file="./tasks/FrogBoss/fb/fb_bet_failure.png")
+	# description 
+	I_BET_FAILURE = RuleImage(roi_front=(591,290,269,72), roi_back=(496,222,447,211), threshold=0.8, method="Template matching", file="./tasks/FrogBoss/fb/fb_bet_failure.png")
 	# description 
 	I_BET_SUCCESS = RuleImage(roi_front=(625,278,260,73), roi_back=(482,243,521,225), threshold=0.8, method="Template matching", file="./tasks/FrogBoss/fb/fb_bet_success.png")
 
