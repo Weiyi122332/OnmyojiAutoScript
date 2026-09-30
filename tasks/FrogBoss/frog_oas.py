@@ -91,7 +91,7 @@ class OasHistory:
         return self.append('result', id=decision['id'], winner=winner,
                            outcomes={s: v == winner for s, v in decision['votes'].items()})
 
-    def choose(self, signature, left, right, predictions):
+    def choose(self, signature, left, right, predictions, fallback_side=None, fallback_reason=''):
         now = datetime.now()
         # Re-entry in the same slot reuses the original frozen decision.
         slot = f'{now.date()}:{now.hour // 2}'
@@ -117,11 +117,18 @@ class OasHistory:
             for uid, vote in votes.items():
                 scores[vote] += weights[uid]
         tied = abs(scores['LEFT'] - scores['RIGHT']) < 1e-12
-        side = random.choice(('LEFT', 'RIGHT')) if tied else max(scores, key=scores.get)
+        mode = 'cold_start' if cold_start else 'win_rate'
+        if fallback_side in ('LEFT', 'RIGHT'):
+            side = fallback_side
+            scores = {key: float(key == side) for key in scores}
+            mode = 'fallback_majority'
+            tied = False
+        else:
+            side = random.choice(('LEFT', 'RIGHT')) if tied else max(scores, key=scores.get)
         return self.append('decision', id=uuid4().hex, slot=slot, signature=signature,
                            left=left, right=right, votes=votes, weights=weights,
                            scores=scores, side=side, strategy_version=2,
-                           mode='cold_start' if cold_start else 'win_rate',
+                           mode=mode, fallback_reason=fallback_reason,
                            expert_counts={'LEFT': expert_left, 'RIGHT': expert_right},
                            expert_side=expert_side, crowd_side=crowd, random_tiebreak=tied)
 

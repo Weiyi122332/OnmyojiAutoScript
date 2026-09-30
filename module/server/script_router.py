@@ -26,6 +26,7 @@ from module.server.main_manager import mm
 from module.server.script_process import ScriptProcess, ScriptState
 
 from tasks.Component.config_base import TimeDelta
+from tasks.FrogBoss.frog_schedule import beijing_now, next_bet_time
 
 
 script_app = APIRouter(route_class=ApiLoggingRoute)
@@ -311,7 +312,11 @@ async def sync_next_run(script_name: str, task: str, target_dt: str):
         return False
     config = mm.config_cache(script_name)
     target = datetime.strptime(target_dt, '%Y-%m-%d %H:%M:%S') if target_dt else None
-    config.task_delay(task=task, success=True, target=target)
+    if target is None and convert_to_underscore(task) == 'frog_boss':
+        target = next_bet_time(beijing_now(), config.model.frog_boss.frog_boss_config.before_end_frog)
+        config.task_delay(task=task, target=target)
+    else:
+        config.task_delay(task=task, success=True, target=target)
     script_process = mm.script_process[script_name]
     config.get_next()
     await script_process.broadcast_state({"schedule": config.get_schedule_data()})

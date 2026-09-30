@@ -154,8 +154,8 @@ class GameUiAssets:
 
 
 	# Image Rule Assets
-	# 庭院标志
-	I_CHECK_MAIN = RuleImage(roi_front=(807,108,76,45), roi_back=(49,98,1033,61), threshold=0.95, method="Template matching", file="./tasks/GameUi/page/page_check_main.png")
+	# 庭院标志（兼容界面更新后的纵向位移）
+	I_CHECK_MAIN = RuleImage(roi_front=(807,108,76,45), roi_back=(49,98,1033,80), threshold=0.95, method="Template matching", file="./tasks/GameUi/page/page_check_main.png")
 	# 闲庭返回庭院标志
 	I_BACK_BROWN = RuleImage(roi_front=(20,18,41,36), roi_back=(0,0,120,100), threshold=0.8, method="Template matching", file="./tasks/GameUi/page/page_back_brown.png")
 	# 庭院卷轴关闭标识

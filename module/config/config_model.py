@@ -501,12 +501,27 @@ class ConfigModel(ConfigBase):
             # 改了定时规则或者刚打开任务时，让 cron 立刻生效
             if group == 'scheduler' and (argument == 'cron' or (argument == 'enable' and value)):
                 self.apply_cron_schedule(task)
+            if task == 'frog_boss' and (
+                (group == 'frog_boss_config' and argument == 'before_end_frog')
+                or (group == 'scheduler' and (argument == 'cron' or (argument == 'enable' and value)))
+            ):
+                self.apply_frog_boss_schedule()
             logger.info(f'Set arg {self.config_name}.{task}.{group}.{argument}.{value}')
             self.save()  # 我是没有想到什么方法可以使得属性改变自动保存的
             return True
         except ValidationError as e:
             logger.error(e)
             return False
+
+    def apply_frog_boss_schedule(self) -> bool:
+        scheduler = self.frog_boss.scheduler
+        if str(scheduler.cron or '').strip():
+            return False
+        from tasks.FrogBoss.frog_schedule import beijing_now, next_bet_time
+        target = next_bet_time(beijing_now(), self.frog_boss.frog_boss_config.before_end_frog)
+        scheduler.next_run = target + timedelta(seconds=random_float_seconds(scheduler.float_time))
+        logger.info(f'frog_boss: betting windows -> next_run {scheduler.next_run}')
+        return True
 
     def apply_cron_schedule(self, task: str) -> bool:
         """

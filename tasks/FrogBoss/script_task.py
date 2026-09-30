@@ -7,6 +7,11 @@ import requests
 import re
 import json
 from pathlib import Path
+from io import BytesIO
+from typing import NoReturn
+from xml.etree.ElementTree import ParseError
+
+from PIL import Image
 
 from module.exception import GameStuckError, TaskEnd
 from module.logger import logger
@@ -20,10 +25,18 @@ from tasks.Component.GeneralBattle.assets import GeneralBattleAssets
 from tasks.Component.config_base import TimeDelta
 from tasks.FrogBoss.assets import FrogBossAssets
 from tasks.FrogBoss.config import Strategy
-from tasks.FrogBoss.frog_oas import OasHistory, fetch_predictions, fingerprint
+from tasks.FrogBoss.frog_bet import RunReport, majority_side
+from tasks.FrogBoss.frog_oas import OasHistory, fetch_predictions, fingerprint, same_lineup
+from tasks.FrogBoss.frog_rss import fetch_prediction, round_start
+from tasks.FrogBoss.frog_schedule import beijing_now, next_bet_time
 
 
 class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
+    @cached_property
+    def run_report(self):
+        strategy = self.config.model.frog_boss.frog_boss_config.strategy_frog
+        return RunReport(str(getattr(strategy, 'value', strategy)), round_start())
+
     @cached_property
     def oas_history(self):
         instance = re.sub(r'[^\w.-]', '_', self.config.config_name)
@@ -47,6 +60,56 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
             raise GameStuckError('FrogBoss page not detected after entering activity')
 
     def run(self):
+        # A task object may be reused; each run gets its own single summary.
+        self.__dict__.pop('run_report', None)
+        report = self.run_report
+        try:
+            self._run()
+        except TaskEnd:
+            raise
+        except Exception as exc:
+            report.status = f'运行异常：{type(exc).__name__}：{exc}'
+            raise
+        finally:
+            self.push_run_report()
+
+    def push_run_report(self):
+        try:
+            notifier = self.config.notifier
+            if not notifier.enable:
+                return
+            scheduler = getattr(self.config.model.frog_boss, 'scheduler', None)
+            content = self.run_report.content(
+                getattr(self.config, 'config_name', ''), getattr(scheduler, 'next_run', None))
+            screenshot = self.run_report.screenshot
+            if screenshot is not None and getattr(notifier, 'provider_name', '').lower() == 'gocqhttp':
+                try:
+                    if notifier.push_image(screenshot, title='对弈竞猜运行结果', content=content):
+                        return
+                except Exception as exc:
+                    logger.warning(f'FrogBoss screenshot notification failed: {exc}')
+                content += '\n截图发送失败，已改发文字摘要。'
+                logger.warning('FrogBoss image notification failed; send text summary instead')
+            elif screenshot is not None:
+                content += '\n当前推送渠道不支持附带截图。'
+            if not notifier.push(title='对弈竞猜运行结果', content=content):
+                logger.warning('FrogBoss run notification was not sent')
+        except Exception as exc:
+            logger.warning(f'FrogBoss run notification failed: {exc}')
+
+    def capture_bet_screenshot(self):
+        # Freeze the same RGB frame that matched I_BETTED before navigation.
+        if self.run_report.screenshot is not None:
+            return
+        try:
+            with BytesIO() as stream:
+                Image.fromarray(self.device.image).save(stream, format='PNG')
+                self.run_report.screenshot = stream.getvalue()
+        except Exception as exc:
+            logger.warning(f'FrogBoss bet screenshot capture failed: {exc}')
+
+    def _run(self):
+        self.ensure_bet_time()
         self.enter_frog_boss()
         # 进入主界面
         while 1:
@@ -55,14 +118,19 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
             # 已经下注
             if self.appear(self.I_BETTED):
                 logger.info('You have betted')
+                self.run_report.status = '下注成功' if self.run_report.confirmed else '本场已下注，未重复下注'
+                self.capture_bet_screenshot()
                 break
             # 休息中
             if self.appear(self.I_FROG_BOSS_REST):
                 logger.info('Frog Boss Rest')
+                self.run_report.status = '活动休息中'
                 break
             # 竞猜成功
             if self.appear(self.I_BET_SUCCESS):
                 logger.info('You bet win')
+                if '竞猜成功' not in self.run_report.settlements:
+                    self.run_report.settlements.append('竞猜成功')
                 self.record_oas_result()
                 self.detect()
                 while 1:
@@ -79,6 +147,8 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
             # 竞猜失败
             if self.appear(self.I_BET_FAILURE):
                 logger.info('You bet lose')
+                if '竞猜失败' not in self.run_report.settlements:
+                    self.run_report.settlements.append('竞猜失败')
                 self.record_oas_result()
                 self.ui_click_until_disappear(self.I_NEXT_COMPETITION)
                 self.detect()
@@ -93,60 +163,53 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
         raise TaskEnd('FrogBoss')
 
     def next_run(self):
-        time = self.config.model.frog_boss.frog_boss_config.before_end_frog
-        time_delta = TimeDelta(hours=time.hour, minutes=time.minute, seconds=time.second)
-        time_now = datetime.now()
-        time_set = time_now.replace(minute=0, second=0, microsecond=0)
-        if 10 <= time_now.hour < 12:
-            time_set = time_set.replace(hour=14)
-        elif 12 <= time_now.hour < 14:
-            time_set = time_set.replace(hour=16)
-        elif 14 <= time_now.hour < 16:
-            time_set = time_set.replace(hour=18)
-        elif 16 <= time_now.hour < 18:
-            time_set = time_set.replace(hour=20)
-        elif 18 <= time_now.hour < 20:
-            time_set = time_set.replace(hour=22)
-        elif 20 <= time_now.hour < 22:
-            time_set = time_set.replace(hour=0) + TimeDelta(days=1)
-        elif 22 <= time_now.hour < 24:
-            time_set = time_set.replace(hour=12) + TimeDelta(days=1)
-        else:
-            time_set = time_set.replace(hour=12)
+        before_end = self.config.model.frog_boss.frog_boss_config.before_end_frog
+        now = beijing_now()
+        completed_round = self.run_report.round_at.replace(tzinfo=None)
+        current_round = now.replace(hour=now.hour // 2 * 2, minute=0, second=0, microsecond=0)
+        target = next_bet_time(now, before_end, skip_current=completed_round == current_round)
+        self.set_next_run(task='FrogBoss', target=target)
 
-        self.set_next_run(task='FrogBoss', target=time_set - time_delta)
+    def ensure_bet_time(self):
+        now = beijing_now()
+        before_end = self.config.model.frog_boss.frog_boss_config.before_end_frog
+        target = next_bet_time(now, before_end)
+        if target > now:
+            self.run_report.status = f'等待下注时间：{target:%Y-%m-%d %H:%M:%S}'
+            logger.info(f'FrogBoss betting not due; next window starts at {target}')
+            self.set_next_run(task='FrogBoss', target=target)
+            raise TaskEnd('FrogBoss')
 
     def do_bet(self):
+        # Also check after navigation/rewards, which can cross a round boundary.
+        self.ensure_bet_time()
         logger.hr('do bet', level=2)
         self.screenshot()
         flag_glod_30 = 0
-        count_left = self.O_LEFT_COUNT.ocr(self.device.image)
-        count_right = self.O_RIGHT_COUNT.ocr(self.device.image)
+        self.run_report.round_at = round_start()
+        count_left, count_right = self.read_bet_counts()
         match self.config.model.frog_boss.frog_boss_config.strategy_frog:
             case Strategy.Majority:
                 click_image = self.I_BET_LEFT if count_left > count_right else self.I_BET_RIGHT
             case Strategy.Minority:
                 click_image = self.I_BET_LEFT if count_left < count_right else self.I_BET_RIGHT
             case Strategy.Bilibili:
-                click_image = self.I_BET_LEFT if count_left > count_right else self.I_BET_RIGHT
+                click_image = self.fallback_majority('哔哩哔哩策略尚未接入有效建议')
             case Strategy.Dashen:
-                click_image = self.get_dashen(count_left, count_right)
-            case Strategy.Oas:
-                signature = fingerprint(self.device.image)
-                predictions = fetch_predictions(self.oas_history)
+                signature, current_round = fingerprint(self.device.image), round_start()
                 try:
-                    decision = self.oas_history.choose(signature, count_left, count_right, predictions)
-                except ValueError as exc:
-                    raise GameStuckError(str(exc)) from exc
-                logger.info(f'frog_oas decision: {decision}')
-                # Fetching may span a round transition; never click a stale frame.
-                self.screenshot()
-                from tasks.FrogBoss.frog_oas import same_lineup
-                if not same_lineup(signature, fingerprint(self.device.image)):
-                    raise GameStuckError('FrogBoss lineup changed while fetching predictions')
-                if not (self.appear(self.I_BET_LEFT) and self.appear(self.I_BET_RIGHT)):
-                    raise GameStuckError('FrogBoss betting closed while fetching predictions')
-                click_image = self.I_BET_LEFT if decision['side'] == 'LEFT' else self.I_BET_RIGHT
+                    click_image = self.get_dashen(count_left, count_right)
+                except (requests.RequestException, ValueError, KeyError, IndexError, TypeError) as exc:
+                    logger.warning(f'Dashen advice unavailable: {exc}')
+                    click_image = None
+                self.refresh_betting(signature, current_round)
+                self.read_bet_counts()
+                if click_image is None:
+                    click_image = self.fallback_majority('大神策略未获取到本场有效押注建议', refresh=False)
+            case Strategy.Rss:
+                click_image = self.get_rss()
+            case Strategy.Oas:
+                click_image = self.get_oas()
             case Strategy.AlwaysRed:
                 click_image = self.I_BET_LEFT
             case Strategy.AlwaysBlue:
@@ -154,12 +217,15 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
             case _:
                 raise ValueError(f'Unknown bet mode: {self.config.model.frog_boss.frog_boss_config.strategy_frog}')
         logger.info(f'You strategy is {self.config.model.frog_boss.frog_boss_config.strategy_frog} and bet on {click_image}')
+        self.run_report.side = 'LEFT' if click_image is self.I_BET_LEFT else 'RIGHT'
+        self.run_report.status = '准备下注，尚未确认成功'
         self.ui_click_until_disappear(click_image)
         gold_30_timer = Timer(10)
         gold_30_timer.start()
         while 1:
             self.screenshot()
             if self.appear(self.I_GOLD_30_CHECK):
+                self.run_report.amount = 300000
                 break
             if gold_30_timer.reached():
                 logger.info('Gold 30 not appear')
@@ -171,6 +237,9 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
         while 1:
             self.screenshot()
             if self.appear(self.I_BETTED):
+                self.run_report.confirmed = True
+                self.run_report.status = '下注成功'
+                self.capture_bet_screenshot()
                 break
             if self.appear_then_click(self.I_BET_SURE, interval=2) and flag_glod_30 == 1:
                 continue
@@ -181,6 +250,92 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
                 continue
             if self.appear_then_click(self.I_UI_CONFIRM_SAMLL, interval=2):
                 continue
+
+    def retry_bet(self, reason: str) -> NoReturn:
+        before_end = self.config.model.frog_boss.frog_boss_config.before_end_frog
+        target = next_bet_time(beijing_now() + TimeDelta(minutes=1), before_end)
+        logger.warning(f'对弈竞猜：{reason}，下次重试 {target}')
+        self.run_report.status = f'暂缓下注：{reason}'
+        self.set_next_run(task='FrogBoss', target=target)
+        self.goto_page(page_main)
+        raise TaskEnd('FrogBoss')
+
+    def read_bet_counts(self):
+        counts = (self.O_LEFT_COUNT.ocr(self.device.image), self.O_RIGHT_COUNT.ocr(self.device.image))
+        self.run_report.counts = counts
+        return counts
+
+    def refresh_betting(self, signature, current_round):
+        self.screenshot()
+        if current_round != round_start():
+            self.retry_bet('获取建议期间场次已切换')
+        if not (self.appear(self.I_BET_LEFT) and self.appear(self.I_BET_RIGHT)):
+            self.retry_bet('下注窗口已关闭')
+        if not same_lineup(signature, fingerprint(self.device.image)):
+            self.retry_bet('获取建议期间阵容已变化')
+
+    def fallback_majority(self, reason: str, refresh: bool = True) -> RuleImage:
+        self.run_report.fallback_reason = reason
+        if refresh:
+            self.screenshot()
+        if not (self.appear(self.I_BET_LEFT) and self.appear(self.I_BET_RIGHT)):
+            self.retry_bet('下注窗口已关闭')
+        try:
+            side = majority_side(*self.read_bet_counts())
+        except ValueError as exc:
+            self.retry_bet(str(exc))
+        logger.warning(f'对弈竞猜使用人数多数兜底：{reason}，下注={side}，人数={self.run_report.counts}')
+        return self.I_BET_LEFT if side == 'LEFT' else self.I_BET_RIGHT
+
+    def get_rss(self) -> RuleImage:
+        signature = fingerprint(self.device.image)
+        current_round = round_start()
+        prediction = None
+        reason = '最近 5 条正式服动态中没有今天本场建议'
+        try:
+            prediction = fetch_prediction()
+        except (requests.RequestException, ParseError, ValueError) as exc:
+            reason = f'RSS 获取或解析建议失败：{exc}'
+        self.refresh_betting(signature, current_round)
+        if prediction is None:
+            return self.fallback_majority(reason, refresh=False)
+
+        if prediction.round_start != current_round:
+            return self.fallback_majority('RSS 建议不属于当前场次', refresh=False)
+        # 翻盘 uses fresh counts after the network request.
+        try:
+            side = prediction.choose_side(*self.read_bet_counts())
+        except ValueError as exc:
+            return self.fallback_majority(str(exc), refresh=False)
+        self.run_report.source = f'面灵气喵：{prediction.hint}，{prediction.link}'
+        logger.info(f'RSS 跟押（面灵气喵）：{prediction.round_start:%Y-%m-%d %H:%M} '
+                    f'建议={prediction.hint}，下注={side}，动态={prediction.link}')
+        return self.I_BET_LEFT if side == 'LEFT' else self.I_BET_RIGHT
+
+    def get_oas(self) -> RuleImage:
+        signature, current_round = fingerprint(self.device.image), round_start()
+        reason = 'OAS 策略未获取到本场有效博主建议'
+        try:
+            predictions = fetch_predictions(self.oas_history)
+        except (requests.RequestException, ValueError, KeyError, IndexError, TypeError) as exc:
+            predictions = []
+            reason = f'OAS 获取或解析建议失败：{exc}'
+        self.refresh_betting(signature, current_round)
+        count_left, count_right = self.read_bet_counts()
+        fallback_side = None
+        if not predictions:
+            try:
+                fallback_side = majority_side(count_left, count_right)
+            except ValueError as exc:
+                self.run_report.fallback_reason = reason
+                self.retry_bet(str(exc))
+        decision = self.oas_history.choose(
+            signature, count_left, count_right, predictions,
+            fallback_side=fallback_side, fallback_reason=reason if fallback_side else '')
+        self.run_report.fallback_reason = decision.get('fallback_reason', '')
+        self.run_report.source = f"OAS：{decision['mode']}"
+        logger.info(f'frog_oas decision: {decision}')
+        return self.I_BET_LEFT if decision['side'] == 'LEFT' else self.I_BET_RIGHT
 
     def detect(self) -> bool:
         """
@@ -217,7 +372,7 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
         # 获取 feedId 的函数
         def get_feed_id(uid):
             url = f'https://inf.ds.163.com/v1/web/feed/basic/getSomeOneFeeds?feedTypes=1,2,3,4,6,7,10,11&someOneUid={uid}'
-            response = requests.get(url)
+            response = requests.get(url, timeout=(3, 5))
             if response.status_code == 200:
                 data = response.json()
                 if 'result' in data and 'feeds' in data['result'] and len(data['result']['feeds']) > 0:
@@ -227,7 +382,7 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
         # 获取 feed 详细信息的函数
         def get_feed_details(feed_id):
             url = f'https://inf.ds.163.com/v1/web/feed/basic/facade?feedId={feed_id}'
-            response = requests.get(url)
+            response = requests.get(url, timeout=(3, 5))
             if response.status_code == 200:
                 data = response.json()
                 try:
@@ -253,7 +408,12 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
             # now = datetime(year=2024, month=10, day=3, hour=19, minute=45, second=0)  # 指定时间读取历史文章
             
             # 获取发布时间
-            post_time = datetime.fromtimestamp(create_time / 1000)  # 假设 create_time 是毫秒级时间戳
+            try:
+                post_time = datetime.fromtimestamp(float(create_time) / 1000)
+            except (TypeError, ValueError, OverflowError, OSError):
+                return False
+            if post_time.date() != now.date() or post_time > now:
+                return False
             post_hour = post_time.hour
             
             # 检查发布时间是否在有效时间段内
@@ -316,11 +476,15 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
         for user in uids:
             uid = user['id']
             name = user['name']
-            feed_id = get_feed_id(uid)
+            try:
+                feed_id = get_feed_id(uid)
+                details = get_feed_details(feed_id) if feed_id else None
+            except (requests.RequestException, ValueError, KeyError, IndexError, TypeError) as exc:
+                logger.warning(f'Dashen advice unavailable for {name}: {exc}')
+                continue
             if feed_id:
-                details = get_feed_details(feed_id)
                 # 检查 create_time 和 body_text
-                if details and is_time_valid(int(details['create_time'])) and details['body_text']:
+                if details and is_time_valid(details['create_time']) and details['body_text']:
                     bet_result = analyze_bet(details['body_text'])
                     bet_rate = (re.compile(r"([5-9]\d%|\d+开|[一二三四五六七八九十零]+开|([红蓝][一二三四五六七八九十零,0-9])+)")
                             .search(details.get('body_text')))
@@ -337,6 +501,10 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
                     elif bet_result == 'RIGHT':
                         count_uper_right += 1
 
+        # No advice is handled by the shared majority fallback in do_bet.
+        if count_uper_left + count_uper_right == 0:
+            return None
+        self.run_report.source = f'大神博主：左 {count_uper_left} / 右 {count_uper_right}'
         # 最终输出决策
         if count_uper_left > count_uper_right:
             logger.info(f"Final decision: The best bet is LEFT({count_uper_left}:{count_uper_right})")
@@ -361,4 +529,3 @@ if __name__ == '__main__':
     t = ScriptTask(c, d)
 
     t.run()
-

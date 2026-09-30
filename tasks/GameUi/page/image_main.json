@@ -3,11 +3,11 @@
     "itemName": "check_main",
     "imageName": "page_check_main.png",
     "roiFront": "807,108,76,45",
-    "roiBack": "49,98,1033,61",
+    "roiBack": "49,98,1033,80",
     "method": "Template matching",
     "threshold": 0.95,
     "profile": "Default",
-    "description": "庭院标志"
+    "description": "庭院标志（兼容界面更新后的纵向位移）"
   },
   {
     "itemName": "back_brown",
