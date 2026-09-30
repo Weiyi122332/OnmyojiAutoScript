@@ -122,12 +122,12 @@
   {
     "itemName": "bet_failure",
     "imageName": "fb_bet_failure.png",
-    "roiFront": "591,290,269,72",
+    "roiFront": "622,272,264,82",
     "roiBack": "496,222,447,211",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "Default",
-    "description": "description"
+    "description": "竞猜失败"
   },
   {
     "itemName": "bet_success",
