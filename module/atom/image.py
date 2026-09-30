@@ -184,6 +184,18 @@ class RuleImage:
             "scale_step": float(self.scale_step),
         }
 
+    def match_cache_key(self) -> tuple:
+        """当前识别参数的快照；点击属性和模板匹配的输出坐标不参与缓存键。"""
+        return (
+            self.file,
+            self.method,
+            float(self.threshold),
+            tuple(self.roi_back),
+            tuple(self.roi_front) if self.is_sift_flann else None,
+            tuple(self.scale_range) if self.scale_range is not None else None,
+            float(self.scale_step),
+        )
+
     def _apply_match_result(self, result: dict) -> bool:
         if result.get("matched"):
             roi_front = result.get("roi_front")
@@ -262,20 +274,17 @@ class RuleImage:
             return True
         return False
 
-    def match(self, image: np.array, threshold: float = None, frame_id: str = None) -> bool:
-        """
-        :param threshold:
-        :param image:
-        :return:
-        """
-        client = get_image_client()
-        result = client.match_rule(
+    def match_result(self, image: np.array, threshold: float = None, frame_id: str = None) -> dict:
+        """获取完整匹配结果，供任务复用当前截图上的单次识别。"""
+        return get_image_client().match_rule(
             rule_data=self.to_service_payload(),
             image=image,
             frame_id=frame_id,
             threshold=threshold,
         )
-        return self._apply_match_result(result)
+
+    def match(self, image: np.array, threshold: float = None, frame_id: str = None) -> bool:
+        return self._apply_match_result(self.match_result(image, threshold=threshold, frame_id=frame_id))
 
     def match_all(self, image: np.array, threshold: float = None, roi: list = None, frame_id: str = None) -> list[tuple]:
         """

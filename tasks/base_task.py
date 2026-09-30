@@ -169,7 +169,7 @@ class BaseTask(GlobalGameAssets, CostumeBase):
         for target in targets:
             if not isinstance(target, RuleImage):
                 continue
-            cache_key = id(target)
+            cache_key = target.match_cache_key()
             if cache_key in seen:
                 continue
             seen.add(cache_key)
@@ -212,10 +212,12 @@ class BaseTask(GlobalGameAssets, CostumeBase):
         elif isinstance(target, RuleImage):
             if threshold is None:
                 cached_result = self.device.get_image_batch_cache(target, frame_id=self.device.image_frame_id)
-                if cached_result is not None:
-                    appear = target._apply_match_result(cached_result)
-                else:
-                    appear = target.match(self.device.image, threshold=threshold, frame_id=self.device.image_frame_id)
+                if cached_result is None:
+                    cached_result = target.match_result(self.device.image, frame_id=self.device.image_frame_id)
+                    self.device.update_image_batch_cache(
+                        [target], [cached_result], frame_id=self.device.image_frame_id,
+                    )
+                appear = target._apply_match_result(cached_result)
             else:
                 appear = target.match(self.device.image, threshold=threshold, frame_id=self.device.image_frame_id)
         else:
