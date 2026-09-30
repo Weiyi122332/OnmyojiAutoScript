@@ -275,6 +275,7 @@ console.bat
 .vscode/*
 tasks/AutoCheckinBigGod/frida-server-17.6.2-android-x86_64
 oas.bat
+/data/frog_oas/
 
 # 需求 / 文档数据：跟着 OAS-功能文档 走，不进仓库
 OAS-需求.json
