@@ -519,6 +519,10 @@ class GeneralBattle(GeneralBuff, GeneralBattleAssets):
             return False
         return context.prepare_click_timer.reached()
 
+    def _get_battle_screenshot_interval(self, page: Page) -> float | str | None:
+        """选择当前战斗页面的截图间隔，允许任务调整开战响应速度。"""
+        return 'combat' if page == page_battle else None
+
     def _inspection_recover_auto_mode(self, context: BattleContext) -> None:
         """默认 battle 巡检项：检测手动并恢复自动。"""
 
@@ -847,7 +851,7 @@ class GeneralBattle(GeneralBuff, GeneralBattleAssets):
                     if handle is None:
                         action = self._handle_missing_battle_page(context, config, resolved_exit_matcher)
                     else:
-                        self.device.screenshot_interval_set('combat' if page == page_battle else None)
+                        self.device.screenshot_interval_set(self._get_battle_screenshot_interval(page))
                         action = handle(context, config)
                 resolved = self._resolve_action(action, context)
                 if resolved is not None:

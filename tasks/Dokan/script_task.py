@@ -72,6 +72,12 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
     def _exit_matcher(self) -> ExitMatcher | None:
         return pages.any_of(self.I_RYOU_DOKAN_CENTER_TOP, self.I_RYOU_DOKAN_REMAIN_ATTACK_COUNT_DONE)
 
+    def _get_battle_screenshot_interval(self, page: pages.Page) -> float | str | None:
+        # 馆员战会直接回到准备页，缩短两帧确认等待以便尽快开始下一场。
+        if page == pages.page_battle:
+            return 0.3
+        return super()._get_battle_screenshot_interval(page)
+
     def _get_battle_behavior_scopes(self, config: GeneralBattleConfig, battle_key: str) -> dict[str, BattleBehaviorScope]:
         scopes = super()._get_battle_behavior_scopes(config, battle_key)
         if battle_key == 'dokan_owner':
