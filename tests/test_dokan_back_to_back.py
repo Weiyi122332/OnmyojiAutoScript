@@ -39,6 +39,7 @@ class BackToBackDokanTest(unittest.TestCase):
         marker = object()
         task = SimpleNamespace(
             I_RYOU_DOKAN_FINDING_DOKAN=marker,
+            device=SimpleNamespace(stuck_record_clear=Mock(), stuck_record_add=Mock()),
             wait_until_appear=Mock(return_value=True),
             dokan_owner_battle=True,
             first_master_killed=True,
@@ -49,6 +50,8 @@ class BackToBackDokanTest(unittest.TestCase):
         )
         ScriptTask.wait_for_next_dokan_selection(task)
         task.wait_until_appear.assert_called_once_with(marker, wait_time=120)
+        task.device.stuck_record_add.assert_called_once_with('PAUSE')
+        self.assertEqual(task.device.stuck_record_clear.call_count, 2)
         self.assertTrue(task.second_dokan_ready)
         self.assertFalse(task.dokan_owner_battle)
         self.assertFalse(task.first_master_killed)
@@ -103,11 +106,13 @@ class BackToBackDokanTest(unittest.TestCase):
         task = SimpleNamespace(
             I_RYOU_DOKAN_FINDING_DOKAN=object(),
             wait_until_appear=Mock(return_value=False),
+            device=SimpleNamespace(stuck_record_clear=Mock(), stuck_record_add=Mock()),
             second_dokan_ready=False,
         )
         with self.assertRaises(DokanNotStartedError):
             ScriptTask.wait_for_next_dokan_selection(task)
         self.assertFalse(task.second_dokan_ready)
+        self.assertEqual(task.device.stuck_record_clear.call_count, 2)
 
     def test_unchecked_option_keeps_original_vote_logic(self):
         names = (

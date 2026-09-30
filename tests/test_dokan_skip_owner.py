@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 from tasks.Component.GeneralBattle.general_battle import BattleAction
 from tasks.Dokan.config import DokanConfig
-from tasks.Dokan.script_task import ScriptTask
+from tasks.Dokan.script_task import DokanFinishedError, ScriptTask
 
 
 class OwnerSkipTest(unittest.TestCase):
@@ -16,6 +16,8 @@ class OwnerSkipTest(unittest.TestCase):
     @patch('tasks.Dokan.script_task.sleep', return_value=None)
     def test_abandon_then_choose_battle_again(self, _sleep):
         markers = {name: object() for name in (
+            'I_RYOU_DOKAN_TODAY_ATTACK_COUNT',
+            'I_RYOU_DOKAN_REMAIN_ATTACK_COUNT_DONE',
             'I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN',
             'I_RYOU_DOKAN_TOPPA_RANK',
             'I_DOKAN_ABANDONED_TOPPA_TITLE',
@@ -69,6 +71,8 @@ class OwnerSkipTest(unittest.TestCase):
     @patch('tasks.Dokan.script_task.sleep', return_value=None)
     def test_last_attempt_abandons_and_keeps_bounty(self, _sleep):
         markers = {name: object() for name in (
+            'I_RYOU_DOKAN_TODAY_ATTACK_COUNT',
+            'I_RYOU_DOKAN_REMAIN_ATTACK_COUNT_DONE',
             'I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN',
             'I_RYOU_DOKAN_FAILED_VOTE_KEEP_BOUNTY',
             'I_RYOU_DOKAN_TOPPA_RANK',
@@ -158,6 +162,36 @@ class OwnerSkipTest(unittest.TestCase):
         )
         self.assertEqual(ScriptTask._handle_in_battle(task, None, None), BattleAction.QUICK_EXIT)
         self.assertTrue(task.dokan_owner_battle)
+
+    def make_finished_task(self):
+        task = ScriptTask.__new__(ScriptTask)
+        task.dokan_owner_battle = True
+        task.conf = SimpleNamespace(dokan_config=SimpleNamespace(skip_owner_battle=True))
+        task.device = SimpleNamespace(stuck_record_clear=Mock())
+        task.screenshot = Mock()
+        task.prepare_appear_cache = Mock()
+        task.appear = Mock(side_effect=lambda target: target is task.I_RYOU_DOKAN_TODAY_ATTACK_COUNT)
+        task.appear_then_click = Mock()
+        task.can_battle_again = Mock(return_value=False)
+        task.update_remain_attack_count = Mock(return_value=0)
+        task.skip_owner_and_battle_again = Mock()
+        return task
+
+    def test_finished_page_takes_priority_over_stale_owner_state(self):
+        task = self.make_finished_task()
+        with self.assertRaises(DokanFinishedError):
+            ScriptTask.run_on_dokan(task)
+        task.skip_owner_and_battle_again.assert_not_called()
+        task.update_remain_attack_count.assert_called_once()
+        self.assertFalse(task.dokan_owner_battle)
+
+    def test_owner_skip_stops_clicking_when_dojo_has_already_ended(self):
+        task = self.make_finished_task()
+        with self.assertRaises(DokanFinishedError):
+            ScriptTask.skip_owner_and_battle_again(task)
+        task.appear_then_click.assert_not_called()
+        task.update_remain_attack_count.assert_called_once()
+        self.assertFalse(task.dokan_owner_battle)
 
 
 if __name__ == '__main__':

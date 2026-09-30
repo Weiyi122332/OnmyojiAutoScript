@@ -311,6 +311,11 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         if self.appear(self.I_DOKAN_BOSS_WAITING) or self.appear(self.I_RYOU_DOKAN_MASTER_BATTLE):  # 馆主战标识
             self.dokan_owner_battle = True
         if self.dokan_owner_battle and self.conf.dokan_config.skip_owner_battle:
+            if self.appear(self.I_RYOU_DOKAN_TODAY_ATTACK_COUNT) or self.appear(self.I_RYOU_DOKAN_REMAIN_ATTACK_COUNT_DONE):
+                self.dokan_owner_battle = False
+                logger.info("Dokan challenge finished, exit Dokan")
+                self.update_remain_attack_count()
+                raise DokanFinishedError
             self.skip_owner_and_battle_again()
             return
         if not self.appear(self.I_DOKAN_BOSS_WAITING) and self.appear(self.I_RYOU_DOKAN_START_CHALLENGE):  # 可挑战
@@ -774,6 +779,12 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         timeout = Timer(15).start()
         while not timeout.reached():
             self.screenshot()
+            # 突破结束后会回到显示今日机会的关闭倒计时页面，不能再次发起放弃投票。
+            if self.appear(self.I_RYOU_DOKAN_TODAY_ATTACK_COUNT) or self.appear(self.I_RYOU_DOKAN_REMAIN_ATTACK_COUNT_DONE):
+                self.dokan_owner_battle = False
+                logger.info("Dokan challenge ended while skipping owner battle")
+                self.update_remain_attack_count()
+                raise DokanFinishedError
             if can_retry and self.appear(self.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN):
                 if self.appear_then_click(self.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN, interval=1):
                     self.wait_until_disappear(self.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN, timeout=3)
@@ -813,8 +824,14 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
     def wait_for_next_dokan_selection(self) -> None:
         """Wait for Battle Again to return to the map before the second selection."""
         logger.info("Waiting for Battle Again to open the dojo selection screen")
-        if not self.wait_until_appear(self.I_RYOU_DOKAN_FINDING_DOKAN, wait_time=120):
-            raise DokanNotStartedError("Battle Again did not return to dojo selection")
+        # 游戏倒计时及跳转可能超过一分钟，使用已有的长等待标记保留完整的 120 秒识别窗口。
+        self.device.stuck_record_clear()
+        self.device.stuck_record_add('PAUSE')
+        try:
+            if not self.wait_until_appear(self.I_RYOU_DOKAN_FINDING_DOKAN, wait_time=120):
+                raise DokanNotStartedError("Battle Again did not return to dojo selection")
+        finally:
+            self.device.stuck_record_clear()
         self.dokan_owner_battle = False
         self.first_master_killed = False
         self.attack_priority_selected = False
