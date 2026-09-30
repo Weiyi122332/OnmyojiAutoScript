@@ -1,4 +1,4 @@
-"""Reuse identical checks within one screenshot while keeping clicks and ROI edits fresh."""
+"""Only dojo tasks reuse single checks and equivalent rules within one screenshot."""
 
 import copy
 import unittest
@@ -9,6 +9,8 @@ import numpy as np
 from module.atom.image import RuleImage
 from module.device.device import Device
 from tasks.base_task import BaseTask
+from tasks.Component.GeneralBattle.general_battle import GeneralBattle
+from tasks.Dokan.script_task import ScriptTask
 
 
 class ImageRecognitionCacheTest(unittest.TestCase):
@@ -17,7 +19,7 @@ class ImageRecognitionCacheTest(unittest.TestCase):
         self.device.image = np.zeros((720, 1280, 3), dtype=np.uint8)
         self.device.image_frame_id = 'frame-1'
         self.device.reset_image_batch_cache('frame-1')
-        self.task = BaseTask.__new__(BaseTask)
+        self.task = ScriptTask.__new__(ScriptTask)
         self.task.device = self.device
         self.task.interval_timer = {}
         self.rule = RuleImage(
@@ -108,6 +110,52 @@ class ImageRecognitionCacheTest(unittest.TestCase):
         self.task.appear(self.rule)
         self.task.appear(self.rule)
         self.assertEqual(self.client.match_rule.call_count, 2)
+
+    def make_other_task(self, task_type=BaseTask):
+        task = task_type.__new__(task_type)
+        task.device = self.device
+        task.interval_timer = {}
+        return task
+
+    def test_other_tasks_keep_matching_repeated_single_checks(self):
+        for task_type in (BaseTask, GeneralBattle):
+            with self.subTest(task=task_type.__name__):
+                self.device.reset_image_batch_cache('frame-1')
+                self.client.match_rule.reset_mock()
+                task = self.make_other_task(task_type)
+                self.assertFalse(task._reuse_image_match_results)
+                self.assertTrue(task.appear(self.rule))
+                self.assertTrue(task.appear(self.rule))
+                self.assertEqual(self.client.match_rule.call_count, 2)
+
+    def test_other_tasks_preserve_original_prefetch_and_identity_deduplication(self):
+        task = self.make_other_task()
+        equivalent = copy.copy(self.rule)
+        self.client.match_many.return_value = [self.result, self.result]
+        task.prepare_appear_cache([self.rule, self.rule, equivalent])
+        self.assertEqual(len(self.client.match_many.call_args.kwargs['rules_data']), 2)
+        self.assertTrue(task.appear(self.rule))
+        self.assertTrue(task.appear(equivalent))
+        self.client.match_rule.assert_not_called()
+
+    def test_other_tasks_do_not_share_prefetched_results_with_new_rule_copies(self):
+        task = self.make_other_task()
+        task.prepare_appear_cache([self.rule])
+        self.assertTrue(task.appear(copy.copy(self.rule)))
+        self.client.match_rule.assert_called_once()
+
+    def test_dojo_single_check_cache_does_not_change_other_tasks_on_same_device(self):
+        self.assertTrue(self.task.appear(self.rule))
+        other_task = self.make_other_task()
+        self.assertTrue(other_task.appear(self.rule))
+        self.assertTrue(other_task.appear(self.rule))
+        self.assertEqual(self.client.match_rule.call_count, 3)
+        self.assertTrue(self.task.appear(self.rule))
+        self.assertEqual(self.client.match_rule.call_count, 3)
+
+    def test_dojo_prefetch_keeps_existing_direct_device_cache_readers_working(self):
+        self.task.prepare_appear_cache([self.rule])
+        self.assertEqual(self.device.get_image_batch_cache(self.rule), self.result)
 
 
 if __name__ == '__main__':

@@ -284,7 +284,14 @@ class RuleImage:
         )
 
     def match(self, image: np.array, threshold: float = None, frame_id: str = None) -> bool:
-        return self._apply_match_result(self.match_result(image, threshold=threshold, frame_id=frame_id))
+        client = get_image_client()
+        result = client.match_rule(
+            rule_data=self.to_service_payload(),
+            image=image,
+            frame_id=frame_id,
+            threshold=threshold,
+        )
+        return self._apply_match_result(result)
 
     def match_all(self, image: np.array, threshold: float = None, roi: list = None, frame_id: str = None) -> list[tuple]:
         """

@@ -47,6 +47,7 @@ MAX_WELFARE_DOKAN_REFRESH_COUNT = 20
 
 
 class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
+    _reuse_image_match_results: bool = True  # 仅道馆启用同帧识别结果和相同规则副本的复用。
     attack_priority_selected: bool = False
     switch_member_soul_done: bool = False
     switch_owner_soul_done: bool = False

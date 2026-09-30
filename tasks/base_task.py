@@ -31,6 +31,7 @@ from typing import Union
 class BaseTask(GlobalGameAssets, CostumeBase):
     config: Config = None
     device: Device = None
+    _reuse_image_match_results: bool = False  # 单次识别缓存由任务显式启用。
 
     folder: str
     name: str
@@ -169,11 +170,13 @@ class BaseTask(GlobalGameAssets, CostumeBase):
         for target in targets:
             if not isinstance(target, RuleImage):
                 continue
-            cache_key = target.match_cache_key()
+            cache_key = target.match_cache_key() if self._reuse_image_match_results else id(target)
             if cache_key in seen:
                 continue
             seen.add(cache_key)
-            if self.device.get_image_batch_cache(target, frame_id=frame_id) is not None:
+            if self.device.get_image_batch_cache(
+                target, frame_id=frame_id, by_parameters=self._reuse_image_match_results,
+            ) is not None:
                 continue
             unique_targets.append(target)
 
@@ -186,6 +189,8 @@ class BaseTask(GlobalGameAssets, CostumeBase):
             frame_id=frame_id,
         )
         self.device.update_image_batch_cache(unique_targets, results, frame_id=frame_id)
+        if self._reuse_image_match_results:
+            self.device.update_image_batch_cache(unique_targets, results, frame_id=frame_id, by_parameters=True)
 
     def appear(self,
                target: RuleImage | RuleGif | RuleOcr,
@@ -211,13 +216,18 @@ class BaseTask(GlobalGameAssets, CostumeBase):
             appear = self.ocr_appear(target, interval)
         elif isinstance(target, RuleImage):
             if threshold is None:
-                cached_result = self.device.get_image_batch_cache(target, frame_id=self.device.image_frame_id)
-                if cached_result is None:
+                cached_result = self.device.get_image_batch_cache(
+                    target, frame_id=self.device.image_frame_id, by_parameters=self._reuse_image_match_results,
+                )
+                if cached_result is None and self._reuse_image_match_results:
                     cached_result = target.match_result(self.device.image, frame_id=self.device.image_frame_id)
                     self.device.update_image_batch_cache(
-                        [target], [cached_result], frame_id=self.device.image_frame_id,
+                        [target], [cached_result], frame_id=self.device.image_frame_id, by_parameters=True,
                     )
-                appear = target._apply_match_result(cached_result)
+                if cached_result is not None:
+                    appear = target._apply_match_result(cached_result)
+                else:
+                    appear = target.match(self.device.image, threshold=threshold, frame_id=self.device.image_frame_id)
             else:
                 appear = target.match(self.device.image, threshold=threshold, frame_id=self.device.image_frame_id)
         else:
