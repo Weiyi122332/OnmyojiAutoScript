@@ -36,7 +36,7 @@ class RyouToppaSpeedTest(unittest.TestCase):
 
     def test_faster_polling_is_scoped_and_restored_after_battle(self):
         for task_type, interval in (
-            (ScriptTask, 0.3), (DokanTask, 0.3),
+            (ScriptTask, 0.5), (DokanTask, 0.3),
             (GeneralBattle, 'combat'), (RealmRaidTask, 'combat'),
         ):
             with self.subTest(task=task_type.__module__):
@@ -57,7 +57,7 @@ class RyouToppaSpeedTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'battle failed'):
                 task.run_general_battle(GeneralBattleConfig())
         self.assertEqual(task.device.screenshot_interval_set.call_args_list,
-                         [call(0.3), call()])
+                         [call(0.5), call()])
         self.assertIsNone(task._battle_context)
 
     def make_settlement(self, task_type=ScriptTask, last_page=page_reward, is_win=True):

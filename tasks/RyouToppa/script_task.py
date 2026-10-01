@@ -86,7 +86,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, RyouToppaAssets):
     def _get_battle_screenshot_interval(self, page: Page) -> float | str | None:
         # 提高战斗结束时的识别频率，及时处理结算并开始下一场。
         if page == page_battle:
-            return 0.3
+            return 0.5
         return super()._get_battle_screenshot_interval(page)
 
     def _handle_missing_battle_page(self, context: BattleContext, config: GeneralBattleConfig,
