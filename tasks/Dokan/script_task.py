@@ -12,6 +12,8 @@ from uuid import uuid4
 
 from future.backports.datetime import datetime
 
+from module.atom.animate import RuleAnimate
+from module.atom.click import RuleClick
 from module.base.timer import Timer
 from module.exception import TaskEnd
 from module.logger import logger
@@ -43,6 +45,10 @@ class DokanRefreshLimitError(Exception):
 
 
 DOKAN_REWARD_SCREENSHOT_DIR = Path('log/screenshots/dokan')
+DOKAN_REWARD_MIN_WAIT = 2.0
+DOKAN_REWARD_STABLE_TIME = 0.8
+DOKAN_REWARD_WAIT_TIMEOUT = 6.0
+DOKAN_REWARD_ITEMS_ROI = (240, 140, 830, 285)
 MAX_WELFARE_DOKAN_REFRESH_COUNT = 20
 
 
@@ -103,10 +109,11 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
 
     def _handle_reward(self, context: BattleContext, config: GeneralBattleConfig) -> BattleAction:
         """Save the visible dojo reward before the battle handler closes it."""
-        self._capture_dokan_reward_if_visible(context)
+        if self._capture_dokan_reward_if_visible(context) is False:
+            return BattleAction.CONTINUE
         return super()._handle_reward(context, config)
 
-    def _capture_dokan_reward_if_visible(self, context: BattleContext | None = None) -> None:
+    def _capture_dokan_reward_if_visible(self, context: BattleContext | None = None) -> bool | None:
         reward_visible = self.appear(self.I_RYOU_DOKAN_BATTLE_OVER) or self.appear(self.I_UI_REWARD)
         if not reward_visible:
             if context is None:
@@ -126,11 +133,41 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         elif (getattr(self, '_dokan_reward_captured_context', None) is context
               and getattr(self, '_dokan_reward_captured_round', None) == context.continuous_count):
             return
+        if not self._wait_for_dokan_reward_ready():
+            return False
         if context is not None:
             self._dokan_reward_captured_context = context
             self._dokan_reward_captured_round = context.continuous_count
         self._dokan_reward_captured_outside_battle = True
         self._save_reward_image(context)
+        return True
+
+    def _wait_for_dokan_reward_ready(self) -> bool:
+        """等待奖励展开和数量动画结束，保留最新截图供保存。"""
+        logger.info("Waiting for dojo reward items to finish appearing before screenshot")
+        minimum_wait = Timer(DOKAN_REWARD_MIN_WAIT).start()
+        stable_wait = Timer(DOKAN_REWARD_STABLE_TIME).start()
+        timeout = Timer(DOKAN_REWARD_WAIT_TIMEOUT).start()
+        animation = RuleAnimate(
+            RuleClick(roi_front=DOKAN_REWARD_ITEMS_ROI, roi_back=DOKAN_REWARD_ITEMS_ROI,
+                      name='dokan_reward_items'),
+            threshold=0.99,
+        )
+        while True:
+            sleep(0.2)
+            self.screenshot()
+            reward_visible = self.appear(self.I_RYOU_DOKAN_BATTLE_OVER) or self.appear(self.I_UI_REWARD)
+            if (not reward_visible or self.appear(self.I_REWARD_PARTICULARS)
+                    or self.appear(self.I_REWARD_PARTICULARS_ORCHI)):
+                return False
+            if not animation.stable(self.device.image, frame_id=self.device.image_frame_id):
+                stable_wait.reset()
+            elif minimum_wait.reached() and stable_wait.reached():
+                logger.info("Dojo reward items are stable; saving the latest screenshot")
+                return True
+            if timeout.reached():
+                logger.warning("Dojo reward effects still changing after 6s; saving the latest screenshot")
+                return True
 
     def _reward_screenshot_directory(self) -> Path:
         run_dir = getattr(self, '_dokan_reward_run_directory', None)

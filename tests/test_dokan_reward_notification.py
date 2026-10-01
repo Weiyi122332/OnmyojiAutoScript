@@ -17,6 +17,11 @@ from tasks.Dokan.script_task import DokanFinishedError, DokanNotStartedError, Sc
 
 
 class DokanRewardNotificationTest(unittest.TestCase):
+    def setUp(self):
+        ready = patch.object(ScriptTask, '_wait_for_dokan_reward_ready', return_value=True)
+        self.wait_for_reward = ready.start()
+        self.addCleanup(ready.stop)
+
     def test_dokan_config_exposes_reward_push_checkbox(self):
         field = next(item for item in ConfigModel().script_task('Dokan')['dokan_config']
                      if item['name'] == 'push_reward_images')
@@ -30,6 +35,7 @@ class DokanRewardNotificationTest(unittest.TestCase):
         task._save_reward_image = Mock()
         context = SimpleNamespace(battle_key='dokan_member', continuous_count=1)
         order = []
+        self.wait_for_reward.side_effect = lambda: order.append('ready') or True
         task._save_reward_image.side_effect = lambda _: order.append('capture')
 
         with patch.object(GeneralBattle, '_handle_reward', side_effect=lambda *_: order.append('close')):
@@ -38,8 +44,24 @@ class DokanRewardNotificationTest(unittest.TestCase):
             context.continuous_count = 2
             task._handle_reward(context, None)
 
-        self.assertEqual(order, ['capture', 'close', 'close', 'capture', 'close'])
+        self.assertEqual(order, ['ready', 'capture', 'close', 'close', 'ready', 'capture', 'close'])
         self.assertEqual(task._save_reward_image.call_count, 2)
+
+    def test_interrupted_reward_wait_does_not_capture_mark_or_close_the_page(self):
+        task = ScriptTask.__new__(ScriptTask)
+        task.appear = Mock(side_effect=lambda marker: marker is task.I_RYOU_DOKAN_BATTLE_OVER)
+        task._save_reward_image = Mock()
+        context = SimpleNamespace(battle_key='dokan_member', continuous_count=1)
+        self.wait_for_reward.return_value = False
+        with patch.object(GeneralBattle, '_handle_reward', return_value=BattleAction.CONTINUE) as close:
+            self.assertEqual(task._handle_reward(context, None), BattleAction.CONTINUE)
+            task._save_reward_image.assert_not_called()
+            self.assertFalse(getattr(task, '_dokan_reward_captured_outside_battle', False))
+            close.assert_not_called()
+            self.wait_for_reward.return_value = True
+            task._handle_reward(context, None)
+            task._save_reward_image.assert_called_once_with(context)
+            close.assert_called_once()
 
     def test_other_reward_pages_do_not_trigger_dokan_capture(self):
         task = ScriptTask.__new__(ScriptTask)
