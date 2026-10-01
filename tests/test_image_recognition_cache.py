@@ -1,4 +1,4 @@
-"""Only dojo tasks reuse single checks and equivalent rules within one screenshot."""
+"""Only explicitly enabled tasks reuse checks within one screenshot."""
 
 import copy
 import unittest
@@ -11,15 +11,19 @@ from module.device.device import Device
 from tasks.base_task import BaseTask
 from tasks.Component.GeneralBattle.general_battle import GeneralBattle
 from tasks.Dokan.script_task import ScriptTask
+from tasks.RealmRaid.script_task import ScriptTask as RealmRaidTask
+from tasks.RyouToppa.script_task import ScriptTask as RyouToppaTask
 
 
 class ImageRecognitionCacheTest(unittest.TestCase):
+    task_type = ScriptTask
+
     def setUp(self):
         self.device = Device.__new__(Device)
         self.device.image = np.zeros((720, 1280, 3), dtype=np.uint8)
         self.device.image_frame_id = 'frame-1'
         self.device.reset_image_batch_cache('frame-1')
-        self.task = ScriptTask.__new__(ScriptTask)
+        self.task = self.task_type.__new__(self.task_type)
         self.task.device = self.device
         self.task.interval_timer = {}
         self.rule = RuleImage(
@@ -118,7 +122,7 @@ class ImageRecognitionCacheTest(unittest.TestCase):
         return task
 
     def test_other_tasks_keep_matching_repeated_single_checks(self):
-        for task_type in (BaseTask, GeneralBattle):
+        for task_type in (BaseTask, GeneralBattle, RealmRaidTask):
             with self.subTest(task=task_type.__name__):
                 self.device.reset_image_batch_cache('frame-1')
                 self.client.match_rule.reset_mock()
@@ -156,6 +160,10 @@ class ImageRecognitionCacheTest(unittest.TestCase):
     def test_dojo_prefetch_keeps_existing_direct_device_cache_readers_working(self):
         self.task.prepare_appear_cache([self.rule])
         self.assertEqual(self.device.get_image_batch_cache(self.rule), self.result)
+
+
+class RyouToppaImageRecognitionCacheTest(ImageRecognitionCacheTest):
+    task_type = RyouToppaTask
 
 
 if __name__ == '__main__':

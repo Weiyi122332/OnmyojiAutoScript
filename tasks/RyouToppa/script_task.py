@@ -7,10 +7,12 @@ import random
 
 from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.RyouToppa.assets import RyouToppaAssets
-from tasks.Component.GeneralBattle.general_battle import GeneralBattle
+from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
+from tasks.Component.GeneralBattle.general_battle import BattleAction, BattleContext, ExitMatcher, GeneralBattle
 from tasks.Component.config_base import ConfigBase, Time
-from tasks.GameUi.game_ui import GameUi
-from tasks.GameUi.page import page_realm_raid, page_main, page_kekkai_toppa, page_shikigami_records
+from tasks.GameUi.game_ui import GameUi, Page
+from tasks.GameUi.page import (page_realm_raid, page_main, page_kekkai_toppa, page_shikigami_records,
+                               page_battle, page_battle_result, page_reward)
 from tasks.RealmRaid.assets import RealmRaidAssets
 
 from module.logger import logger
@@ -78,7 +80,24 @@ def random_delay(min_value: float = 1.0, max_value: float = 2.0, decimal: int = 
 
 
 class ScriptTask(GeneralBattle, GameUi, SwitchSoul, RyouToppaAssets):
+    _reuse_image_match_results: bool = True  # 仅本任务启用同帧识别结果复用。
     medal_grid: ImageGrid = None
+
+    def _get_battle_screenshot_interval(self, page: Page) -> float | str | None:
+        # 提高战斗结束时的识别频率，及时处理结算并开始下一场。
+        if page == page_battle:
+            return 0.3
+        return super()._get_battle_screenshot_interval(page)
+
+    def _handle_missing_battle_page(self, context: BattleContext, config: GeneralBattleConfig,
+                                    exit_matcher: ExitMatcher | None) -> BattleAction:
+        # 已经过结算且返回寮突破列表时，本场结束，无需等待通用的 2.5 秒兜底。
+        if (not config.continuous_battle
+                and context.last_page in (page_battle_result, page_reward)
+                and self.appear(self.I_TOPPA_RECORD)):
+            logger.info('Returned to RyouToppa list after settlement')
+            return BattleAction.EXIT_WIN if context.is_win else BattleAction.EXIT_LOSE
+        return super()._handle_missing_battle_page(context, config, exit_matcher)
 
     def run(self):
         """
@@ -108,25 +127,25 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, RyouToppaAssets):
             self.screenshot()
             if self.appear_then_click(RealmRaidAssets.I_REALM_RAID, interval=1):
                 continue
-            if self.appear(self.I_REAL_RAID_REFRESH, threshold=0.8):
+            if self.appear(self.I_REAL_RAID_REFRESH):
                 if self.appear_then_click(self.I_RYOU_TOPPA, interval=1):
                     continue
             # 攻破阴阳寮，说明寮突已开，则退出
-            elif self.appear(self.I_SUCCESS_PENETRATION, threshold=0.8):
+            elif self.appear(self.I_SUCCESS_PENETRATION):
                 ryou_toppa_start_flag = True
                 ryou_toppa_success_penetration = True
                 break
             # 出现选择寮突说明寮突未开
-            elif self.appear(self.I_SELECT_RYOU_BUTTON, threshold=0.8):
+            elif self.appear(self.I_SELECT_RYOU_BUTTON):
                 ryou_toppa_start_flag = False
                 ryou_toppa_admin_flag = True
                 break
             # 出现晴明说明寮突未开
-            elif self.appear(self.I_NO_SELECT_RYOU, threshold=0.8):
+            elif self.appear(self.I_NO_SELECT_RYOU):
                 ryou_toppa_start_flag = False
                 break
             # 出现寮奖励， 说明寮突已开
-            elif self.appear(self.I_RYOU_REWARD, threshold=0.8) or self.appear(self.I_RYOU_REWARD_90, threshold=0.8):
+            elif self.appear(self.I_RYOU_REWARD) or self.appear(self.I_RYOU_REWARD_90):
                 ryou_toppa_start_flag = True
                 break
 
@@ -225,7 +244,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, RyouToppaAssets):
             if self.appear_then_click(self.I_START_TOPPA_BUTTON, interval=1):
                 continue
             # 出现寮奖励， 说明寮突已开
-            if self.appear(self.I_RYOU_REWARD, threshold=0.8):
+            if self.appear(self.I_RYOU_REWARD):
                 break
         logger.info(f'Click {self.I_START_TOPPA_BUTTON.name}')
 
@@ -255,12 +274,12 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, RyouToppaAssets):
         self.screenshot()
         # 如果该区域已经被攻破则退出
         # Ps: 这时候能打过的都打过了，没有能攻打的结界了, 代表任务已经完成，set_next_run time=1d
-        if self.appear(f3, threshold=0.8) or self.appear(f4, threshold=0.8):
+        if self.appear(f3) or self.appear(f4):
             logger.info('RyouToppa has tried to attack')
             self.plan_tomorrow_ryoutoppa()
             raise TaskEnd
         # 如果该区域攻略失败返回 False
-        if self.appear(f1, threshold=0.8) or self.appear(f2, threshold=0.8):
+        if self.appear(f1) or self.appear(f2):
             logger.info('Area [%s] is futile attack, skip.' % str(index + 1))
             return False
         return True
@@ -334,12 +353,11 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, RyouToppaAssets):
                 continue
 
             # 挑战浮窗已出现时点击挑战按钮，并开启独立的战斗等待窗口。
-            if self.appear(RealmRaidAssets.I_FIRE, threshold=0.8):
+            if self.appear(RealmRaidAssets.I_FIRE):
                 popup_wait_timer = None
                 if self.appear_then_click(
                     RealmRaidAssets.I_FIRE,
                     interval=2,
-                    threshold=0.8,
                 ):
                     battle_wait_timer = Timer(TOPPA_BATTLE_WAIT_TIMEOUT).start()
                 continue
