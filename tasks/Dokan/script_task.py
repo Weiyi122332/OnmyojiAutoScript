@@ -12,8 +12,6 @@ from uuid import uuid4
 
 from future.backports.datetime import datetime
 
-from module.atom.animate import RuleAnimate
-from module.atom.click import RuleClick
 from module.base.timer import Timer
 from module.exception import TaskEnd
 from module.logger import logger
@@ -45,10 +43,7 @@ class DokanRefreshLimitError(Exception):
 
 
 DOKAN_REWARD_SCREENSHOT_DIR = Path('log/screenshots/dokan')
-DOKAN_REWARD_MIN_WAIT = 2.0
-DOKAN_REWARD_STABLE_TIME = 0.8
-DOKAN_REWARD_WAIT_TIMEOUT = 6.0
-DOKAN_REWARD_ITEMS_ROI = (240, 140, 830, 285)
+DOKAN_REWARD_CAPTURE_DELAY = 1.0
 MAX_WELFARE_DOKAN_REFRESH_COUNT = 20
 
 
@@ -143,31 +138,13 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         return True
 
     def _wait_for_dokan_reward_ready(self) -> bool:
-        """等待奖励展开和数量动画结束，保留最新截图供保存。"""
-        logger.info("Waiting for dojo reward items to finish appearing before screenshot")
-        minimum_wait = Timer(DOKAN_REWARD_MIN_WAIT).start()
-        stable_wait = Timer(DOKAN_REWARD_STABLE_TIME).start()
-        timeout = Timer(DOKAN_REWARD_WAIT_TIMEOUT).start()
-        animation = RuleAnimate(
-            RuleClick(roi_front=DOKAN_REWARD_ITEMS_ROI, roi_back=DOKAN_REWARD_ITEMS_ROI,
-                      name='dokan_reward_items'),
-            threshold=0.99,
-        )
-        while True:
-            sleep(0.2)
-            self.screenshot()
-            reward_visible = self.appear(self.I_RYOU_DOKAN_BATTLE_OVER) or self.appear(self.I_UI_REWARD)
-            if (not reward_visible or self.appear(self.I_REWARD_PARTICULARS)
-                    or self.appear(self.I_REWARD_PARTICULARS_ORCHI)):
-                return False
-            if not animation.stable(self.device.image, frame_id=self.device.image_frame_id):
-                stable_wait.reset()
-            elif minimum_wait.reached() and stable_wait.reached():
-                logger.info("Dojo reward items are stable; saving the latest screenshot")
-                return True
-            if timeout.reached():
-                logger.warning("Dojo reward effects still changing after 6s; saving the latest screenshot")
-                return True
+        """结算出现后等待一秒，重新截图并确认仍在奖励页面。"""
+        logger.info("Waiting 1s before taking the dojo reward screenshot")
+        sleep(DOKAN_REWARD_CAPTURE_DELAY)
+        self.screenshot()
+        reward_visible = self.appear(self.I_RYOU_DOKAN_BATTLE_OVER) or self.appear(self.I_UI_REWARD)
+        return (reward_visible and not self.appear(self.I_REWARD_PARTICULARS)
+                and not self.appear(self.I_REWARD_PARTICULARS_ORCHI))
 
     def _reward_screenshot_directory(self) -> Path:
         run_dir = getattr(self, '_dokan_reward_run_directory', None)
@@ -349,11 +326,6 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         if self.appear(self.I_DOKAN_BOSS_WAITING) or self.appear(self.I_RYOU_DOKAN_MASTER_BATTLE):  # 馆主战标识
             self.dokan_owner_battle = True
         if self.dokan_owner_battle and self.conf.dokan_config.skip_owner_battle:
-            if self.appear(self.I_RYOU_DOKAN_TODAY_ATTACK_COUNT) or self.appear(self.I_RYOU_DOKAN_REMAIN_ATTACK_COUNT_DONE):
-                self.dokan_owner_battle = False
-                logger.info("Dokan challenge finished, exit Dokan")
-                self.update_remain_attack_count()
-                raise DokanFinishedError
             self.skip_owner_and_battle_again()
             return
         if not self.appear(self.I_DOKAN_BOSS_WAITING) and self.appear(self.I_RYOU_DOKAN_START_CHALLENGE):  # 可挑战
@@ -814,15 +786,17 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
     def skip_owner_and_battle_again(self) -> bool:
         """馆主阶段放弃突破；有第二次机会时再战，否则保留赏金。"""
         can_retry = self.can_battle_again()
+        remaining = None
+        retry_wait_logged = False
         timeout = Timer(15).start()
         while not timeout.reached():
             self.screenshot()
-            # 突破结束后会回到显示今日机会的关闭倒计时页面，不能再次发起放弃投票。
-            if self.appear(self.I_RYOU_DOKAN_TODAY_ATTACK_COUNT) or self.appear(self.I_RYOU_DOKAN_REMAIN_ATTACK_COUNT_DONE):
-                self.dokan_owner_battle = False
-                logger.info("Dokan challenge ended while skipping owner battle")
-                self.update_remain_attack_count()
-                raise DokanFinishedError
+            settlement_visible = (self.appear(self.I_RYOU_DOKAN_TODAY_ATTACK_COUNT)
+                                  or self.appear(self.I_RYOU_DOKAN_REMAIN_ATTACK_COUNT_DONE))
+            if settlement_visible and (remaining is None or remaining < 0):
+                remaining = self.update_remain_attack_count()
+                can_retry = self.can_battle_again()
+            # 投票控件优先于今日次数提示，第一次放弃后该提示也会出现。
             if can_retry and self.appear(self.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN):
                 if self.appear_then_click(self.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN, interval=1):
                     self.wait_until_disappear(self.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN, timeout=3)
@@ -844,6 +818,16 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             elif (self.appear(self.I_DOKAN_ABANDONED_TOPPA_TITLE)
                   and self.appear(self.I_RYOU_DOKAN_ABANDONED_TOPPA_ABANDONED)):
                 self.appear_then_click(self.I_RYOU_DOKAN_ABANDONED_TOPPA_ABANDONED, interval=1)
+            elif settlement_visible:
+                if remaining < 0 or can_retry:
+                    if not retry_wait_logged:
+                        logger.info(f"Dokan has {remaining} remaining attempt(s); waiting for the Battle Again vote")
+                        retry_wait_logged = True
+                    # 本次已结束，等待投票出现，不能重新点击放弃突破。
+                else:
+                    self.dokan_owner_battle = False
+                    logger.info("Dokan challenge ended while skipping owner battle")
+                    raise DokanFinishedError
             elif self.appear(self.I_DOKAN_ABANDONED_TOPPA_ENSURE):
                 self.appear_then_click(self.I_DOKAN_ABANDONED_TOPPA_ENSURE, interval=1)
             elif self.appear(self.I_DOKAN_ABANDONED_TOPPA_RIGHT):

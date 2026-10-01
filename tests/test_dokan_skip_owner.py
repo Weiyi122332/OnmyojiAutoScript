@@ -35,7 +35,8 @@ class OwnerSkipTest(unittest.TestCase):
                 'confirm': markers['I_DOKAN_ABANDONED_TOPPA_ENSURE'],
                 'vote': markers['I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN'],
             }
-            return target is visible.get(state['value'])
+            return (target is visible.get(state['value'])
+                    or (state['value'] == 'vote' and target is markers['I_RYOU_DOKAN_TODAY_ATTACK_COUNT']))
 
         def click(target, **kwargs):
             if target is markers['I_DOKAN_ABANDONED_TOPPA_RIGHT']:
@@ -62,6 +63,7 @@ class OwnerSkipTest(unittest.TestCase):
             wait_until_disappear=Mock(),
             wait_for_next_dokan_selection=Mock(),
             can_battle_again=Mock(return_value=True),
+            update_remain_attack_count=Mock(return_value=1),
             click=Mock(side_effect=AssertionError('rank close not expected')),
         )
         self.assertTrue(ScriptTask.skip_owner_and_battle_again(task))
@@ -91,7 +93,8 @@ class OwnerSkipTest(unittest.TestCase):
                 'confirm': markers['I_DOKAN_ABANDONED_TOPPA_ENSURE'],
                 'vote': markers['I_RYOU_DOKAN_FAILED_VOTE_KEEP_BOUNTY'],
             }
-            return target is visible.get(state['value'])
+            return (target is visible.get(state['value'])
+                    or (state['value'] == 'vote' and target is markers['I_RYOU_DOKAN_TODAY_ATTACK_COUNT']))
 
         def click(target, **kwargs):
             if target is markers['I_DOKAN_ABANDONED_TOPPA_RIGHT']:
@@ -117,6 +120,7 @@ class OwnerSkipTest(unittest.TestCase):
             wait_until_disappear=Mock(),
             wait_for_next_dokan_selection=Mock(),
             can_battle_again=Mock(return_value=False),
+            update_remain_attack_count=Mock(return_value=0),
         )
         self.assertTrue(ScriptTask.skip_owner_and_battle_again(task))
         self.assertEqual(clicked, ['abandon', 'confirm', 'keep_bounty'])
@@ -179,9 +183,11 @@ class OwnerSkipTest(unittest.TestCase):
 
     def test_finished_page_takes_priority_over_stale_owner_state(self):
         task = self.make_finished_task()
+        task.skip_owner_and_battle_again.side_effect = lambda: ScriptTask.skip_owner_and_battle_again(task)
         with self.assertRaises(DokanFinishedError):
             ScriptTask.run_on_dokan(task)
-        task.skip_owner_and_battle_again.assert_not_called()
+        task.skip_owner_and_battle_again.assert_called_once()
+        task.appear_then_click.assert_not_called()
         task.update_remain_attack_count.assert_called_once()
         self.assertFalse(task.dokan_owner_battle)
 
@@ -192,6 +198,65 @@ class OwnerSkipTest(unittest.TestCase):
         task.appear_then_click.assert_not_called()
         task.update_remain_attack_count.assert_called_once()
         self.assertFalse(task.dokan_owner_battle)
+
+    def make_waiting_for_retry_task(self, counts=(1,)):
+        task = ScriptTask.__new__(ScriptTask)
+        attack_count = SimpleNamespace(daily_attack_count=2, remain_attack_count=0)
+        task.conf = SimpleNamespace(dokan_config=SimpleNamespace(skip_owner_battle=True),
+                                    attack_count_config=attack_count)
+        task.dokan_owner_battle = True
+        task.device = SimpleNamespace(stuck_record_clear=Mock())
+        task.prepare_appear_cache = Mock()
+        state = {'frames': 0, 'voted': False}
+        task.screenshot = Mock(side_effect=lambda: state.update(frames=state['frames'] + 1))
+
+        def appear(target):
+            return (target is task.I_RYOU_DOKAN_TODAY_ATTACK_COUNT
+                    or (target is task.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN
+                        and state['frames'] >= 3 and not state['voted']))
+
+        def click(target, **kwargs):
+            self.assertIs(target, task.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN)
+            state['voted'] = True
+            return True
+
+        count_values = iter(counts)
+
+        def update_count():
+            count = next(count_values)
+            if count >= 0:
+                attack_count.remain_attack_count = count
+            return count
+
+        task.appear = Mock(side_effect=appear)
+        task.appear_then_click = Mock(side_effect=click)
+        task.update_remain_attack_count = Mock(side_effect=update_count)
+        task.wait_until_disappear = Mock()
+        task.wait_for_next_dokan_selection = Mock()
+        return task
+
+    @patch('tasks.Dokan.script_task.sleep', return_value=None)
+    def test_remaining_attempt_waits_for_retry_vote_without_abandoning_again(self, _sleep):
+        task = self.make_waiting_for_retry_task()
+        self.assertTrue(task.skip_owner_and_battle_again())
+        task.update_remain_attack_count.assert_called_once()
+        task.appear_then_click.assert_called_once_with(task.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN, interval=1)
+        task.wait_for_next_dokan_selection.assert_called_once()
+
+    @patch('tasks.Dokan.script_task.sleep', return_value=None)
+    def test_unknown_remaining_count_is_rechecked_before_ending_task(self, _sleep):
+        task = self.make_waiting_for_retry_task(counts=(-1, 1))
+        self.assertTrue(task.skip_owner_and_battle_again())
+        self.assertEqual(task.update_remain_attack_count.call_count, 2)
+        task.appear_then_click.assert_called_once_with(task.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN, interval=1)
+        task.wait_for_next_dokan_selection.assert_called_once()
+
+    @patch('tasks.Dokan.script_task.sleep', return_value=None)
+    def test_outer_dojo_loop_keeps_first_settlement_in_the_same_task(self, _sleep):
+        task = self.make_waiting_for_retry_task()
+        task.run_on_dokan()
+        task.wait_for_next_dokan_selection.assert_called_once()
+        task.appear_then_click.assert_called_once_with(task.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN, interval=1)
 
 
 if __name__ == '__main__':
