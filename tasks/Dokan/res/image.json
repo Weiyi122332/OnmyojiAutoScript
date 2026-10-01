@@ -384,7 +384,7 @@
     "roiBack": "240,600,94,90",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": "道馆 地图界面 建立道馆按钮"
+    "description": "道馆地图：可点击的建立道馆按钮，识别后需区分颜色"
   },
   {
     "itemName": "ryou_dokan_create_dokan_ensure",
@@ -564,6 +564,6 @@
     "roiBack": "240,600,94,90",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": ""
+    "description": "道馆地图：灰色建立道馆按钮，表示己方道馆已建立，需区分颜色"
   }
 ]

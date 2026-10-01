@@ -124,7 +124,7 @@ class DokanAssets:
 	I_SCENE_RYOU = RuleImage(roi_front=(1161,674,75,31), roi_back=(1161,674,75,31), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/scene_ryou.png")
 	# 场景检测：神社 
 	I_SCENE_SHENSHE = RuleImage(roi_front=(477,165,63,65), roi_back=(477,165,65,80), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/scene_shenshe.png")
-	# 道馆 地图界面 建立道馆按钮 
+	# 道馆地图：可点击的建立道馆按钮，识别后需区分颜色
 	I_RYOU_DOKAN_CREATE_DOKAN = RuleImage(roi_front=(240,600,94,90), roi_back=(240,600,94,90), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_create_dokan.png")
 	# 道馆 地图界面 点击建立道馆按钮后弹窗中的 确认按钮 
 	I_RYOU_DOKAN_CREATE_DOKAN_ENSURE = RuleImage(roi_front=(0,0,1280,720), roi_back=(0,0,1280,720), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_create_dokan_ensure.png")
@@ -164,7 +164,7 @@ class DokanAssets:
 	I_RYOU_DOKAN_CHEERING = RuleImage(roi_front=(65,601,71,33), roi_back=(44,568,112,100), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_cheering.png")
 	# 助威灰色不可点击 
 	I_RYOU_DOKAN_CHEERING_GRAY = RuleImage(roi_front=(65,601,71,33), roi_back=(44,568,112,100), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_cheering_gray.png")
-	#  
+	# 道馆地图：灰色建立道馆按钮，表示己方道馆已建立，需区分颜色
 	I_RYOU_DOKAN_HAVE_DOKAN = RuleImage(roi_front=(240,600,94,90), roi_back=(240,600,94,90), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_have_dokan.png")
 
 

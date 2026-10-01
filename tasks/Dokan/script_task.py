@@ -598,25 +598,40 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         return False
 
     def ensure_dokan_created(self) -> bool:
-        """点击道馆状态入口，以是否出现创建确认框判断是否需要创建。"""
-        click_count = 0
+        """灰色按钮表示已建立道馆；可点击时先完成建立，再开始筛选。"""
         for attempt in range(1, 3):
             self.screenshot()
-            marker_found = (
-                self.appear(self.I_RYOU_DOKAN_CREATE_DOKAN)
-                or self.appear(self.I_RYOU_DOKAN_HAVE_DOKAN)
-            )
-            if marker_found:
-                logger.info(
-                    f'Click Dokan create/have marker: attempt={attempt}/2'
-                )
-                self.click(self.I_RYOU_DOKAN_CREATE_DOKAN)
-                click_count += 1
-            else:
+            if self.appear(self.I_RYOU_DOKAN_CREATE_DOKAN_ENSURE):
+                return self.creat_dokan()
+
+            button = next((item for item in (
+                self.I_RYOU_DOKAN_CREATE_DOKAN, self.I_RYOU_DOKAN_HAVE_DOKAN
+            ) if self.appear(item)), None)
+            if button is None:
                 logger.warning(
                     f'Dokan create/have marker not recognized: '
                     f'attempt={attempt}/2'
                 )
+                sleep(0.5)
+                continue
+
+            # 两个按钮的轮廓相同，模板相关性超过 0.96，必须额外区分颜色。
+            # 只取图标中央，避开彩色地图背景和底部文字。
+            x, y, w, h = button.roi_front
+            icon = self.device.image[
+                y + h // 4:y + 3 * h // 4,
+                x + w // 4:x + 3 * w // 4,
+                :3,
+            ]
+            if icon.size == 0:
+                continue
+            mean_chroma = float((icon.max(axis=2) - icon.min(axis=2)).mean())
+            if mean_chroma < 10:
+                logger.info('Dokan create button is grey; own Dokan already exists, start selecting a target')
+                return True
+
+            logger.info(f'Create Dokan before selecting a target: attempt={attempt}/2')
+            self.click(button)
 
             if self.wait_until_appear(
                     self.I_RYOU_DOKAN_CREATE_DOKAN_ENSURE,
@@ -626,16 +641,9 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                 logger.info('Create Dokan dialog opened')
                 return self.creat_dokan()
 
-        if click_count == 2:
-            logger.info(
-                'Dokan create dialog did not open after 2 clicks; '
-                'treat own Dokan as already created'
-            )
-            return True
-
         logger.warning(
-            'Dokan state marker was not recognized twice; '
-            'cannot confirm whether own Dokan exists'
+            'Could not confirm that own Dokan exists or create it; '
+            'stop before selecting a target'
         )
         return False
 
