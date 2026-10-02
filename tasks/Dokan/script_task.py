@@ -22,6 +22,7 @@ from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.Component.config_base import Time
 from tasks.Dokan.assets import DokanAssets
 from tasks.Dokan.config import Dokan
+from tasks.Dokan.reward_recognition import count_blue_tickets_in_png
 import tasks.Dokan.page as pages
 from tasks.GameUi.game_ui import GameUi
 
@@ -175,6 +176,12 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         screenshots = sorted(run_dir.glob('*.png'))
         if not screenshots:
             return
+        try:
+            images = [screenshot.read_bytes() for screenshot in screenshots]
+            reward_summary = self._dokan_reward_blue_ticket_summary(images)
+        except Exception as exc:
+            logger.warning(f'Dokan reward screenshots could not be read: {exc}')
+            return
         if not self.conf.dokan_config.push_reward_images:
             logger.info('Dokan reward screenshots kept because dojo notifications are disabled')
             return
@@ -183,8 +190,8 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             logger.info('Dokan reward screenshots kept because notifications are disabled')
             return
         try:
-            images = [screenshot.read_bytes() for screenshot in screenshots]
-            sent = notifier.push_images(images, title=f'{datetime.now():%Y-%m-%d} 道馆结算奖励')
+            sent = notifier.push_images(images, title=f'{datetime.now():%Y-%m-%d} 道馆结算奖励',
+                                        content=reward_summary)
         except Exception as exc:
             logger.warning(f'Dokan reward notification failed: {exc}')
             return
@@ -200,6 +207,29 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             run_dir.rmdir()
         except OSError:
             pass
+
+    def _dokan_reward_blue_ticket_summary(self, images: list[bytes]) -> str:
+        """在任务结束后识别已保存的截图；识别失败仍推送原图。"""
+        quantities = []
+        details = []
+        for index, image in enumerate(images, start=1):
+            try:
+                quantity = count_blue_tickets_in_png(image)
+            except Exception as exc:
+                logger.warning(f'Dokan blue ticket recognition failed for screenshot {index}: {exc}')
+                quantity = None
+            quantities.append(quantity)
+            text = f'{quantity} 张' if quantity is not None else '数量未识别'
+            details.append(f'截图 {index}：蓝票{text}')
+            logger.info(f'Dokan reward screenshot {index}: blue tickets={quantity}')
+        total = sum(quantity for quantity in quantities if quantity is not None)
+        unknown_count = quantities.count(None)
+        logger.info(f'Dokan reward blue tickets: total={total}, unrecognized screenshots={unknown_count}')
+        if unknown_count:
+            headline = f'蓝票已识别合计：{total} 张（另有 {unknown_count} 张截图数量未识别）'
+        else:
+            headline = f'蓝票合计：{total} 张'
+        return '\n'.join([headline, *details])
 
     def _push_dokan_refresh_limit_notification(self) -> None:
         notifier = self.config.notifier
