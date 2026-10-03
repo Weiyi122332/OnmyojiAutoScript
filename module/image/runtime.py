@@ -79,6 +79,7 @@ class TemplateEntry:
     last_access_at: float
     sift_kp: Any = None
     sift_des: np.ndarray | None = None
+    mask: np.ndarray | None = None
 
     @property
     def shape(self) -> tuple[int, ...]:
@@ -520,14 +521,19 @@ class ImageRuntime:
             self._cache_stats["frame_hits"] += 1
             return entry
 
-    def _get_template_entry(self, template_path: str) -> TemplateEntry:
+    def _get_template_entry(self, template_path: str, with_mask: bool = False) -> TemplateEntry:
         """
         按模板路径和文件指纹获取模板缓存条目。
 
         若缓存未命中，会重新加载模板图像并生成新的缓存键，确保模板文件更新后不会复用旧内容。
+
+        Args:
+            with_mask: 为真时额外加载同目录派生的掩码图；指纹会同时包含掩码文件的
+                修改时间与大小，保证改了掩码（或补上掩码）后缓存自动失效。
         """
         normalized_path = str(Path(template_path).resolve())
-        fingerprint = self._build_template_fingerprint(normalized_path)
+        mask_path = self._resolve_mask_path(normalized_path) if with_mask else None
+        fingerprint = self._build_template_fingerprint(normalized_path, mask_path)
         template_key = f"{normalized_path}|{fingerprint}"
         now = time.time()
 
@@ -542,6 +548,7 @@ class ImageRuntime:
         self._cache_stats["template_misses"] += 1
         image_rgb = self._load_template_image(normalized_path)
         image_gray = self._to_gray(image_rgb)
+        mask = self._load_template_mask(mask_path, image_rgb) if mask_path else None
         entry = TemplateEntry(
             template_key=template_key,
             file_path=normalized_path,
@@ -550,6 +557,7 @@ class ImageRuntime:
             image_gray=image_gray,
             loaded_at=now,
             last_access_at=now,
+            mask=mask,
         )
 
         with self._lock:
@@ -612,12 +620,14 @@ class ImageRuntime:
     ) -> dict[str, Any]:
         """执行单规则匹配并把结果转换为可直接返回给 RPC 层的字典。"""
         rule = self._normalize_rule(rule_data=rule_data, threshold=threshold)
-        matched, score, roi_front = self._match_rule(image=image, rule=rule)
-        return {
+        matched, score, roi_front, extra = self._match_rule(image=image, rule=rule)
+        payload = {
             "matched": matched,
             "score": score,
             "roi_front": roi_front,
         }
+        payload.update(extra)
+        return payload
 
     def _match_all_any_payload(
         self,
@@ -631,21 +641,25 @@ class ImageRuntime:
         matches = self._match_all_any_template(image=image, rule=rule, nms_threshold=nms_threshold)
         return {"matches": [list(item) for item in matches]}
 
-    def _match_rule(self, image: np.ndarray, rule: dict[str, Any]) -> tuple[bool, float, list[int] | None]:
-        """按规则声明的 method 分派到具体匹配实现。"""
+    def _match_rule(
+        self, image: np.ndarray, rule: dict[str, Any]
+    ) -> tuple[bool, float, list[int] | None, dict[str, Any]]:
+        """按规则声明的 method 分派到具体匹配实现，最后一个返回值是附加信息（如多尺度的 scale）。"""
         method = rule["method"]
-        if method == "Template matching":
-            template = self._get_template_entry(rule["file"]).image_rgb
-            return self._template_match_image(
+        if method in ("Template matching", "Masked template matching"):
+            entry = self._get_template_entry(rule["file"], with_mask=method == "Masked template matching")
+            matched, score, roi_front = self._template_match_image(
                 image=image,
-                template=template,
+                template=entry.image_rgb,
                 roi_back=rule["roi_back"],
                 threshold=rule["threshold"],
                 log_name=rule["name"],
+                mask=entry.mask,
             )
+            return matched, score, roi_front, {}
         if method == "Multi-scale template matching":
             template = self._get_template_entry(rule["file"]).image_rgb
-            return self._multi_scale_template_match(
+            matched, score, roi_front, scale = self._multi_scale_template_match(
                 image=image,
                 template=template,
                 roi_back=rule["roi_back"],
@@ -654,15 +668,17 @@ class ImageRuntime:
                 scale_step=rule["scale_step"],
                 log_name=rule["name"],
             )
+            return matched, score, roi_front, ({} if scale is None else {"scale": round(float(scale), 4)})
         if method == "Sift Flann":
             entry = self._ensure_template_sift(self._get_template_entry(rule["file"]))
-            return self._sift_match(
+            matched, score, roi_front = self._sift_match(
                 image=image,
                 template_entry=entry,
                 roi_front=rule["roi_front"],
                 roi_back=rule["roi_back"],
                 log_name=rule["name"],
             )
+            return matched, score, roi_front, {}
         raise ValueError(f"unknown method {method}")
 
     @staticmethod
@@ -675,6 +691,25 @@ class ImageRuntime:
     def _template_image_invalid(mat: np.ndarray) -> bool:
         """检查模板图是否为空或尺寸非法，避免参与 OpenCV 匹配。"""
         return mat is None or mat.shape[0] == 0 or mat.shape[1] == 0
+
+    @staticmethod
+    def _template_is_degenerate(template: np.ndarray, mask: np.ndarray | None = None) -> bool:
+        """
+        判断模板在参与匹配的区域内是否逐通道恒为常量。
+
+        CCOEFF_NORMED 归一化时分母来自各通道的方差，参与区域内只要有通道完全没有起伏，
+        分母就是 0，OpenCV 会走特判：无掩码时整张结果矩阵被填成 1.0（恒假阳性，且落点固定
+        在 roi_back 左上角），带掩码时整张变成 0/0 的 nan。两种都让这条规则失去意义，
+        这里提前拦掉，而不是把异常数值当成命中。
+        """
+        region = template if mask is None else template[mask > 0]
+        if region.size == 0:
+            return True
+        # 掩码取值后是 `(N, C)`、整体模板是 `(H, W, C)`、灰度图是 `(H, W)` 或 `(N,)`，
+        # 通道数只认模板本身，再统一摊平成 `(N, C)` 逐通道判断。
+        channels = 1 if template.ndim == 2 else template.shape[-1]
+        samples = region.reshape(-1, channels)
+        return all(float(samples[:, channel].std()) == 0.0 for channel in range(channels))
 
     @staticmethod
     def _mean_brightness(image: np.ndarray) -> float:
@@ -691,11 +726,13 @@ class ImageRuntime:
         roi_back: list[int],
         threshold: float,
         log_name: str,
+        mask: np.ndarray | None = None,
     ) -> tuple[bool, float, list[int] | None]:
         """
         执行普通模板匹配，并在命中时回传前景 ROI。
 
         `roi_back` 表示在原图上的搜索区域，命中结果会被换算回原图坐标系。
+        `mask` 为可选的单通道掩码，非零区域参与匹配、零区域忽略。
         """
         source = self._crop(image, roi_back)
         if self._template_image_invalid(template):
@@ -703,7 +740,14 @@ class ImageRuntime:
             return True, 1.0, [int(v) for v in roi_back]
         if source.shape[0] < template.shape[0] or source.shape[1] < template.shape[1]:
             return False, -1.0, None
-        result = cv2.matchTemplate(source, template, cv2.TM_CCOEFF_NORMED)
+        if self._template_is_degenerate(template, mask):
+            logger.error(f"{log_name} template is flat (no variance in matching area), treated as not matched")
+            return False, -1.0, None
+        if mask is None:
+            result = cv2.matchTemplate(source, template, cv2.TM_CCOEFF_NORMED)
+        else:
+            result = cv2.matchTemplate(source, template, cv2.TM_CCOEFF_NORMED, mask=mask)
+        result = self._sanitize_match_result(result, log_name)
         _, max_val, _, max_loc = cv2.minMaxLoc(result)
         roi_front = None
         matched = max_val > threshold
@@ -726,27 +770,36 @@ class ImageRuntime:
         scale_range: tuple[float, ...] | None,
         scale_step: float,
         log_name: str,
-    ) -> tuple[bool, float, list[int] | None]:
+    ) -> tuple[bool, float, list[int] | None, float | None]:
         """
         在给定缩放范围内搜索最优模板匹配结果。
 
-        缩放步长与范围来自规则配置，最终返回最佳得分对应的位置与尺寸。
+        缩放步长与范围来自规则配置，最终返回最佳得分对应的位置、尺寸与缩放倍数。
         """
         source = self._crop(image, roi_back)
         if self._template_image_invalid(template):
             logger.error(f"Template image is invalid: {None if template is None else template.shape}")
-            return True, 1.0, [int(v) for v in roi_back]
+            return True, 1.0, [int(v) for v in roi_back], None
+        if self._template_is_degenerate(template):
+            logger.error(f"{log_name} template is flat (no variance), treated as not matched")
+            return False, -1.0, None, None
 
         min_scale, max_scale, step = self._get_multi_scale_range(scale_range, scale_step)
         best_val = -1.0
         best_loc = None
         best_shape = None
-        current_scale = min_scale
-        while current_scale <= max_scale + 1e-8:
+        best_scale = None
+        # 倍数按索引求值：`current_scale += step` 会浮点向下漂（1.0 漂成 0.9999999999999999），
+        # 再经 int() 截断就少 1 像素，导致恰好原尺寸那一档永远测不到。
+        index = 0
+        while True:
+            current_scale = min_scale + index * step
+            if current_scale > max_scale + 1e-8:
+                break
+            index += 1
             scaled_w = max(1, int(template.shape[1] * current_scale))
             scaled_h = max(1, int(template.shape[0] * current_scale))
             if scaled_w > source.shape[1] or scaled_h > source.shape[0]:
-                current_scale += step
                 continue
             scaled_template = cv2.resize(template, (scaled_w, scaled_h), interpolation=cv2.INTER_LINEAR)
             result = cv2.matchTemplate(source, scaled_template, cv2.TM_CCOEFF_NORMED)
@@ -755,7 +808,7 @@ class ImageRuntime:
                 best_val = max_val
                 best_loc = max_loc
                 best_shape = (scaled_w, scaled_h)
-            current_scale += step
+                best_scale = current_scale
 
         roi_front = None
         matched = best_loc is not None and best_shape is not None and best_val > threshold
@@ -766,8 +819,9 @@ class ImageRuntime:
                 int(best_shape[0]),
                 int(best_shape[1]),
             ]
-        logger.debug(f"{log_name} multi-scale score={best_val:.5f}")
-        return matched, float(best_val), roi_front
+        scale_text = "none" if best_scale is None else f"{best_scale:.3f}"
+        logger.debug(f"{log_name} multi-scale score={best_val:.5f} scale={scale_text}")
+        return matched, float(best_val), roi_front, best_scale
 
     @staticmethod
     def _get_multi_scale_range(
@@ -855,20 +909,29 @@ class ImageRuntime:
 
     def _match_all_template(self, image: np.ndarray, rule: dict[str, Any]) -> list[tuple[float, int, int, int, int]]:
         """
-        返回普通模板匹配的全部命中列表。
+        返回模板匹配的全部命中列表。
 
         返回项格式为 `(score, x, y, w, h)`，坐标始终换算到原图坐标系。
         """
-        if rule["method"] != "Template matching":
-            raise ValueError(f"unknown method {rule['method']}")
-        template = self._get_template_entry(rule["file"]).image_rgb
+        method = rule["method"]
+        if method not in ("Template matching", "Masked template matching"):
+            raise ValueError(f"unknown method {method}")
+        entry = self._get_template_entry(rule["file"], with_mask=method == "Masked template matching")
+        template = entry.image_rgb
         source = self._crop(image, rule["roi_back"])
         if self._template_image_invalid(template):
             logger.error(f"Template image is invalid: {None if template is None else template.shape}")
             return []
         if source.shape[0] < template.shape[0] or source.shape[1] < template.shape[1]:
             return []
-        results = cv2.matchTemplate(source, template, cv2.TM_CCOEFF_NORMED)
+        if self._template_is_degenerate(template, entry.mask):
+            logger.error(f"{rule['name']} template is flat (no variance in matching area), skip match_all")
+            return []
+        if entry.mask is None:
+            results = cv2.matchTemplate(source, template, cv2.TM_CCOEFF_NORMED)
+        else:
+            results = cv2.matchTemplate(source, template, cv2.TM_CCOEFF_NORMED, mask=entry.mask)
+        results = self._sanitize_match_result(results, rule["name"])
         locations = np.where(results >= rule["threshold"])
         matches = []
         for point in zip(*locations[::-1]):
@@ -973,10 +1036,65 @@ class ImageRuntime:
         return entry
 
     @staticmethod
-    def _build_template_fingerprint(template_path: str) -> str:
-        """基于修改时间和文件大小生成模板指纹，用于缓存失效判断。"""
-        stat = os.stat(template_path)
-        return f"{int(stat.st_mtime_ns)}:{int(stat.st_size)}"
+    def _resolve_mask_path(template_path: str) -> str:
+        """按同目录同名的约定派生掩码路径，即 `xxx.png` 对应 `xxx_mask.png`。"""
+        path = Path(template_path)
+        return str(path.with_name(f"{path.stem}_mask{path.suffix}"))
+
+    @staticmethod
+    def _build_template_fingerprint(template_path: str, mask_path: str | None = None) -> str:
+        """
+        基于修改时间和文件大小生成模板指纹，用于缓存失效判断。
+
+        掩码文件同样参与指纹（不存在时记作 none），因此改掩码、后补掩码都会让缓存自动失效。
+        """
+        def file_part(path: str) -> str:
+            try:
+                stat = os.stat(path)
+            except OSError:
+                return "none"
+            return f"{int(stat.st_mtime_ns)}:{int(stat.st_size)}"
+
+        if mask_path is None:
+            return file_part(template_path)
+        return f"{file_part(template_path)}|{file_part(mask_path)}"
+
+    @staticmethod
+    def _load_template_mask(mask_path: str, template: np.ndarray) -> np.ndarray | None:
+        """
+        读取掩码图并规范为单通道灰度。
+
+        掩码语义为「非零参与匹配，零忽略」。文件缺失、读取失败或尺寸与模板不一致时返回
+        None，由调用方回退到普通匹配，避免一张画错尺寸的掩码直接让规则报错。
+        """
+        try:
+            mask = cv2.imdecode(fromfile(mask_path, dtype=uint8), cv2.IMREAD_GRAYSCALE)
+        except OSError:
+            mask = None
+        if mask is None:
+            logger.debug(f"Template mask unavailable, fallback to plain matching: {mask_path}")
+            return None
+        if mask.shape[:2] != template.shape[:2]:
+            logger.error(
+                f"Template mask size mismatch {mask.shape[:2]} != {template.shape[:2]}, "
+                f"fallback to plain matching: {mask_path}"
+            )
+            return None
+        return mask
+
+    @staticmethod
+    def _sanitize_match_result(result: np.ndarray, log_name: str) -> np.ndarray:
+        """
+        压掉匹配结果矩阵里的非有限值。
+
+        白区（或源图窗口）整块同色时 CCOEFF_NORMED 会算出 nan/inf：nan 会让
+        `max_val > threshold` 恒为假而静默漏检，inf 则会越过阈值并把命中位置指到随机
+        坐标（假阳性，点错位置）。这里统一替换为 -1.0，等价于「该位置判不匹配」。
+        """
+        if np.isfinite(result).all():
+            return result
+        logger.error(f"{log_name} match result contains nan/inf (solid-color region), treated as not matched")
+        return np.nan_to_num(result, nan=-1.0, posinf=-1.0, neginf=-1.0)
 
     @staticmethod
     def _to_gray(image_rgb: np.ndarray) -> np.ndarray:

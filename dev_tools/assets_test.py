@@ -73,13 +73,38 @@ def detect_image_detail(file: str, target: RuleImage) -> dict:
         target.roi_front[2] = int(mat.shape[1])
         target.roi_front[3] = int(mat.shape[0])
         message = "match" if matched else "not_match"
-    else:
+    elif target.is_sift_flann:
+        # SIFT 保持原样，走本地 test_match（sift_match 会弹窗画出匹配到的四边形）
         try:
             matched = bool(target.test_match(img))
             similarity = 1.0 if matched else 0.0
             message = "match" if matched else "not_match"
         except Exception as e:
             message = f"sift_error:{e}"
+    else:
+        # 掩码 / 多尺度交给图像服务计算，保证这里显示的分数与脚本实际运行时一致
+        try:
+            from module.image.rpc import get_image_client
+
+            result = get_image_client().match_rule(rule_data=target.to_service_payload(), image=img)
+            matched = bool(result.get("matched", False))
+            similarity = float(result.get("score", 0.0))
+            roi_front = result.get("roi_front")
+            if roi_front is not None:
+                target.roi_front = [int(v) for v in roi_front]
+            if not np.isfinite(similarity):
+                # 服务端已做兜底，这里再挡一层，避免把非法 JSON 抛给前端
+                similarity = 0.0
+                matched = False
+                message = "invalid_score"
+            else:
+                message = "match" if matched else "not_match"
+                # 多尺度会带回取到最高分时的缩放倍数，直接用来看该放大/缩小到多少才对得上
+                scale = result.get("scale")
+                if scale is not None:
+                    message += f" scale={float(scale):.2f}"
+        except Exception as e:
+            message = f"rule_error:{e}"
 
     return {
         "matched": matched,

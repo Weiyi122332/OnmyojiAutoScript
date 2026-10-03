@@ -1,0 +1,11 @@
+[
+  {
+    "itemName": "challenge_times",
+    "roiFront": "1176,32,68,32",
+    "roiBack": "1176,32,68,32",
+    "mode": "DigitCounter",
+    "method": "Default",
+    "keyword": "",
+    "description": "狭间幻境挑战次数 可用/上限(每天3次)"
+  }
+]

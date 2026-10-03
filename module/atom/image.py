@@ -17,6 +17,7 @@ from module.base.utils import is_approx_rectangle
 class RuleImage:
     debug_mode: bool = False
     METHOD_TEMPLATE_MATCH = "Template matching"
+    METHOD_MASKED_TEMPLATE_MATCH = "Masked template matching"
     METHOD_MULTI_SCALE_TEMPLATE_MATCH = "Multi-scale template matching"
     METHOD_SIFT_FLANN = "Sift Flann"
     DEFAULT_MULTI_SCALE_RANGE = (0.6, 1.2)
@@ -35,7 +36,7 @@ class RuleImage:
         初始化
         :param roi_front: 前置roi
         :param roi_back: 后置roi 用于匹配的区域
-        :param method: 匹配方法 "Template matching" / "Multi-scale template matching" / "Sift Flann"
+        :param method: 匹配方法 "Template matching" / "Masked template matching" / "Multi-scale template matching" / "Sift Flann"
         :param threshold: 阈值  0.8
         :param file: 相对路径, 带后缀
         """
@@ -114,6 +115,14 @@ class RuleImage:
         :return:
         """
         return self.method == self.METHOD_TEMPLATE_MATCH
+
+    @property
+    def is_masked_template_match(self) -> bool:
+        """
+        是否是掩码模板匹配，掩码取自同目录下 `xxx_mask.png`
+        :return:
+        """
+        return self.method == self.METHOD_MASKED_TEMPLATE_MATCH
 
     @property
     def is_multi_scale_template_match(self) -> bool:
@@ -240,12 +249,17 @@ class RuleImage:
         best_val = -1.0
         best_loc = None
         best_shape = None
-        cur_scale = min_scale
-        while cur_scale <= max_scale + 1e-8:
+        # 倍数按索引求值：`cur_scale += step` 会浮点向下漂（1.0 漂成 0.9999999999999999），
+        # 再经 int() 截断就少 1 像素，导致恰好原尺寸那一档永远测不到。
+        index = 0
+        while True:
+            cur_scale = min_scale + index * step
+            if cur_scale > max_scale + 1e-8:
+                break
+            index += 1
             scaled_w = max(1, int(mat.shape[1] * cur_scale))
             scaled_h = max(1, int(mat.shape[0] * cur_scale))
             if scaled_w > source.shape[1] or scaled_h > source.shape[0]:
-                cur_scale += step
                 continue
             scaled_mat = cv2.resize(mat, (scaled_w, scaled_h), interpolation=cv2.INTER_LINEAR)
             res = cv2.matchTemplate(source, scaled_mat, cv2.TM_CCOEFF_NORMED)
@@ -254,7 +268,6 @@ class RuleImage:
                 best_val = max_val
                 best_loc = max_loc
                 best_shape = (scaled_w, scaled_h)
-            cur_scale += step
         if self.debug_mode:
             logger.attr(self.name, f'multi-scale matching score {best_val:.5f}')
         if best_loc is not None and best_shape is not None and best_val > threshold:
@@ -353,6 +366,8 @@ class RuleImage:
     def test_match(self, image: np.array):
         self.debug_mode = True
         if self.is_template_match:
+            return self.match(image)
+        if self.is_masked_template_match:
             return self.match(image)
         if self.is_multi_scale_template_match:
             return self.match(image)

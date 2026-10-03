@@ -19,7 +19,7 @@ class ConfigManual:
         > Pets > TalismanPass > Delegation > Hyakkiyakou
         > Secret > WeeklyTrifles > MysteryShop > Duel > Chess
         > TrueOrochi > WeeklyPurchase
-        > MetaDemon > FrogBoss > FloatParade > LBS > Quiz > KittyShop > DyeTrials > MemoryScrolls > GuguArtStudio
+        > MetaDemon > FrogBoss > FrogChallenge > FloatParade > LBS > Quiz > KittyShop > DyeTrials > MemoryScrolls > GuguArtStudio > IbukiArena
         """
 
     DEVICE_OVER_HTTP = False

@@ -56,6 +56,8 @@
   "checkin_big_god_manual_claim_help": "1.启用后使用纯UI操作领取福利（不依赖Frida）。\n2.适用于Frida不可用或Root环境异常的情况。\n3.需确保模拟器已登录「网易大神」APP并绑定阴阳师角色，同时添加阴阳师圈子！！！",
   "costume_main_14": "雪月华庭",
   "GuguArtStudio": "呱呱画室",
+  "IbukiArena": "狭间幻境",
+  "FrogChallenge": "青蛙瓷器挑战赛",
   "try_start_abyss_shadows": "是否自己开启狭间",
   "attack_order": "攻击顺序",
   "mark_main": "标记主怪",

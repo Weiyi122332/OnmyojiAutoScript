@@ -1,0 +1,20 @@
+[
+  {
+    "itemName": "mystery_dice_reward",
+    "roiFront": "1117,257,98,31",
+    "roiBack": "1117,257,98,31",
+    "mode": "DigitCounter",
+    "method": "Default",
+    "keyword": "",
+    "description": "神秘骰子奖励进度"
+  },
+  {
+    "itemName": "click_anywhere_continue",
+    "roiFront": "548,460,185,31",
+    "roiBack": "548,460,185,31",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "",
+    "description": "点击任意位置继续"
+  }
+]

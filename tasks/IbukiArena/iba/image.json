@@ -1,0 +1,74 @@
+[
+  {
+    "itemName": "main_to_ibuki",
+    "imageName": "iba_main_to_ibuki.png",
+    "roiFront": "1186,291,32,34",
+    "roiBack": "1160,110,120,470",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "庭院右侧活动栏进入伊吹之擂"
+  },
+  {
+    "itemName": "check_ibuki",
+    "imageName": "iba_check_ibuki.png",
+    "roiFront": "88,24,136,44",
+    "roiBack": "60,10,190,70",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "伊吹之擂主界面标题"
+  },
+  {
+    "itemName": "goto_arena",
+    "imageName": "iba_goto_arena.png",
+    "roiFront": "42,662,116,32",
+    "roiBack": "20,560,170,140",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "狭间幻境入口"
+  },
+  {
+    "itemName": "check_arena",
+    "imageName": "iba_check_arena.png",
+    "roiFront": "143,25,148,40",
+    "roiBack": "120,10,200,70",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "狭间幻境标题"
+  },
+  {
+    "itemName": "challenge",
+    "imageName": "iba_challenge.png",
+    "roiFront": "1128,558,104,52",
+    "roiBack": "1090,530,180,150",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "挑战"
+  },
+  {
+    "itemName": "skip",
+    "imageName": "iba_skip.png",
+    "roiFront": "808,416,70,44",
+    "roiBack": "740,380,240,110",
+    "method": "Template matching",
+    "threshold": 0.75,
+    "description": "跳过剧情"
+  },
+  {
+    "itemName": "ibuki_unlock",
+    "imageName": "iba_ibuki_unlock.png",
+    "roiFront": "760,634,22,27",
+    "roiBack": "733,617,117,61",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "未锁定状态"
+  },
+  {
+    "itemName": "ibuki_lock",
+    "imageName": "iba_ibuki_lock.png",
+    "roiFront": "760,634,22,27",
+    "roiBack": "733,617,117,61",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "锁定状态"
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "itemName": "goto_frog_challenge",
+    "imageName": "fc_goto_frog_challenge.png",
+    "roiFront": "1183,376,45,28",
+    "roiBack": "1166,113,88,404",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "前往青蛙瓷器挑战赛"
+  },
+  {
+    "itemName": "fc_skip",
+    "imageName": "fc_fc_skip.png",
+    "roiFront": "1157,32,53,29",
+    "roiBack": "1129,17,105,63",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "首次进入跳过"
+  },
+  {
+    "itemName": "check_frog_challenge",
+    "imageName": "fc_check_frog_challenge.png",
+    "roiFront": "1080,19,27,26",
+    "roiBack": "1065,7,62,52",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "青蛙瓷器挑战赛页面标志"
+  },
+  {
+    "itemName": "fc_fire",
+    "imageName": "fc_fc_fire.png",
+    "roiFront": "1159,641,64,28",
+    "roiBack": "1121,571,141,126",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "战斗"
+  },
+  {
+    "itemName": "fc_fire_stop",
+    "imageName": "fc_fc_fire_stop.png",
+    "roiFront": "1159,641,64,28",
+    "roiBack": "1121,571,141,126",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "无奖励战斗就停止"
+  }
+]
