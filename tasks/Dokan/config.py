@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, field_validator
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 from tasks.Component.SwitchSoul.switch_soul_config import SwitchSoulConfig
 from tasks.Component.config_base import ConfigBase, Time, dynamic_hide
+from tasks.Component.config_notify import TaskNotifyConfig
 from tasks.Component.config_scheduler import Scheduler
 
 
@@ -158,6 +159,7 @@ class DokanBattleConfig(GeneralBattleConfig):
 class Dokan(ConfigBase):
     scheduler: Scheduler = Field(default_factory=Scheduler)
     dokan_config: DokanConfig = Field(default_factory=DokanConfig)
+    notification_config: TaskNotifyConfig = Field(default_factory=TaskNotifyConfig)
     dokan_member_battle_conf: DokanBattleConfig = Field(default_factory=DokanBattleConfig)
     dokan_owner_battle_conf: DokanBattleConfig = Field(default_factory=DokanBattleConfig)
     dokan_member_switch_soul: SwitchSoulConfig = Field(default_factory=SwitchSoulConfig)

@@ -15,6 +15,7 @@ from PIL import Image
 
 from module.exception import GameStuckError, TaskEnd
 from module.logger import logger
+from module.notify.task_notify import resolve_task_notifier
 from module.atom.image import RuleImage
 from module.base.timer import Timer
 
@@ -75,7 +76,8 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
 
     def push_run_report(self):
         try:
-            notifier = self.config.notifier
+            notifier = resolve_task_notifier(
+                self.config, getattr(self.config.model.frog_boss, 'notification_config', None))
             if not notifier.enable:
                 return
             scheduler = getattr(self.config.model.frog_boss, 'scheduler', None)

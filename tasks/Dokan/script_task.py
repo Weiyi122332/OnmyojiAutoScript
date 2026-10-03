@@ -15,6 +15,7 @@ from future.backports.datetime import datetime
 from module.base.timer import Timer
 from module.exception import TaskEnd
 from module.logger import logger
+from module.notify.task_notify import resolve_task_notifier
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 from tasks.Component.GeneralBattle.general_battle import GeneralBattle, ExitMatcher, BattleBehaviorScope, BattleContext, \
     BattleAction
@@ -185,7 +186,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         if not self.conf.dokan_config.push_reward_images:
             logger.info('Dokan reward screenshots kept because dojo notifications are disabled')
             return
-        notifier = self.config.notifier
+        notifier = resolve_task_notifier(self.config, getattr(self.conf, 'notification_config', None))
         if not notifier.enable:
             logger.info('Dokan reward screenshots kept because notifications are disabled')
             return
@@ -232,7 +233,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         return '\n'.join([headline, *details])
 
     def _push_dokan_refresh_limit_notification(self) -> None:
-        notifier = self.config.notifier
+        notifier = resolve_task_notifier(self.config, getattr(self.conf, 'notification_config', None))
         if not notifier.enable:
             logger.warning('Dokan refresh limit reached, but notifications are disabled')
             return

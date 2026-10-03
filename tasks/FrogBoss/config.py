@@ -6,6 +6,7 @@ from enum import Enum
 from pydantic import BaseModel, Field, field_validator
 
 from tasks.Component.config_base import ConfigBase, Time
+from tasks.Component.config_notify import TaskNotifyConfig
 from tasks.Component.config_scheduler import Scheduler
 from tasks.FrogBoss.frog_schedule import advance_delta
 
@@ -33,5 +34,6 @@ class FrogBossConfig(ConfigBase):
 class FrogBoss(ConfigBase):
     scheduler: Scheduler = Field(default_factory=Scheduler)
     frog_boss_config: FrogBossConfig = Field(default_factory=FrogBossConfig)
+    notification_config: TaskNotifyConfig = Field(default_factory=TaskNotifyConfig)
 
 

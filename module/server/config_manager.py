@@ -24,6 +24,7 @@ CONFIG_REDACTION_PATHS = (
     "wanted_quests.wanted_quests_config.invite_friend_name",
     "*.invite_config.friend_list",
     "script.error.notify_config",
+    "*.notification_config.task_notify_config",
     "global_game.server.password",
     "script.device.serial",
     "script.device.handle",

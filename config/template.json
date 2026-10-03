@@ -1183,6 +1183,10 @@
     "frog_boss_config": {
       "before_end_frog": "00:15:00",
       "strategy_frog": "frog_majority"
+    },
+    "notification_config": {
+      "task_notify_enable": true,
+      "task_notify_config": ""
     }
   },
   "float_parade": {
@@ -1934,6 +1938,10 @@
       "min_people_num": -1,
       "min_bounty": 0,
       "find_dokan_refresh_count": 7
+    },
+    "notification_config": {
+      "task_notify_enable": true,
+      "task_notify_config": ""
     },
     "dokan_member_battle_conf": {
       "lock_team_enable": false,
