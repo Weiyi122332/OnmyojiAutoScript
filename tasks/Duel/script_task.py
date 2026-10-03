@@ -7,7 +7,7 @@ import random
 from datetime import date, time, datetime, timedelta
 
 from module.logger import logger
-from module.exception import TaskEnd
+from module.exception import GamePageUnknownError, TaskEnd
 from module.base.timer import Timer
 from module.base.protect import random_sleep
 
@@ -545,32 +545,50 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
         battle_operated = False
         battle_timeout_timer = Timer(270).start()
         ret_timer = Timer(5)
+        settlement_click_count = 0
+        settlement_clicked_at = None
         battle_timeout_cnt, max_timeout_cnt = 0, 3
         ret = None
         while True:
             self.screenshot()
-            self.check_and_get_reward()
             if self.appear(self.I_CHECK_DUEL) and self.appear(self.I_D_HELP):  # 斗技主界面
                 break
+            if settlement_click_count == 2 and monotonic() - settlement_clicked_at >= 5:
+                logger.warning('Duel settlement did not finish within 5s after one retry')
+                raise GamePageUnknownError('Duel settlement timeout after one retry')
+            self.check_and_get_reward()
             if self.appear(self.I_D_WIN_SHARE,interval= 1.2): #拔得头筹
                 self.click(random_click(ltrb=(True, True, False, True)), interval=1.2)
                 continue
             if self.appear_then_click(self.I_UI_BACK_RED, interval=1.2):  # 关闭段位上升页面
                 ret_timer.reset()
                 continue
-            if ret_timer.started() and ret_timer.reached():  # 兜底逻辑, 已经结算了但是还没有到斗技主界面
-                self.goto_page(page_duel)
-                break
+            in_settlement = False
             if self.is_battle_win():
                 ret = True
-                ret_timer.start()
-                self.click(random_click(ltrb=(True, True, False, True)), interval=1.2)
-                continue
-            if self.is_battle_lose():
+                in_settlement = True
+            elif self.is_battle_lose():
                 ret = False
-                ret_timer.start()
-                self.click(random_click(ltrb=(True, True, False, True)), interval=1.2)
+                in_settlement = True
+            if in_settlement:
+                # 只允许首次点击和一次补点；每次都用当前截图确认仍在结算页。
+                if settlement_click_count == 0 or (
+                    settlement_click_count == 1 and monotonic() - settlement_clicked_at >= 2
+                ):
+                    self.click(random_click(ltrb=(True, True, False, True)))
+                    settlement_click_count += 1
+                    settlement_clicked_at = monotonic()
+                    ret_timer.reset()
+                    if settlement_click_count == 1:
+                        logger.info('Duel settlement: first click; recheck after 2s')
+                    else:
+                        logger.info('Duel settlement: retry once; wait up to 5s')
+                sleep(0.2)
                 continue
+            # 结算标志消失后的过渡页沿用导航兜底；补点后仍未返回则由上方5秒超时报错。
+            if ret_timer.started() and ret_timer.reached():
+                self.goto_page(page_duel)
+                break
             if not ret_timer.started() and battle_timeout_cnt >= max_timeout_cnt:
                 logger.warning('Duel battle timeout[>15 minutes], exit')
                 self.duel_exit_battle()
