@@ -87,7 +87,7 @@ class ScriptTask(KU, KekkaiActivationAssets):
         """
         执行挂卡，要求在结界的界面
         顺便把下一次执行也设置了：
-        下次运行时间 = 结界卡持续时间 + 15~30 分钟随机值
+        下次运行时间 = 结界卡持续时间 + 5~15 分钟随机值
         :return: 挂卡成功（）返回True，失败(时间没到提前来了)返回False
         退出的时候还是在挂卡界面而不是结界界面
         """
@@ -139,8 +139,8 @@ class ScriptTask(KU, KekkaiActivationAssets):
                 logger.info('Card is not selected also not using')
                 self.screening_card(_config.card_type)
 
-    # 挂卡后下一次运行：结界卡持续时间 + 15~30 分钟随机值
-    NEXT_RUN_EXTRA_MINUTES = (15, 30)
+    # 挂卡后下一次运行：结界卡持续时间 + 5~15 分钟随机值
+    NEXT_RUN_EXTRA_MINUTES = (5, 15)
     # 结界卡列表里每一行都写着卡片的总时长（例如“24小时”）
     CARD_DURATION_KEYWORD = '小时'
     # 同一行内的“每小时收益”和“总时长”两段文字允许的垂直偏差
@@ -182,7 +182,7 @@ class ScriptTask(KU, KekkaiActivationAssets):
 
     def set_next_run_by_card_time(self, interval: timedelta, card_duration: timedelta = None) -> None:
         """
-        下次运行时间 = 结界卡持续时间 + 15~30 分钟随机值
+        下次运行时间 = 结界卡持续时间 + 5~15 分钟随机值
         :param interval: 面板上识别到的卡片剩余时间（O_CARD_ALL_TIME）
         :param card_duration: 卡片本身的总时长（O_CARD_DURATION），刚挂上的卡用它
         """
