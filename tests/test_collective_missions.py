@@ -1,6 +1,7 @@
 """集体任务切换后的状态、识别重试及提交窗口检查。"""
 
 import unittest
+import numpy as np
 from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
 
@@ -23,9 +24,17 @@ class CollectiveMissionsTest(unittest.TestCase):
     def make_selection_task(self, names):
         task = ScriptTask.__new__(ScriptTask)
         task.current_mission = MC.FEED  # 模拟上次识别留下的结果。
-        task.device = SimpleNamespace(image=None, click_record_clear=Mock())
-        task.screenshot = Mock()
-        task.O_CM_2 = SimpleNamespace(ocr=Mock(side_effect=names))
+        task.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8),
+                                      click_record_clear=Mock())
+
+        def screenshot():
+            # 模拟任务切换或文字动画改变名称区域。
+            task.device.image[135, 333, 0] += 1
+
+        task.screenshot = Mock(side_effect=screenshot)
+        task.O_CM_2 = SimpleNamespace(
+            roi=(333, 135, 92, 44), ocr_single_line=Mock(side_effect=names),
+            ocr=Mock(side_effect=AssertionError('full text detection is too expensive')))
         task.appear_then_click = Mock(return_value=True)
         return task
 
@@ -46,7 +55,7 @@ class CollectiveMissionsTest(unittest.TestCase):
         self.assertFalse(self.select(task))
         self.assertIsNone(task.current_mission)
         self.assertEqual(task.appear_then_click.call_count, 2)
-        self.assertEqual(task.O_CM_2.ocr.call_count, 3)
+        self.assertEqual(task.O_CM_2.ocr_single_line.call_count, 3)
 
     def test_blank_ocr_retries_without_switching_away_from_target(self):
         task = self.make_selection_task(['', ' ', '御灵一'])
@@ -60,6 +69,27 @@ class CollectiveMissionsTest(unittest.TestCase):
         self.assertFalse(self.select(task))
         self.assertIsNone(task.current_mission)
         task.appear_then_click.assert_not_called()
+        self.assertEqual(task.screenshot.call_count, 3)
+
+    def test_unchanged_blank_name_is_only_recognized_once(self):
+        task = self.make_selection_task([''])
+        task.screenshot = Mock()
+        self.assertFalse(self.select(task))
+        task.O_CM_2.ocr_single_line.assert_called_once()
+        task.O_CM_2.ocr.assert_not_called()
+        self.assertEqual(task.screenshot.call_count, 3)
+        self.assertIsNone(task.current_mission)
+
+    def test_changes_outside_name_region_do_not_repeat_ocr(self):
+        task = self.make_selection_task([''])
+
+        def screenshot():
+            task.device.image[0, 0, 0] += 1
+
+        task.screenshot.side_effect = screenshot
+        self.assertFalse(self.select(task))
+        task.O_CM_2.ocr_single_line.assert_called_once()
+        task.O_CM_2.ocr.assert_not_called()
         self.assertEqual(task.screenshot.call_count, 3)
 
     def test_blank_ocr_after_switch_clears_previous_feed_mission(self):

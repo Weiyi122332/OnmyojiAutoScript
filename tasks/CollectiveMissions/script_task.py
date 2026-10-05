@@ -6,6 +6,7 @@ from time import sleep
 
 import random
 import re
+import numpy as np
 from cached_property import cached_property
 from enum import Enum
 from datetime import timedelta
@@ -55,10 +56,17 @@ class ScriptTask(GameUi, CollectiveMissionsAssets):
         raise TaskEnd
 
     def _read_mission_text(self) -> str:
-        """名称暂时为空时重读当前界面，避免直接切走目标任务。"""
+        """名称为空时等待画面变化，只对变化后的名称区域做单行识别。"""
+        previous_region = None
+        mission_text = ''
+        x, y, width, height = self.O_CM_2.roi
         for attempt in range(3):
             self.screenshot()
-            mission_text = self.O_CM_2.ocr(self.device.image).strip()
+            region = self.device.image[y:y + height, x:x + width]
+            if previous_region is None or not np.array_equal(region, previous_region):
+                # 任务名称是固定横排文字，不调用完整文字检测；相同画面不重复识别。
+                mission_text = self.O_CM_2.ocr_single_line(self.device.image).strip()
+                previous_region = region.copy()
             if mission_text:
                 return mission_text
             logger.warning(f'No mission name detected ({attempt + 1}/3)')
