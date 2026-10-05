@@ -26,7 +26,7 @@ from tasks.CollectiveMissions.assets import CollectiveMissionsAssets
 class ScriptTask(GameUi, CollectiveMissionsAssets):
     """阴阳寮集体任务"""
 
-    current_mission: MC = None
+    current_mission: MC | None = None
 
     def run(self):
         self.goto_page(page_collective_missions)
@@ -36,39 +36,50 @@ class ScriptTask(GameUi, CollectiveMissionsAssets):
             self.goto_page(page_main)
             self.set_next_run(task='CollectiveMissions', success=True)
             raise TaskEnd
-        self.select_and_update_cur_mission(self.config.collective_missions.missions_config.missions_select)
-        if self.current_mission is None:
+        target_mission = self.config.collective_missions.missions_config.missions_select
+        selected = self.select_and_update_cur_mission(target_mission)
+        if not selected or self.current_mission != target_mission:
+            logger.warning(f'Mission selection failed, skip target: {target_mission.value}')
             self.goto_page(page_main)
             self.set_next_run(task='CollectiveMissions', success=False)
             raise TaskEnd
         match self.current_mission:
             case MC.FEED:
-                self._feed()  # 喂 N 卡
+                success = self._feed()  # 喂 N 卡
             case MC.AW1 | MC.AW2 | MC.AW3 | MC.GR1 | MC.GR2 | MC.GR3:
-                self._donate()  # 捐材料
+                success = self._donate()  # 捐材料
             case MC.SO1 | MC.SO2:
-                self._soul()  # 捐御魂
+                success = self._soul()  # 捐御魂
         self.goto_page(page_main)
-        self.set_next_run(task='CollectiveMissions', success=True)
+        self.set_next_run(task='CollectiveMissions', success=success)
         raise TaskEnd
 
+    def _read_mission_text(self) -> str:
+        """名称暂时为空时重读当前界面，避免直接切走目标任务。"""
+        for attempt in range(3):
+            self.screenshot()
+            mission_text = self.O_CM_2.ocr(self.device.image).strip()
+            if mission_text:
+                return mission_text
+            logger.warning(f'No mission name detected ({attempt + 1}/3)')
+            if attempt < 2:
+                sleep(0.4)
+        return ''
+
     def select_and_update_cur_mission(self, mission: MC) -> bool:
-        """尝试选择对应任务并更新当前任务, 若选择失败(无法切换)则会停留在当前任务
-        :return: 成功选择返回True
+        """选择目标任务；失败时清空当前任务，防止使用切换前的识别结果。
+        :return: 已确认当前任务为目标时返回True
         """
+        self.current_mission = None
         pre_mission = ''
         switch_fail_cnt, max_retry = 0, random.randint(2, 3)  # 点了没反应, 可能之前已经做了其他任务导致无法切换
         switch_cnt, max_switch = 0, random.randint(12, 15)  # 尝试最多15次内能中奖找到对应任务
         while True:
-            if switch_fail_cnt >= max_retry:
-                logger.warning(f'Cannot switch next mission, stop select and try run')
+            mission_text = self._read_mission_text()
+            if not mission_text:
+                logger.warning(f'Cannot identify current mission, skip target: {mission.value}')
                 return False
-            if switch_cnt >= max_switch:
-                logger.warning(f'Cannot find target mission: {mission.value}, exit')
-                return False
-            self.screenshot()
             # 识别当前任务
-            mission_text = self.O_CM_2.ocr(self.device.image)
             try:
                 detect_mission = MC(mission_text)
                 logger.info(f"Current: {detect_mission.value}, target: {mission.value}")
@@ -76,19 +87,55 @@ class ScriptTask(GameUi, CollectiveMissionsAssets):
                 if detect_mission == mission:
                     logger.info(f"Success select mission[{mission_text}]")
                     return True
-            except ValueError as e:
+            except ValueError:
                 logger.warning(f'Unknown {mission_text}, skip')
-            logger.info("Try switch to next mission")
+
+            # 最后一次切换也必须先识别，再检查上限。
             switch_fail_cnt = 0 if pre_mission != mission_text else (switch_fail_cnt + 1)
+            if switch_fail_cnt >= max_retry:
+                logger.warning(f'Cannot switch mission: current={mission_text}, target={mission.value}')
+                self.current_mission = None
+                return False
+            if switch_cnt >= max_switch:
+                logger.warning(f'Cannot find target mission: {mission.value}, current={mission_text}, exit')
+                self.current_mission = None
+                return False
+            logger.info('Try switch to next mission')
+            if not self.appear_then_click(self.I_CM_SWITCH, interval=0.6):
+                logger.warning(f'Mission switch button unavailable: current={mission_text}, target={mission.value}')
+                self.current_mission = None
+                return False
             pre_mission = mission_text
-            if self.appear_then_click(self.I_CM_SWITCH, interval=0.6):
-                sleep(random.uniform(0.6, 1.2))
-                switch_cnt += 1
-                self.device.click_record_clear()
+            self.current_mission = None
+            switch_cnt += 1
+            sleep(random.uniform(0.6, 1.2))
+            self.device.click_record_clear()
+
+    def _open_submission(self, expected: RuleImage) -> bool:
+        """打开一次提交窗口，确认类型；不匹配或5秒内未出现则退出。"""
+        deadline = time.monotonic() + 5
+        clicked = False
+        window_markers = (self.I_CM_PRESENT, self.I_SL_SUBMIT, self.I_FEED_HEAP)
+        while True:
+            self.screenshot()
+            if self.appear(expected):
+                return True
+            for marker in window_markers:
+                if marker is not expected and self.appear(marker):
+                    logger.warning(f'Unexpected mission submission window: expected={expected}, actual={marker}')
+                    return False
+            if time.monotonic() >= deadline:
+                logger.warning(f'Mission submission window did not appear within 5s: {expected}')
+                return False
+            if not clicked:
+                self.click(self.C_CM_1)
+                clicked = True
+            sleep(0.2)
 
     def _donate(self):
         """捐材料"""
-        self.ui_click(self.C_CM_1, self.I_CM_PRESENT, interval=1.5)
+        if not self._open_submission(self.I_CM_PRESENT):
+            return False
         logger.info('Start to donate')
         # 判断哪一个的材料最多
         self.screenshot()
@@ -142,7 +189,8 @@ class ScriptTask(GameUi, CollectiveMissionsAssets):
 
     def _soul(self):
         """提交御魂"""
-        self.ui_click(self.C_CM_1, self.I_SL_SUBMIT)
+        if not self._open_submission(self.I_SL_SUBMIT):
+            return False
         while 1:
             self.screenshot()
             number_text = self.O_SL_NUMBER.ocr(self.device.image)
@@ -165,7 +213,8 @@ class ScriptTask(GameUi, CollectiveMissionsAssets):
     def _feed(self):
         """提交N卡"""
         logger.info('Start to feed N')
-        self.ui_click(self.C_CM_1, self.I_FEED_HEAP)
+        if not self._open_submission(self.I_FEED_HEAP):
+            return False
         logger.info('Submit to feed N')
         click_list = random.sample([self.L_FEED_CLICK_1, self.L_FEED_CLICK_2, self.L_FEED_CLICK_3, self.L_FEED_CLICK_4], 2)
         while 1:
