@@ -227,7 +227,7 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
         preview_close_clicked = False
         while 1:
             self.screenshot()
-            preview_visible = self.appear(self.I_BET_REWARD_PREVIEW)
+            preview_visible = self.bet_reward_preview_visible()
             if preview_close_clicked and not preview_visible:
                 self.run_report.amount = 300000
                 break
@@ -248,7 +248,7 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
         confirm_timer = Timer(10).start()
         while 1:
             self.screenshot()
-            if self.appear(self.I_BET_REWARD_PREVIEW):
+            if self.bet_reward_preview_visible():
                 self.retry_bet('奖励预览仍在显示，取消确认下注')
             if self.appear(self.I_BETTED):
                 self.run_report.confirmed = True
@@ -264,6 +264,11 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
             if self.appear_then_click(self.I_UI_CONFIRM_SAMLL, interval=2):
                 continue
             sleep(0.2)
+
+    def bet_reward_preview_visible(self) -> bool:
+        # 奖励预览兼容“获胜可获得”和“获胜奖励”两种标题。
+        return (self.appear(self.I_BET_REWARD_PREVIEW_PENDING)
+                or self.appear(self.I_BET_REWARD_PREVIEW))
 
     def retry_bet(self, reason: str) -> NoReturn:
         before_end = self.config.model.frog_boss.frog_boss_config.before_end_frog

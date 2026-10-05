@@ -2,8 +2,12 @@
 
 import unittest
 from datetime import datetime
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
+
+import cv2
+import numpy as np
 
 from module.exception import TaskEnd
 from tasks.FrogBoss.config import Strategy
@@ -32,6 +36,7 @@ class FrogBetFlowTest(unittest.TestCase):
             'amount_wait': (task.I_GOLD_30,),
             'coin_without_preview': (task.I_GOLD_30, task.I_GOLD_30_CHECK),
             'preview': (task.I_GOLD_30, task.I_GOLD_30_CHECK, task.I_BET_REWARD_PREVIEW),
+            'preview_pending': (task.I_GOLD_30, task.I_GOLD_30_CHECK, task.I_BET_REWARD_PREVIEW_PENDING),
             'preview_wait': (task.I_GOLD_30, task.I_GOLD_30_CHECK, task.I_BET_REWARD_PREVIEW),
             'preview_without_coin': (task.I_GOLD_30, task.I_BET_REWARD_PREVIEW),
             'confirm': (task.I_GOLD_30, task.I_BET_SURE),
@@ -97,6 +102,17 @@ class FrogBetFlowTest(unittest.TestCase):
         self.assertEqual(self.count_clicks(clock, task.I_GOLD_30), 1)
         self.assertEqual(self.count_clicks(clock, task.I_BET_SURE), 1)
         self.assertTrue(task.run_report.confirmed)
+
+    def test_pending_preview_title_triggers_the_second_amount_click(self):
+        task, clock = self.make_task([
+            (0, 'betting'), (0.1, 'amount'), (1.2, 'preview_pending'),
+            (1.5, 'amount'), (2, 'confirm'), (3, 'betted'),
+        ])
+        self.do_bet(task, clock)
+        self.assertEqual(self.count_clicks(clock, task.I_GOLD_30), 2)
+        self.assertEqual(self.count_clicks(clock, task.I_BET_SURE), 1)
+        self.assertTrue(task.run_report.confirmed)
+        task.retry_bet.assert_not_called()
 
     def test_confirmation_wait_does_not_reopen_amount_preview(self):
         task, clock = self.make_task([
@@ -204,15 +220,50 @@ class FrogBetFlowTest(unittest.TestCase):
         self.assertEqual(self.count_clicks(clock, task.I_BET_SURE), 0)
 
     def test_unexpected_preview_during_confirmation_blocks_background_clicks(self):
-        task, clock = self.make_task([
-            (0, 'betting'), (0.1, 'amount'), (0.3, 'preview'), (0.5, 'amount'),
-            (1, 'preview'),
-        ])
-        with self.assertRaises(TaskEnd):
-            self.do_bet(task, clock)
-        self.assertEqual(self.count_clicks(clock, task.I_GOLD_30), 2)
-        self.assertEqual(self.count_clicks(clock, task.I_BET_SURE), 0)
-        task.retry_bet.assert_called_once_with('奖励预览仍在显示，取消确认下注')
+        for scene in ('preview', 'preview_pending'):
+            with self.subTest(scene=scene):
+                task, clock = self.make_task([
+                    (0, 'betting'), (0.1, 'amount'), (0.3, 'preview'), (0.5, 'amount'),
+                    (1, scene),
+                ])
+                with self.assertRaises(TaskEnd):
+                    self.do_bet(task, clock)
+                self.assertEqual(self.count_clicks(clock, task.I_GOLD_30), 2)
+                self.assertEqual(self.count_clicks(clock, task.I_BET_SURE), 0)
+                task.retry_bet.assert_called_once_with('奖励预览仍在显示，取消确认下注')
+
+
+class FrogPreviewImageTest(unittest.TestCase):
+    """真实截图裁剪，覆盖下注前后两种标题及普通竞猜界面。"""
+
+    def make_task(self, scene):
+        task = ScriptTask.__new__(ScriptTask)
+        path = Path(__file__).parent / 'fixtures' / 'frog_preview' / f'{scene}.png'
+        crop = cv2.cvtColor(cv2.imdecode(np.fromfile(str(path), np.uint8), cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
+        image = np.zeros((720, 1280, 3), dtype=np.uint8)
+        image[100:310, 450:830] = crop
+        task.appear = lambda marker: marker.template_match(image)
+        return task
+
+    def test_live_pending_preview_is_detected_with_coin(self):
+        task = self.make_task('pending')
+        self.assertTrue(task.appear(task.I_BET_REWARD_PREVIEW_PENDING))
+        self.assertFalse(task.appear(task.I_BET_REWARD_PREVIEW))
+        self.assertTrue(task.bet_reward_preview_visible())
+        self.assertTrue(task.appear(task.I_GOLD_30_CHECK))
+
+    def test_previous_reward_preview_remains_supported(self):
+        task = self.make_task('reward')
+        self.assertFalse(task.appear(task.I_BET_REWARD_PREVIEW_PENDING))
+        self.assertTrue(task.appear(task.I_BET_REWARD_PREVIEW))
+        self.assertTrue(task.bet_reward_preview_visible())
+        self.assertTrue(task.appear(task.I_GOLD_30_CHECK))
+
+    def test_normal_betting_screen_does_not_match_either_preview(self):
+        task = self.make_task('betting')
+        self.assertFalse(task.appear(task.I_BET_REWARD_PREVIEW_PENDING))
+        self.assertFalse(task.appear(task.I_BET_REWARD_PREVIEW))
+        self.assertFalse(task.bet_reward_preview_visible())
 
 
 if __name__ == '__main__':

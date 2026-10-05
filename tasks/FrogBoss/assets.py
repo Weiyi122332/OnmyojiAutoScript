@@ -31,7 +31,9 @@ class FrogBossAssets:
 	# description 
 	I_GOLD_30_CHECK = RuleImage(roi_front=(513,196,58,53), roi_back=(402,141,459,489), threshold=0.8, method="Template matching", file="./tasks/FrogBoss/fb/fb_gold_30_check.png")
 	# 下注档位的获胜奖励预览
-	I_BET_REWARD_PREVIEW = RuleImage(roi_front=(580,165,125,36), roi_back=(555,145,175,75), threshold=0.9, method="Template matching", file="./tasks/FrogBoss/fb/fb_bet_reward_preview.png")
+	I_BET_REWARD_PREVIEW = RuleImage(roi_front=(580,165,125,36), roi_back=(550,115,185,110), threshold=0.9, method="Template matching", file="./tasks/FrogBoss/fb/fb_bet_reward_preview.png")
+	# 下注前的获胜可获得奖励预览
+	I_BET_REWARD_PREVIEW_PENDING = RuleImage(roi_front=(566,139,146,34), roi_back=(550,115,185,110), threshold=0.9, method="Template matching", file="./tasks/FrogBoss/fb/fb_bet_reward_preview_pending.png")
 	# description 
 	I_BETTED = RuleImage(roi_front=(1093,313,125,54), roi_back=(207,240,1058,312), threshold=0.8, method="Template matching", file="./tasks/FrogBoss/fb/fb_betted.png")
 	# description 

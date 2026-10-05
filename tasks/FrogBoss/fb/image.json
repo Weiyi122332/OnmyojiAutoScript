@@ -93,11 +93,21 @@
     "itemName": "bet_reward_preview",
     "imageName": "fb_bet_reward_preview.png",
     "roiFront": "580,165,125,36",
-    "roiBack": "555,145,175,75",
+    "roiBack": "550,115,185,110",
     "method": "Template matching",
     "threshold": 0.9,
     "profile": "Default",
     "description": "下注档位的获胜奖励预览"
+  },
+  {
+    "itemName": "bet_reward_preview_pending",
+    "imageName": "fb_bet_reward_preview_pending.png",
+    "roiFront": "566,139,146,34",
+    "roiBack": "550,115,185,110",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "profile": "Default",
+    "description": "下注前的获胜可获得奖励预览"
   },
   {
     "itemName": "betted",
