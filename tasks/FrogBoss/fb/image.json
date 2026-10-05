@@ -90,6 +90,16 @@
     "description": "description"
   },
   {
+    "itemName": "bet_reward_preview",
+    "imageName": "fb_bet_reward_preview.png",
+    "roiFront": "580,165,125,36",
+    "roiBack": "555,145,175,75",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "profile": "Default",
+    "description": "下注档位的获胜奖励预览"
+  },
+  {
     "itemName": "betted",
     "imageName": "fb_betted.png",
     "roiFront": "1093,313,125,54",

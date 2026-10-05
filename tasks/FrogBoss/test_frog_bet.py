@@ -68,15 +68,21 @@ class FrogBossRunTests(unittest.TestCase):
         self.task.next_run = Mock()
         self.betted = False
         self.rest = False
+        self.preview_open = False
 
         def appear(marker):
             if marker is self.task.I_BETTED:
                 return self.betted
             if marker is self.task.I_FROG_BOSS_REST:
                 return self.rest
+            if marker is self.task.I_BET_REWARD_PREVIEW:
+                return self.preview_open
             return marker in (self.task.I_BET_LEFT, self.task.I_BET_RIGHT, self.task.I_GOLD_30_CHECK)
 
         def confirm(marker, **kwargs):
+            if marker is self.task.I_GOLD_30:
+                self.preview_open = not self.preview_open
+                return True
             if marker is self.task.I_UI_CONFIRM:
                 self.betted = True
                 return True

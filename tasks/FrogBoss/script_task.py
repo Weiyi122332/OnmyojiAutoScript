@@ -8,6 +8,7 @@ import re
 import json
 from pathlib import Path
 from io import BytesIO
+from time import sleep
 from typing import NoReturn
 from xml.etree.ElementTree import ParseError
 
@@ -187,7 +188,6 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
         self.ensure_bet_time()
         logger.hr('do bet', level=2)
         self.screenshot()
-        flag_glod_30 = 0
         self.run_report.round_at = round_start()
         count_left, count_right = self.read_bet_counts()
         match self.config.model.frog_boss.frog_boss_config.strategy_frog:
@@ -222,36 +222,48 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
         self.run_report.side = 'LEFT' if click_image is self.I_BET_LEFT else 'RIGHT'
         self.run_report.status = '准备下注，尚未确认成功'
         self.ui_click_until_disappear(click_image)
-        gold_30_timer = Timer(10)
-        gold_30_timer.start()
+        gold_30_timer = Timer(10).start()
+        gold_30_clicked = False
+        preview_close_clicked = False
         while 1:
             self.screenshot()
-            if self.appear(self.I_GOLD_30_CHECK):
+            preview_visible = self.appear(self.I_BET_REWARD_PREVIEW)
+            if preview_close_clicked and not preview_visible:
                 self.run_report.amount = 300000
                 break
             if gold_30_timer.reached():
-                logger.info('Gold 30 not appear')
-                break
-            if self.appear_then_click(self.I_GOLD_30, interval=3):
+                self.retry_bet('30万档位选择或奖励预览关闭未完成，取消本次下注')
+            if preview_visible:
+                # 首次选择会打开奖励预览；只有识别到预览和金币图案才再次点击关闭。
+                if not preview_close_clicked and self.appear(self.I_GOLD_30_CHECK):
+                    if self.appear_then_click(self.I_GOLD_30, interval=1):
+                        preview_close_clicked = True
+                        continue
+            elif not gold_30_clicked and self.appear_then_click(self.I_GOLD_30, interval=1):
+                gold_30_clicked = True
                 continue
+            sleep(0.2)
         # 正式下注
         logger.info('Formal bet')
+        confirm_timer = Timer(10).start()
         while 1:
             self.screenshot()
+            if self.appear(self.I_BET_REWARD_PREVIEW):
+                self.retry_bet('奖励预览仍在显示，取消确认下注')
             if self.appear(self.I_BETTED):
                 self.run_report.confirmed = True
                 self.run_report.status = '下注成功'
                 self.capture_bet_screenshot()
                 break
-            if self.appear_then_click(self.I_BET_SURE, interval=2) and flag_glod_30 == 1:
-                continue
-            if self.appear_then_click(self.I_GOLD_30, interval=2):
-                flag_glod_30 = 1
+            if confirm_timer.reached():
+                self.retry_bet('下注结果未确认，稍后重新检查')
+            if self.appear_then_click(self.I_BET_SURE, interval=2):
                 continue
             if self.appear_then_click(self.I_UI_CONFIRM, interval=2):
                 continue
             if self.appear_then_click(self.I_UI_CONFIRM_SAMLL, interval=2):
                 continue
+            sleep(0.2)
 
     def retry_bet(self, reason: str) -> NoReturn:
         before_end = self.config.model.frog_boss.frog_boss_config.before_end_frog
