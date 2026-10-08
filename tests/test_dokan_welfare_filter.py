@@ -1,4 +1,4 @@
-"""The welfare guild switch must never challenge a different emblem."""
+"""Welfare dojo selection must never challenge a different emblem."""
 
 import unittest
 from types import SimpleNamespace
@@ -9,10 +9,9 @@ from tasks.Dokan.script_task import DokanRefreshLimitError, ScriptTask
 
 
 class FakeDokanSelection:
-    def __init__(self, people: int, has_xin: bool, only_welfare: bool = True):
+    def __init__(self, people: int, has_xin: bool):
         self.found_dokan_cnt = 0
         self.has_xin = has_xin
-        self.only_welfare = only_welfare
         self.selected_item = None
         self.I_RIGHTPAD_POINT_BOUNTY = SimpleNamespace(roi_back=(1077, 0, 171, 602))
         self.I_RIGHTPAD_XIN_ICON = SimpleNamespace(roi_back=(1110, 20, 110, 610))
@@ -20,16 +19,10 @@ class FakeDokanSelection:
             roi_back=(0, 0, 1280, 720), roi_front=(400, 420, 20, 20)
         )
         self.I_CENTER_CHALLENGE = object()
-        self.I_CENTER_GUANZHU_XIUXI = object()
         self.I_CHALLENGE_ENSURE = object()
         self.I_REFRESH_ENSURE = object()
         self.C_DOKAN_REFRESH = object()
         self.S_DOKAN_LIST_UP = object()
-        self.O_DOKAN_RIGHTPAD_BOUNTY = SimpleNamespace(
-            roi=None,
-            ocr=Mock(side_effect=AssertionError('welfare mode read bounty'))
-            if only_welfare else Mock(return_value='449万')
-        )
         self.O_DOKAN_CENTER_PEOPLE_NUMBER = SimpleNamespace(
             roi=None, detect_text=Mock(return_value=f'{people}人')
         )
@@ -37,9 +30,7 @@ class FakeDokanSelection:
         self.config = SimpleNamespace(
             dokan=SimpleNamespace(
                 dokan_config=SimpleNamespace(
-                    only_welfare_guild=only_welfare,
                     min_people_num=150,
-                    min_bounty=9999 if only_welfare else 0,
                     find_dokan_refresh_count=1,
                 ),
                 attack_count_config=SimpleNamespace(del_attack_count=Mock()),
@@ -59,10 +50,6 @@ class FakeDokanSelection:
             return self.has_xin and target.roi_back[1] == 328
         if target is self.I_CENTER_POINT_PEOPLE_NUMBER:
             return True
-        if target is self.I_CENTER_GUANZHU_XIUXI:
-            if self.only_welfare:
-                raise AssertionError('welfare mode checked owner level')
-            return True
         return False
 
     def ui_click_until_appear_or_timeout(self, target, stop, **kwargs):
@@ -72,19 +59,11 @@ class FakeDokanSelection:
 
 class WelfareGuildFilterTest(unittest.TestCase):
     @patch('tasks.Dokan.script_task.sleep', return_value=None)
-    def test_switch_off_keeps_existing_selection(self, _sleep):
-        selection = FakeDokanSelection(people=170, has_xin=False, only_welfare=False)
-        self.assertTrue(ScriptTask.find_dokan(selection))
-        self.assertEqual(selection.selected_item[1], 116)
-        selection.O_DOKAN_RIGHTPAD_BOUNTY.ocr.assert_called_once()
-
-    @patch('tasks.Dokan.script_task.sleep', return_value=None)
     def test_only_xin_emblem_with_enough_defenders_is_challenged(self, _sleep):
         selection = FakeDokanSelection(people=170, has_xin=True)
-        self.assertTrue(ScriptTask.find_dokan(selection, score=0))
+        self.assertTrue(ScriptTask.find_dokan(selection))
         self.assertEqual(selection.selected_item[1], 408)
         selection.config.dokan.attack_count_config.del_attack_count.assert_called_once()
-        selection.O_DOKAN_RIGHTPAD_BOUNTY.ocr.assert_not_called()
 
     @patch('tasks.Dokan.script_task.sleep', return_value=None)
     def test_defender_threshold_is_halved_after_configured_refreshes(self, _sleep):

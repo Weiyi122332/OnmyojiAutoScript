@@ -23,7 +23,6 @@ class DokanWaitTimeoutTest(unittest.TestCase):
         self.task.device.detect_record = set()
         self.task.device.app_is_running = Mock(return_value=True)
         self.task.dokan_owner_battle = True
-        self.task.first_master_killed = True
         self.task.attack_priority_selected = True
         self.task.switch_member_soul_done = True
         self.task.second_dokan_ready = False

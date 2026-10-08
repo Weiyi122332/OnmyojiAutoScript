@@ -55,6 +55,22 @@ class DokanBlueTicketRecognitionTest(unittest.TestCase):
                 self.assertEqual(count_blue_tickets(image, reader), 3)
                 reader.assert_called_once()
 
+    def test_clear_two_with_animation_background_is_read_after_ocr_retry(self):
+        reader = Mock(side_effect=[('', 0.0), ('2', 0.99)])
+        self.assertEqual(count_blue_tickets(reward_image('blue_two_background.png'), reader), 2)
+        self.assertEqual(reader.call_count, 2)
+        original, cleaned = [call.args[0] for call in reader.call_args_list]
+        self.assertEqual(cleaned.shape, original.shape)
+        self.assertGreater(np.count_nonzero(np.ptp(original, axis=2)), 0)
+        self.assertTrue(np.all(np.ptp(cleaned, axis=2) == 0))
+        self.assertEqual(cleaned.max(), 255)
+
+    def test_retry_does_not_accept_low_confidence_or_invalid_numbers(self):
+        for text, confidence in (('2', 0.79), ('', 0.0), ('0', 0.99), ('2张', 0.99)):
+            with self.subTest(text=text):
+                reader = Mock(side_effect=[('', 0.0), (text, confidence)])
+                self.assertIsNone(count_blue_tickets(reward_image('blue_two_background.png'), reader))
+
     def test_distinct_blue_ticket_cards_are_added_without_duplicate_matches(self):
         image = reward_image('blue_three.png')
         image[171:279, 263:371] = image[171:279, 667:775].copy()
@@ -93,18 +109,19 @@ class DokanBlueTicketPushTest(unittest.TestCase):
 
     def test_samples_are_summarized_in_one_dated_push_and_deleted_after_delivery(self):
         task = self.make_task()
-        images = [reward_png(name) for name in ('without_blue.png', 'blue_three.png', 'blue_two.png')]
+        images = [reward_png(name) for name in (
+            'without_blue.png', 'blue_three.png', 'blue_two.png', 'blue_two_background.png')]
         with tempfile.TemporaryDirectory() as directory:
             task._dokan_reward_run_directory = Path(directory)
             for index, image in enumerate(images):
                 (Path(directory) / f'{index}.png').write_bytes(image)
             with patch('tasks.Dokan.reward_recognition._read_quantity',
-                       side_effect=[('3', 0.99), ('2', 0.99)]):
+                       side_effect=[('3', 0.99), ('2', 0.99), ('', 0.0), ('2', 0.99)]):
                 task._push_current_run_reward_images()
             self.assertFalse(Path(directory).exists())
         task.config.notifier.push_images.assert_called_once_with(
             images, title=f'{datetime.now():%Y-%m-%d} 道馆结算奖励',
-            content='蓝票合计：5 张\n截图 1：蓝票0 张\n截图 2：蓝票3 张\n截图 3：蓝票2 张')
+            content='蓝票合计：7 张\n截图 1：蓝票0 张\n截图 2：蓝票3 张\n截图 3：蓝票2 张\n截图 4：蓝票2 张')
 
     def test_recognition_failure_does_not_prevent_images_from_being_sent(self):
         task = self.make_task()

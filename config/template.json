@@ -1927,16 +1927,9 @@
     "dokan_config": {
       "dokan_run_time": "20:00:00",
       "dokan_attack_priority": 0,
-      "dokan_auto_cheering_while_cd": false,
-      "random_delay": false,
       "monday_to_thursday": true,
-      "try_start_dokan": false,
-      "only_welfare_guild": false,
-      "skip_owner_battle": false,
       "push_reward_images": true,
-      "find_dokan_score": 4.6,
       "min_people_num": -1,
-      "min_bounty": 0,
       "find_dokan_refresh_count": 7
     },
     "notification_config": {
@@ -1958,29 +1951,7 @@
       "max_continuous": 0,
       "quick_exit": false
     },
-    "dokan_owner_battle_conf": {
-      "lock_team_enable": false,
-      "preset_enable": false,
-      "preset_group": 1,
-      "preset_team": 1,
-      "green_enable": false,
-      "green_mark_type": "choose",
-      "green_mark": "green_left1",
-      "green_mark_name": "",
-      "random_click_swipt_enable": false,
-      "battle_timeout": -1,
-      "continuous_battle": true,
-      "max_continuous": 0,
-      "quick_exit": false
-    },
     "dokan_member_switch_soul": {
-      "enable": false,
-      "switch_group_team": "-1,-1",
-      "enable_switch_by_name": false,
-      "group_name": "",
-      "team_name": ""
-    },
-    "dokan_owner_switch_soul": {
       "enable": false,
       "switch_group_team": "-1,-1",
       "enable_switch_by_name": false,
@@ -1990,8 +1961,21 @@
     "attack_count_config": {
       "remain_attack_count": 2,
       "attack_date": "2023-01-01",
-      "daily_attack_count": 2,
-      "attack_dokan_master": "ATTACK_TWO_TWO"
+      "daily_attack_count": 2
+    },
+    "qq_message_config": {
+      "qq_message_enable": false,
+      "napcat_api_url": "",
+      "napcat_access_token": "",
+      "qq_group_id": "",
+      "qq_member_id": "",
+      "qq_keywords": "",
+      "qq_excluded_keywords": "",
+      "qq_query_start_time": "20:00:00",
+      "qq_query_end_time": "22:00:00",
+      "qq_poll_interval": 60,
+      "qq_history_page_size": 100,
+      "qq_history_max_pages": 5
     }
   },
   "abyss_shadows": {

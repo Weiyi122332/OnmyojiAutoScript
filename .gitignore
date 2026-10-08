@@ -18,6 +18,7 @@ dev_tools/debug_tools
 *.lock
 config/reloadflag
 config/reloadalas
+config/dokan_qq_messages.db*
 test.py
 test/
 

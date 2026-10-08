@@ -3,58 +3,15 @@
 # @author   jackyhwei
 # @note     draft version without full test
 # github    https://github.com/roarhill/oas
-import re
 from datetime import datetime
-from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
 
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 from tasks.Component.SwitchSoul.switch_soul_config import SwitchSoulConfig
-from tasks.Component.config_base import ConfigBase, Time, dynamic_hide
+from tasks.Component.config_base import ConfigBase, MultiLine, Time, dynamic_hide
 from tasks.Component.config_notify import TaskNotifyConfig
 from tasks.Component.config_scheduler import Scheduler
-
-
-class AttackDokanMasterType(str, Enum):
-    """
-        NOTE: 如果第一个道馆没有放弃突破,那么没有第二次选择道馆的机会
-            目前如果设置打一次馆主,如果打不过(失败),会一直等待->挑战循环
-            导致失去放弃突破的机会->无法进行第二次道馆
-    """
-    # 不打馆主                                  0
-    ATTACK_ZERO_ZERO = "ATTACK_ZERO_ZERO"
-    # 第二次攻击时攻击馆主一次                     1
-    ATTACK_ZERO_ONE = "ATTACK_ZERO_ONE"
-    # 第一次攻击时不攻击馆主,第二次攻击时攻击馆主一次     2
-    ATTACK_ZERO_TWO = "ATTACK_ZERO_TWO"
-    #                                           3
-    ATTACK_ONE_ZERO = "ATTACK_ONE_ZERO"
-    # 第一次攻击时攻击馆主一次,第二次攻击时攻击馆主一次 4
-    ATTACK_ONE_ONE = "ATTACK_ONE_ONE"
-    # 第一次攻击时攻击馆主一次,第二次攻击时攻击馆主二次 5
-    ATTACK_ONE_TWO = "ATTACK_ONE_TWO"
-    # 第一次攻击时攻击馆主二次, 没有第二次了          8
-    ATTACK_TWO_TWO = "ATTACK_TWO_TWO"
-
-    def __int__(self):
-        match self.value:
-            case "ATTACK_ZERO_ZERO":
-                return 0
-            case "ATTACK_ZERO_ONE":
-                return 1
-            case "ATTACK_ZERO_TWO":
-                return 2
-            case "ATTACK_ONE_ZERO":
-                return 3
-            case "ATTACK_ONE_ONE":
-                return 4
-            case "ATTACK_ONE_TWO":
-                return 5
-            case "ATTACK_TWO_TWO":
-                return 8
-            case _:
-                return 8
 
 
 class AttackAccountConfig(BaseModel):
@@ -62,13 +19,8 @@ class AttackAccountConfig(BaseModel):
     remain_attack_count: int = Field(default=2, description='remain_attack_count_help')
     # remain_attack_count 值记录的时间,不用配置
     attack_date: str = Field(default='2023-01-01', description='attack_date_help')
-    # 每日最大攻击次数(1-2,默认2次),建议:僵尸寮配置2,其他寮配置1
+    # 每日最大挑战次数(1-2,默认2次)
     daily_attack_count: int = Field(default=2, description='daily_attack_count_help')
-    # 攻击馆主配置,格式:ATTACK_X_Y          X:  第一个道馆,只打馆主一阵/两阵都打
-    #                                    Y:  第二个道馆,只打馆主一阵/两阵都打
-    # 建议普通寮配置ATTACK_TWO_TWO,僵尸寮看自己喜好
-    attack_dokan_master: AttackDokanMasterType = Field(default=AttackDokanMasterType.ATTACK_TWO_TWO,
-                                                       description='attack_dokan_master_help')
 
     hide_fields = dynamic_hide('remain_attack_count', 'attack_date')
 
@@ -80,24 +32,6 @@ class AttackAccountConfig(BaseModel):
         if not callback:
             return
         callback()
-
-    def attack_dokan_master_count(self) -> int:
-        """
-        根据当前配置,获取此次道馆突破,需要攻击馆主的次数
-        @return: 当前突破,可攻击馆主的次数
-        @rtype:
-        """
-        if self.attack_dokan_master == AttackDokanMasterType.ATTACK_ZERO_ZERO:
-            return 0
-        if self.attack_dokan_master == AttackDokanMasterType.ATTACK_TWO_TWO:
-            return 2
-        # 只攻击一次
-        # 或者
-        # 还有一次选择寮的机会,即,在打第一个寮的过程中
-        if self.daily_attack_count == 1 or self.remain_attack_count >= 1:
-            return int(self.attack_dokan_master) // 3
-        # 攻击两次 且 在打第二个寮的过程中
-        return int(self.attack_dokan_master) % 3
 
     def set_attack_count(self, count=2, callback=None):
         if count < 0:
@@ -123,28 +57,29 @@ class DokanConfig(BaseModel):
     dokan_run_time: Time = Field(Time(hour=20, minute=0, second=0), description='dokan_run_time_help')
     # 攻击优先顺序: 见习=0,初级=1...
     dokan_attack_priority: int = Field(default=0, description='dokan_attack_priority_help')
-    # 失败CD后自动加油
-    dokan_auto_cheering_while_cd: bool = Field(default=False, description='dokan_auto_cheering_while_cd_help')
-    # 正式进攻会设定 2s - 10s 的随机延迟，避免攻击间隔及其相近被检测为脚本。
-    random_delay: bool = Field(default=False, description='random_delay_help')
     # 只在周一到周四开启道馆
     monday_to_thursday: bool = Field(default=True, description='monday_to_thursday_help')
-    # 是否尝试开启道馆,在道馆未开启时,尝试查找合适道馆并开启,需要有权限
-    try_start_dokan: bool = Field(default=False, description='try_start_dokan')
-    # 开启后只选择列表中带“鑫”字徽章的福利寮道馆
-    only_welfare_guild: bool = Field(default=False, description='only_welfare_guild_help')
-    # 进入馆主阶段后放弃突破，并选择再战道馆
-    skip_owner_battle: bool = Field(default=False, description='skip_owner_battle_help')
     # 任务结束时推送本次运行的结算截图；关闭时仍保存截图
     push_reward_images: bool = Field(default=True, description='push_reward_images_help')
-    # 道馆系数,赏金/人数 根据喜好配置
-    find_dokan_score: float = Field(default=4.6, description='dokan_score_help')
     # 道馆最小人数限制
     min_people_num: int = Field(default=-1, description='min_people_num_help')
-    # 最少赏金设置
-    min_bounty: int = Field(default=0, description='min_bounty_help')
-    # 普通模式的最大刷新次数；福利寮模式超过此次数后将最低防守人数减半，最多刷新20次
+    # 超过此刷新次数后将最低防守人数减半，最多刷新20次
     find_dokan_refresh_count: int = Field(default=7, description='find_dokan_refresh_count_help')
+
+
+class QQMessageConfig(BaseModel):
+    qq_message_enable: bool = Field(default=False, description='qq_message_enable_help')
+    napcat_api_url: str = Field(default='', description='napcat_api_url_help')
+    napcat_access_token: str = Field(default='', description='napcat_access_token_help')
+    qq_group_id: str = Field(default='', description='qq_group_id_help')
+    qq_member_id: str = Field(default='', description='qq_member_id_help')
+    qq_keywords: MultiLine = Field(default='', description='qq_keywords_help')
+    qq_excluded_keywords: MultiLine = Field(default='', description='qq_excluded_keywords_help')
+    qq_query_start_time: Time = Field(default=Time(hour=20), description='qq_query_start_time_help')
+    qq_query_end_time: Time = Field(default=Time(hour=22), description='qq_query_end_time_help')
+    qq_poll_interval: int = Field(default=60, ge=1, le=86400, description='qq_poll_interval_help')
+    qq_history_page_size: int = Field(default=100, ge=1, le=500, description='qq_history_page_size_help')
+    qq_history_max_pages: int = Field(default=5, ge=1, le=20, description='qq_history_max_pages_help')
 
 
 class DokanBattleConfig(GeneralBattleConfig):
@@ -159,9 +94,8 @@ class DokanBattleConfig(GeneralBattleConfig):
 class Dokan(ConfigBase):
     scheduler: Scheduler = Field(default_factory=Scheduler)
     dokan_config: DokanConfig = Field(default_factory=DokanConfig)
+    qq_message_config: QQMessageConfig = Field(default_factory=QQMessageConfig)
     notification_config: TaskNotifyConfig = Field(default_factory=TaskNotifyConfig)
     dokan_member_battle_conf: DokanBattleConfig = Field(default_factory=DokanBattleConfig)
-    dokan_owner_battle_conf: DokanBattleConfig = Field(default_factory=DokanBattleConfig)
     dokan_member_switch_soul: SwitchSoulConfig = Field(default_factory=SwitchSoulConfig)
-    dokan_owner_switch_soul: SwitchSoulConfig = Field(default_factory=SwitchSoulConfig)
     attack_count_config: AttackAccountConfig = Field(default_factory=AttackAccountConfig)

@@ -22,7 +22,7 @@ from pydantic import BaseModel, ValidationError
 from threading import Thread
 from multiprocessing.queues import Queue
 from module.config.utils import convert_to_underscore
-from module.config.config import Config
+from module.config.config import Config, Function
 from module.device.env import IS_WINDOWS
 from module.task_loader import load_task_script, task_script_path
 from module.base.decorator import del_cached_property
@@ -41,6 +41,7 @@ from module.ocr.rpc import (
 from module.script import ScriptRuntimeController, ScriptRuntimeDecision
 from tasks.Restart.server_update import delay_pending_tasks_for_server_update, is_server_update_window
 from module.server.log_service import build_error_log_dir_name
+from tasks.Dokan.qq_monitor import DokanQQMonitor
 
 _log_switch_lock = threading.Lock()#线程锁
 
@@ -54,6 +55,7 @@ class Script:
         self.runtime = ScriptRuntimeController(self)
         self.gui_update_task: Callable = None  # 回调函数, gui进程注册当每次config更新任务的时候更新gui的信息
         self.config_name = config_name
+        self.dokan_qq_monitor = DokanQQMonitor(config_name)
         # Skip first restart
         self.is_first_task = True
         # Failure count of tasks
@@ -333,7 +335,16 @@ class Script:
             #         logger.info(f"[{self.config_name}] exited. Reason: Update")
             #         exit(0)
 
-            time.sleep(5)
+            monitor = getattr(self, 'dokan_qq_monitor', None)
+            settings = self.config.model.dokan.qq_message_config
+            if settings.qq_message_enable and self.config.model.dokan.scheduler.enable \
+                    and monitor is not None and monitor.ready.is_set():
+                update_until = self.runtime.server_update_wait_until
+                waiting_for_update = update_until is not None and datetime.now() < update_until
+                if not waiting_for_update and self._antiban_wake_time(datetime.now()) is None \
+                        and monitor.state.flags(settings)[1]:
+                    return False
+            time.sleep(1 if settings.qq_message_enable else 5)
 
             if self.config.should_reload():
                 return False
@@ -448,6 +459,43 @@ class Script:
                 wake = max(wake, self._rest_until) if wake else self._rest_until
         return wake
 
+    def _select_dokan_qq_task(self, task):
+        """Only QQ-enabled dojos wait for permission or gain priority at task boundaries."""
+        monitor = getattr(self, 'dokan_qq_monitor', None)
+        dokan = self.config.model.dokan
+        settings = dokan.qq_message_config
+        if monitor is None or not settings.qq_message_enable or not dokan.scheduler.enable:
+            return task
+        allowed, pending = monitor.state.flags(settings)
+        now = datetime.now()
+        count = dokan.attack_count_config
+        exhausted = count.attack_date == now.strftime('%Y-%m-%d') and count.remain_attack_count <= 0
+        weekend = dokan.dokan_config.monday_to_thursday and now.weekday() >= 4
+        if pending and (exhausted or weekend):
+            monitor.state.consume(settings)
+            monitor.ready.clear()
+        elif pending:
+            if task.command == 'Restart' and task.next_run <= now:
+                return task
+            task = Function('dokan', dokan.model_dump())
+            task.next_run = now
+            self.config.pending_task = [task] + [item for item in self.config.pending_task
+                                                if item.command != 'Dokan']
+            self.config.waiting_task = [item for item in self.config.waiting_task if item.command != 'Dokan']
+            return task
+        if allowed:
+            return task
+        # Withhold the regular scheduled dojo until a matching group message arrives.
+        # This changes only the in-memory queue, without repeated config writes.
+        self.config.pending_task = [item for item in self.config.pending_task if item.command != 'Dokan']
+        self.config.waiting_task = [item for item in self.config.waiting_task if item.command != 'Dokan']
+        if self.config.pending_task:
+            return self.config.pending_task[0]
+        if self.config.waiting_task:
+            return self.config.waiting_task[0]
+        task.next_run = now + timedelta(days=1)
+        return task
+
     def get_next_task(self) -> str:
         """
         获取下一个任务的名字, 大驼峰。
@@ -455,6 +503,7 @@ class Script:
         """
         while True:
             task = self.config.get_next()
+            task = self._select_dokan_qq_task(task)
             self.config.task = task
             if self.state_queue:
                 self.state_queue.put({"schedule": self.config.get_schedule_data()})
@@ -573,6 +622,7 @@ class Script:
                 raise ScriptError('OCR model resource precache failed') from exc
             logger.info('Resource precache completed; scheduler tasks can start')
         self.config.model.running_task = ''
+        self.dokan_qq_monitor.start()
         self._active_seconds_today = 0
         self._active_date = date.today()
         self._rest_until = None
@@ -620,6 +670,9 @@ class Script:
                 continue
 
             # Run
+            if task == 'Dokan' and self.config.model.dokan.qq_message_config.qq_message_enable:
+                self.dokan_qq_monitor.state.consume(self.config.model.dokan.qq_message_config)
+                self.dokan_qq_monitor.ready.clear()
             logger.info(f'Scheduler: Start task `{task}`')
             self.device.stuck_record_clear()
             self.device.click_record_clear()

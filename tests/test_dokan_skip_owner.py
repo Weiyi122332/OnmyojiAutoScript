@@ -1,18 +1,14 @@
-"""Owner-skip option must abandon and choose Battle Again before combat."""
+"""Welfare dojos must abandon the owner and choose Battle Again before combat."""
 
 import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from tasks.Component.GeneralBattle.general_battle import BattleAction
-from tasks.Dokan.config import DokanConfig
 from tasks.Dokan.script_task import DokanFinishedError, ScriptTask
 
 
 class OwnerSkipTest(unittest.TestCase):
-    def test_option_is_off_by_default(self):
-        self.assertFalse(DokanConfig().skip_owner_battle)
-
     @patch('tasks.Dokan.script_task.sleep', return_value=None)
     def test_abandon_then_choose_battle_again(self, _sleep):
         markers = {name: object() for name in (
@@ -56,7 +52,6 @@ class OwnerSkipTest(unittest.TestCase):
             **markers,
             C_DOKAN_TOPPA_RANK_CLOSE_AREA=object(),
             dokan_owner_battle=True,
-            first_master_killed=True,
             screenshot=Mock(),
             appear=appear,
             appear_then_click=click,
@@ -140,7 +135,6 @@ class OwnerSkipTest(unittest.TestCase):
         markers = {name: object() for name in names}
         task = SimpleNamespace(
             **markers,
-            conf=SimpleNamespace(dokan_config=SimpleNamespace(skip_owner_battle=True)),
             device=SimpleNamespace(stuck_record_clear=Mock()),
             dokan_owner_battle=False,
             prepare_appear_cache=Mock(),
@@ -160,7 +154,6 @@ class OwnerSkipTest(unittest.TestCase):
         task = SimpleNamespace(
             I_RYOU_DOKAN_BATTLE_MASTER_FIRST=first,
             I_RYOU_DOKAN_BATTLE_MASTER_SECOND=second,
-            conf=SimpleNamespace(dokan_config=SimpleNamespace(skip_owner_battle=True)),
             dokan_owner_battle=False,
             appear=lambda target: target is first,
         )
@@ -170,7 +163,6 @@ class OwnerSkipTest(unittest.TestCase):
     def make_finished_task(self):
         task = ScriptTask.__new__(ScriptTask)
         task.dokan_owner_battle = True
-        task.conf = SimpleNamespace(dokan_config=SimpleNamespace(skip_owner_battle=True))
         task.device = SimpleNamespace(stuck_record_clear=Mock())
         task.screenshot = Mock()
         task.prepare_appear_cache = Mock()
@@ -202,8 +194,7 @@ class OwnerSkipTest(unittest.TestCase):
     def make_waiting_for_retry_task(self, counts=(1,)):
         task = ScriptTask.__new__(ScriptTask)
         attack_count = SimpleNamespace(daily_attack_count=2, remain_attack_count=0)
-        task.conf = SimpleNamespace(dokan_config=SimpleNamespace(skip_owner_battle=True),
-                                    attack_count_config=attack_count)
+        task.conf = SimpleNamespace(attack_count_config=attack_count)
         task.dokan_owner_battle = True
         task.device = SimpleNamespace(stuck_record_clear=Mock())
         task.prepare_appear_cache = Mock()

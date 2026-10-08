@@ -20,9 +20,6 @@ class BackToBackDokanTest(unittest.TestCase):
             I_RYOU_DOKAN_FOUND_DOKAN=object(),
             I_RYOU_DOKAN_CENTER_TOP=object(),
             config=SimpleNamespace(dokan=SimpleNamespace(
-                dokan_config=SimpleNamespace(
-                    try_start_dokan=True, find_dokan_score=4.6,
-                    skip_owner_battle=True),
                 attack_count_config=SimpleNamespace(daily_attack_count=2),
             )),
             found_dokan_cnt=found,
@@ -42,10 +39,8 @@ class BackToBackDokanTest(unittest.TestCase):
             device=SimpleNamespace(stuck_record_clear=Mock(), stuck_record_add=Mock()),
             wait_until_appear=Mock(return_value=True),
             dokan_owner_battle=True,
-            first_master_killed=True,
             attack_priority_selected=True,
             switch_member_soul_done=True,
-            switch_owner_soul_done=True,
             second_dokan_ready=False,
         )
         ScriptTask.wait_for_next_dokan_selection(task)
@@ -54,10 +49,8 @@ class BackToBackDokanTest(unittest.TestCase):
         self.assertEqual(task.device.stuck_record_clear.call_count, 2)
         self.assertTrue(task.second_dokan_ready)
         self.assertFalse(task.dokan_owner_battle)
-        self.assertFalse(task.first_master_killed)
         self.assertFalse(task.attack_priority_selected)
         self.assertTrue(task.switch_member_soul_done)
-        self.assertTrue(task.switch_owner_soul_done)
 
     def test_battle_again_requires_an_actual_remaining_attempt(self):
         task = SimpleNamespace(conf=SimpleNamespace(attack_count_config=SimpleNamespace(
@@ -76,18 +69,11 @@ class BackToBackDokanTest(unittest.TestCase):
             ScriptTask.run_on_dokan_map(task)
         task.find_dokan.assert_not_called()
 
-    def test_unchecked_option_keeps_original_map_guard(self):
-        task = self.make_map_task()
-        task.config.dokan.dokan_config.skip_owner_battle = False
-        with self.assertRaises(DokanNotStartedError):
-            ScriptTask.run_on_dokan_map(task)
-        task.find_dokan.assert_not_called()
-
     def test_second_selection_starts_in_same_run(self):
         task = self.make_map_task()
         ScriptTask.run_on_dokan_map(task)
         task.ensure_dokan_created.assert_not_called()
-        task.find_dokan.assert_called_once_with(4.6)
+        task.find_dokan.assert_called_once_with()
         self.assertFalse(task.second_dokan_ready)
 
     def test_no_selection_without_remaining_game_attempt(self):
@@ -114,46 +100,8 @@ class BackToBackDokanTest(unittest.TestCase):
         self.assertFalse(task.second_dokan_ready)
         self.assertEqual(task.device.stuck_record_clear.call_count, 2)
 
-    def test_unchecked_option_keeps_original_vote_logic(self):
-        names = (
-            'I_RYOU_DOKAN_GATHERING', 'I_RYOU_DOKAN_MASTER_BATTLE',
-            'I_RYOU_DOKAN_START_CHALLENGE', 'I_RYOU_DOKAN_CD',
-            'I_RYOU_DOKAN_ABANDONED_TOPPA_ABANDONED',
-            'I_RYOU_DOKAN_FAILED_VOTE_KEEP_BOUNTY',
-            'I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN',
-            'I_RYOU_DOKAN_TODAY_ATTACK_COUNT',
-            'I_RYOU_DOKAN_REMAIN_ATTACK_COUNT_DONE', 'I_DOKAN_BOSS_WAITING',
-        )
-        markers = {name: object() for name in names}
-        task = SimpleNamespace(
-            **markers,
-            conf=SimpleNamespace(
-                dokan_config=SimpleNamespace(skip_owner_battle=False),
-                attack_count_config=SimpleNamespace(daily_attack_count=2),
-            ),
-            device=SimpleNamespace(stuck_record_clear=Mock()),
-            dokan_owner_battle=False,
-            prepare_appear_cache=Mock(),
-            appear_then_click=Mock(return_value=False),
-            ui_click_until_disappear=Mock(return_value=True),
-            wait_for_next_dokan_selection=Mock(),
-        )
-        task.appear = lambda target, **kwargs: target in (
-            task.I_RYOU_DOKAN_FAILED_VOTE_KEEP_BOUNTY,
-            task.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN,
-        )
-        ScriptTask.run_on_dokan(task)
-        task.ui_click_until_disappear.assert_called_once_with(
-            task.I_RYOU_DOKAN_FAILED_VOTE_BATTLE_AGAIN)
-        task.wait_for_next_dokan_selection.assert_not_called()
-        task.conf.attack_count_config.daily_attack_count = 1
-        task.ui_click_until_disappear.reset_mock()
-        ScriptTask.run_on_dokan(task)
-        task.ui_click_until_disappear.assert_called_once_with(
-            task.I_RYOU_DOKAN_FAILED_VOTE_KEEP_BOUNTY)
-        task.wait_for_next_dokan_selection.assert_not_called()
 
-    def test_unchecked_option_keeps_original_scheduler_interval(self):
+    def test_partial_run_retains_scheduler_retry_interval(self):
         interval = timedelta(minutes=2)
         task = SimpleNamespace(
             config=SimpleNamespace(model=SimpleNamespace(dokan=SimpleNamespace(

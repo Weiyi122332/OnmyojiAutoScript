@@ -65,12 +65,19 @@ def count_blue_tickets(image: np.ndarray,
             # A single reward has no printed quantity in the game UI.
             count = 1
         else:
-            enlarged = cv2.resize(quantity, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
-            text, confidence = (read_quantity or _read_quantity)(enlarged)
-            text = str(text).strip()
-            if confidence < 0.8 or not re.fullmatch(r'[1-9]\d{0,2}', text):
+            # Reward animation backgrounds can make otherwise clear digits unreadable.
+            # Retry with only the white number, keeping the same confidence requirement.
+            number_only = cv2.cvtColor(white.astype(np.uint8) * 255, cv2.COLOR_GRAY2RGB)
+            count = None
+            for candidate in (quantity, number_only):
+                enlarged = cv2.resize(candidate, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+                text, confidence = (read_quantity or _read_quantity)(enlarged)
+                text = str(text).strip()
+                if confidence >= 0.8 and re.fullmatch(r'[1-9]\d{0,2}', text):
+                    count = int(text)
+                    break
+            if count is None:
                 return None
-            count = int(text)
         total += count
         # Suppress neighboring hits of this same icon, while preserving other cards.
         th, tw = template.shape[:2]

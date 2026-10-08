@@ -37,10 +37,6 @@ class DokanCreationTest(unittest.TestCase):
             wait_until_appear=Mock(return_value=True),
             creat_dokan=Mock(return_value=True),
             config=SimpleNamespace(dokan=SimpleNamespace(
-                dokan_config=SimpleNamespace(
-                    try_start_dokan=True, skip_owner_battle=True,
-                    find_dokan_score=4.6,
-                ),
                 attack_count_config=SimpleNamespace(daily_attack_count=2),
             )),
             found_dokan_cnt=0,
@@ -126,7 +122,7 @@ class DokanCreationTest(unittest.TestCase):
         actions = []
         task.click.side_effect = lambda item: actions.append('click')
         task.creat_dokan.side_effect = lambda: actions.append('create') or True
-        task.find_dokan.side_effect = lambda score: actions.append('select') or True
+        task.find_dokan.side_effect = lambda: actions.append('select') or True
         ScriptTask.run_on_dokan_map(task)
         self.assertEqual(actions, ['click', 'create', 'select'])
 
@@ -135,7 +131,7 @@ class DokanCreationTest(unittest.TestCase):
         ScriptTask.run_on_dokan_map(task)
         task.click.assert_not_called()
         task.creat_dokan.assert_not_called()
-        task.find_dokan.assert_called_once_with(4.6)
+        task.find_dokan.assert_called_once_with()
 
 
 if __name__ == '__main__':
