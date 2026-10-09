@@ -20,7 +20,7 @@
 
 ## 福利寮插件触发
 
-先安装 [TRSS-Yunzai 福利寮检测插件](../../plugins/trss-welfare-dojo/README.md)，在插件的 `data/oas-welfare-dojo/config.json` 中填写群号、指定成员的QQ号和开启关键词。插件监听该成员今天的普通群聊文字消息，首次查询时补读当天历史；不需要消息带命令前缀或 @机器人。
+先安装 [福利寮检测插件](../../plugins/trss-welfare-dojo/README.md)，在插件的 `data/oas-welfare-dojo/config.json` 中填写群号、指定成员的QQ号和开启关键词。插件监听该成员今天的普通群聊文字消息，首次查询时补读当天历史；不需要消息带命令前缀或 @机器人。
 
 在道馆页面启用插件状态触发，填写完整接口地址（例如 `http://服务器IP:2537/welfare-dojo/today`）和插件配置中的 `api_token`。OAS 使用 `GET` 请求及 `Authorization: Bearer <api_token>` 请求头，接口只返回当天日期和 `opened` 布尔值。默认关闭；开启后必须确认今天开启福利寮才会进入道馆，原来固定运行时间到点也会等待确认。
 

@@ -41,7 +41,7 @@ export async function startService({ bot, logger, dataPath = path.join(process.c
             if (stamp !== settingsStamp || settingsError) {
                 const updated = normalizeConfig(JSON.parse(fs.readFileSync(configPath, 'utf8')));
                 if (updated.http_host !== config.http_host || updated.http_port !== config.http_port) {
-                    throw new Error('修改监听地址或端口后需要重启云崽');
+                    throw new Error('修改监听地址或端口后需要重启机器人服务');
                 }
                 monitor.update(updated);
                 settingsStamp = stamp;
@@ -50,7 +50,7 @@ export async function startService({ bot, logger, dataPath = path.join(process.c
         } catch {
             settingsError = true;
             if (Date.now() - lastWarning >= 60000) {
-                logger.warn('福利寮配置读取失败，请检查配置格式；修改监听地址或端口后需重启云崽');
+                logger.warn('福利寮配置读取失败，请检查配置格式；修改监听地址或端口后需重启机器人服务');
                 lastWarning = Date.now();
             }
         }

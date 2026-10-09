@@ -9,7 +9,7 @@ export class WelfareDojo extends PluginBase.default {
     async init() {
         const bot = globalThis.Bot;
         if (typeof bot?.on !== 'function' || typeof bot?.off !== 'function') {
-            throw new Error('需要 TRSS-Yunzai 的 Bot 事件接口');
+            throw new Error('需要机器人服务的 Bot 事件接口');
         }
         const key = Symbol.for('oas.trss-welfare-dojo.service');
         if (globalThis[key]) await globalThis[key].close();

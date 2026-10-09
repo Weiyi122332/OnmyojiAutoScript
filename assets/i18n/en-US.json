@@ -1,7 +1,7 @@
 {
   "qq_message_config": "Welfare dojo plugin status",
   "qq_message_enable": "Trigger dojos from plugin status",
-  "qq_message_enable_help": "Query the TRSS-Yunzai plugin's opening status for today during the query window. Stop querying after a match, including after restart; permission expires at Beijing midnight. Start when idle or after the current task ends. Weekday, daily attempt and rest settings apply. Configure group, member and keywords in the plugin.",
+  "qq_message_enable_help": "Query the welfare detection plugin's opening status for today during the query window. Stop querying after a match, including after restart; permission expires at Beijing midnight. Start when idle or after the current task ends. Weekday, daily attempt and rest settings apply. Configure group, member and keywords in the plugin.",
   "qq_query_start_time": "Query start time",
   "qq_query_start_time_help": "Beijing time, default 20:00. Windows across midnight are supported; equal start/end times mean all day.",
   "qq_query_end_time": "Query end time",
@@ -71,7 +71,7 @@
   "float_time_help": "Random float: the final run time = the computed time + a random 0..this-many seconds. Empty or 00:00:00 disables it; it also applies to crontab rules (e.g. 00:10:00 makes a 05:00 task start somewhere between 05:00 and 05:10).",
   "dokan_config": "Welfare dojo settings",
   "welfare_plugin_url": "Welfare plugin status URL",
-  "welfare_plugin_url_help": "Full URL, e.g. http://server:2537/welfare-dojo/today. Use the http_port configured in the TRSS-Yunzai welfare plugin.",
+  "welfare_plugin_url_help": "Full URL, e.g. http://server:2537/welfare-dojo/today. Use the http_port configured in the welfare detection plugin.",
   "welfare_plugin_token": "Plugin access token",
-  "welfare_plugin_token_help": "The api_token from the TRSS-Yunzai welfare plugin configuration."
+  "welfare_plugin_token_help": "The api_token from the welfare detection plugin configuration."
 }

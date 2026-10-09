@@ -1,4 +1,4 @@
-"""Load the TRSS plugin entry and query its HTTP status from the Python monitor."""
+"""Load the plugin entry and query its HTTP status from the Python monitor."""
 
 import json
 import shutil

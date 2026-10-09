@@ -1,4 +1,4 @@
-"""Read today's welfare status from the TRSS-Yunzai plugin; the scheduler operates the game."""
+"""Read today's welfare status from the plugin; the scheduler operates the game."""
 
 import hashlib
 import json
@@ -168,7 +168,7 @@ class DokanQQMonitor:
         if pending:
             self.ready.set()
             if not before:
-                logger.info('TRSS-Yunzai插件已确认今天开启福利寮，等待当前任务结束后优先运行道馆')
+                logger.info('福利寮检测插件已确认今天开启福利寮，等待当前任务结束后优先运行道馆')
         else:
             self.ready.clear()
 
@@ -193,7 +193,7 @@ class DokanQQMonitor:
                 except Exception as exc:
                     error = type(exc).__name__
                     if error != self._last_error or time.monotonic() - self._last_error_at >= 60:
-                        logger.warning(f'TRSS-Yunzai福利寮状态检查失败（{error}），按检测间隔重试')
+                        logger.warning(f'福利寮状态检查失败（{error}），按检测间隔重试')
                         self._last_error, self._last_error_at = error, time.monotonic()
                     # A failed request cannot open the gate or consume the pending trigger.
                 next_poll = time.monotonic() + interval

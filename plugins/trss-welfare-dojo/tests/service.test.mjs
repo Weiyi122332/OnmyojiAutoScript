@@ -46,7 +46,7 @@ async function fixture(t, overrides = {}, history = []) {
     return { bot, service, calls, logs, query, config, configPath, save };
 }
 
-test('ordinary flattened TRSS messages open today without a prefix, and other bots do not', async t => {
+test('ordinary flattened group messages open today without a prefix, and other bots do not', async t => {
     const f = await fixture(t);
     assert.equal((await (await f.query()).json()).opened, false);
     f.bot.emit('message.group', event({ self_id: 999 }));
@@ -57,7 +57,7 @@ test('ordinary flattened TRSS messages open today without a prefix, and other bo
     assert.ok(f.logs.every(line => !line.includes('test-token') && !line.includes('456')));
 });
 
-test('history is read through the selected TRSS account and handles flattened text', async t => {
+test('history is read through the selected bot account and handles flattened text', async t => {
     const f = await fixture(t, {}, [event()]);
     const response = await f.query();
     assert.equal(response.status, 200);

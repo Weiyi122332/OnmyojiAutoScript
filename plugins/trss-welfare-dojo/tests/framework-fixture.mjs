@@ -1,4 +1,4 @@
-// Minimal local TRSS loader harness. Not included in the installation package.
+// Minimal local plugin loader harness. Not included in the installation package.
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -38,7 +38,7 @@ const plugins = Object.values(entry).filter(value => value?.prototype);
 if (plugins.length !== 1) throw new Error('Invalid plugin exports');
 const instance = new plugins[0]();
 await instance.init();
-new plugins[0](); // TRSS creates a separate message instance after init.
+new plugins[0](); // The loader creates a separate message instance after init.
 const service = globalThis[Symbol.for('oas.trss-welfare-dojo.service')];
 const base = await import(pathToFileURL(baseFile));
 async function dispose() {

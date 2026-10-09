@@ -1,7 +1,7 @@
 {
   "qq_message_config": "福利寮插件检测",
   "qq_message_enable": "启用插件状态触发道馆",
-  "qq_message_enable_help": "在查询时段内读取TRSS-Yunzai插件今天是否开启福利寮。当天匹配后停止查询，重启后也不重复；北京时间次日自动失效。空闲时启动道馆，其他任务运行时等其结束后优先执行。仍遵守星期、每日次数及脚本休息设置。群号、成员和关键词在TRSS-Yunzai插件中设置。",
+  "qq_message_enable_help": "在查询时段内读取福利寮检测插件今天是否开启福利寮。当天匹配后停止查询，重启后也不重复；北京时间次日自动失效。空闲时启动道馆，其他任务运行时等其结束后优先执行。仍遵守星期、每日次数及脚本休息设置。群号、成员和关键词在插件中设置。",
   "qq_query_start_time": "开始查询时间",
   "qq_query_start_time_help": "按北京时间计算，默认20:00。支持跨午夜时段；开始和结束时间相同表示全天查询。",
   "qq_query_end_time": "结束查询时间",
@@ -422,7 +422,7 @@
   "float_time_help": "随机浮动：最终运行时间 = 算出来的时间 + 0~此设置的随机秒数。留空或 00:00:00 表示不浮动；对 crontab 规则同样生效（例如设 00:10:00，5:00 的任务会在 5:00~5:10 之间随机启动）。",
   "dokan_config": "福利寮道馆配置",
   "welfare_plugin_url": "福利寮插件接口地址",
-  "welfare_plugin_url_help": "填写完整地址，例如 http://服务器:2537/welfare-dojo/today。端口使用TRSS-Yunzai福利寮插件中配置的http_port。",
+  "welfare_plugin_url_help": "填写完整地址，例如 http://服务器:2537/welfare-dojo/today。端口使用福利寮检测插件中配置的http_port。",
   "welfare_plugin_token": "插件访问令牌",
-  "welfare_plugin_token_help": "填写TRSS-Yunzai福利寮插件配置中的api_token。"
+  "welfare_plugin_token_help": "填写福利寮检测插件配置中的api_token。"
 }
