@@ -1965,17 +1965,11 @@
     },
     "qq_message_config": {
       "qq_message_enable": false,
-      "napcat_api_url": "",
-      "napcat_access_token": "",
-      "qq_group_id": "",
-      "qq_member_id": "",
-      "qq_keywords": "",
-      "qq_excluded_keywords": "",
       "qq_query_start_time": "20:00:00",
       "qq_query_end_time": "22:00:00",
       "qq_poll_interval": 60,
-      "qq_history_page_size": 100,
-      "qq_history_max_pages": 5
+      "welfare_plugin_url": "",
+      "welfare_plugin_token": ""
     }
   },
   "abyss_shadows": {

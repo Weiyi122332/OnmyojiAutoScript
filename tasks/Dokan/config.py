@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 from tasks.Component.SwitchSoul.switch_soul_config import SwitchSoulConfig
-from tasks.Component.config_base import ConfigBase, MultiLine, Time, dynamic_hide
+from tasks.Component.config_base import ConfigBase, Time, dynamic_hide
 from tasks.Component.config_notify import TaskNotifyConfig
 from tasks.Component.config_scheduler import Scheduler
 
@@ -69,17 +69,11 @@ class DokanConfig(BaseModel):
 
 class QQMessageConfig(BaseModel):
     qq_message_enable: bool = Field(default=False, description='qq_message_enable_help')
-    napcat_api_url: str = Field(default='', description='napcat_api_url_help')
-    napcat_access_token: str = Field(default='', description='napcat_access_token_help')
-    qq_group_id: str = Field(default='', description='qq_group_id_help')
-    qq_member_id: str = Field(default='', description='qq_member_id_help')
-    qq_keywords: MultiLine = Field(default='', description='qq_keywords_help')
-    qq_excluded_keywords: MultiLine = Field(default='', description='qq_excluded_keywords_help')
+    welfare_plugin_url: str = Field(default='', description='welfare_plugin_url_help')
+    welfare_plugin_token: str = Field(default='', description='welfare_plugin_token_help')
     qq_query_start_time: Time = Field(default=Time(hour=20), description='qq_query_start_time_help')
     qq_query_end_time: Time = Field(default=Time(hour=22), description='qq_query_end_time_help')
     qq_poll_interval: int = Field(default=60, ge=1, le=86400, description='qq_poll_interval_help')
-    qq_history_page_size: int = Field(default=100, ge=1, le=500, description='qq_history_page_size_help')
-    qq_history_max_pages: int = Field(default=5, ge=1, le=20, description='qq_history_max_pages_help')
 
 
 class DokanBattleConfig(GeneralBattleConfig):

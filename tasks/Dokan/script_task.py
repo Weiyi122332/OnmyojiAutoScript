@@ -275,7 +275,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         self.conf = self.config.model.dokan
         qq_settings = getattr(self.conf, 'qq_message_config', QQMessageConfig())
         if qq_settings.qq_message_enable and not QQDokanState(self.config.config_name).flags(qq_settings)[0]:
-            logger.info('尚未收到匹配的QQ福利寮开启消息，等待下次检测')
+            logger.info('尚未确认今天开启福利寮，等待下次检测')
             self.set_next_run(task='Dokan', target=datetime.now() + timedelta(seconds=qq_settings.qq_poll_interval))
             raise TaskEnd
         if self.conf.dokan_config.monday_to_thursday and datetime.now().weekday() >= 4:

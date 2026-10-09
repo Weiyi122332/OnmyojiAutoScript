@@ -1,0 +1,9 @@
+{
+  "name": "trss-welfare-dojo",
+  "version": "1.0.1",
+  "type": "module",
+  "main": "index.js",
+  "description": "TRSS-Yunzai 福利寮开启消息检测及 OAS 当天状态接口。",
+  "author": "Weiyi",
+  "scripts": {"test": "node --test tests/*.test.mjs"}
+}

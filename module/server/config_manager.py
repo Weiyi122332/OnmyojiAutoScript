@@ -26,6 +26,7 @@ CONFIG_REDACTION_PATHS = (
     "script.error.notify_config",
     "*.notification_config.task_notify_config",
     "dokan.qq_message_config.napcat_access_token",
+    "dokan.qq_message_config.welfare_plugin_token",
     "dokan.qq_message_config.qq_group_id",
     "dokan.qq_message_config.qq_member_id",
     "global_game.server.password",
