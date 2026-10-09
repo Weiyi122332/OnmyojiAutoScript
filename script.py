@@ -478,7 +478,9 @@ class Script:
             if task.command == 'Restart' and task.next_run <= now:
                 return task
             task = Function('dokan', dokan.model_dump())
-            task.next_run = now
+            # 早于调度快照，确保自动拉起的道馆进入前端的运行中列表。
+            snapshot_time = min(now, getattr(self.config, 'scheduler_update_dt', now))
+            task.next_run = snapshot_time - timedelta(microseconds=1)
             self.config.pending_task = [task] + [item for item in self.config.pending_task
                                                 if item.command != 'Dokan']
             self.config.waiting_task = [item for item in self.config.waiting_task if item.command != 'Dokan']
@@ -495,6 +497,16 @@ class Script:
             return self.config.waiting_task[0]
         task.next_run = now + timedelta(days=1)
         return task
+
+    def _publish_dokan_schedule(self, running: bool) -> None:
+        if not self.state_queue:
+            return
+        schedule = self.config.get_schedule_data()
+        schedule['running'] = {'name': 'Dokan', 'next_run': str(datetime.now())} if running else {}
+        if running:
+            for group in ('pending', 'waiting'):
+                schedule[group] = [item for item in schedule[group] if item['name'] != 'Dokan']
+        self.state_queue.put({'schedule': schedule})
 
     def get_next_task(self) -> str:
         """
@@ -678,6 +690,8 @@ class Script:
             self.device.click_record_clear()
             logger.hr(task, level=0)
             self.config.model.running_task = task
+            if task == 'Dokan':
+                self._publish_dokan_schedule(running=True)
             _task_start = datetime.now()
             RuleScatter.begin_task(task)
             try:
@@ -685,6 +699,8 @@ class Script:
             finally:
                 RuleScatter.end_task(task)
             self.config.model.running_task = ''
+            if task == 'Dokan':
+                self._publish_dokan_schedule(running=False)
             logger.info(f'Scheduler: End task `{task}`')
             self.is_first_task = False
             if task == 'Restart' and success:

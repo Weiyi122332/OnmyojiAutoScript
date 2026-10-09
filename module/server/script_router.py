@@ -319,7 +319,7 @@ async def sync_next_run(script_name: str, task: str, target_dt: str):
         config.task_delay(task=task, success=True, target=target)
     script_process = mm.script_process[script_name]
     config.get_next()
-    await script_process.broadcast_state({"schedule": config.get_schedule_data()})
+    await script_process.broadcast_state({"schedule": script_process.schedule_with_live_dokan(config.get_schedule_data())})
     return True
 
 
@@ -369,7 +369,7 @@ async def websocket_endpoint(websocket: WebSocket, script_name: str):
         log_ws_event(f"ws[{script_name}] connect state: {script_process.state}")
         config = mm.config_cache(script_name)
         config.get_next()
-        schedule_data = config.get_schedule_data()
+        schedule_data = script_process.schedule_with_live_dokan(config.get_schedule_data())
         await script_process.send_json(websocket, {"schedule": schedule_data})
         log_ws_event(f"ws[{script_name}] connect response: {schedule_data}")
         while True:
@@ -382,7 +382,7 @@ async def websocket_endpoint(websocket: WebSocket, script_name: str):
             elif data == 'get_schedule':
                 config = mm.config_cache(script_name)
                 config.get_next()
-                schedule_data = config.get_schedule_data()
+                schedule_data = script_process.schedule_with_live_dokan(config.get_schedule_data())
                 await script_process.broadcast_state({"schedule": schedule_data})
                 log_ws_event(f"ws[{script_name}] response: {schedule_data}")
             elif data == 'start':

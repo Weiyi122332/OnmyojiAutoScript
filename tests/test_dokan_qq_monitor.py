@@ -7,11 +7,12 @@ import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from datetime import datetime, time as clock_time, timedelta
 from pathlib import Path
-from types import SimpleNamespace
+from types import MethodType, SimpleNamespace
 from unittest.mock import Mock, patch
 
 from pydantic import ValidationError
 
+from module.config.config import Config
 from module.config.config_model import ConfigModel
 from module.server.config_manager import ConfigManager
 from script import Script
@@ -241,6 +242,22 @@ class QQSchedulerTests(unittest.TestCase):
         self.assertLessEqual(result.next_run, datetime.now())
         self.assertEqual([item.command for item in self.task.config.pending_task], ['Dokan', 'RyouToppa'])
         self.task.dokan_qq_monitor.state.consume.assert_not_called()
+
+    def test_triggered_dojo_is_reported_running_in_dashboard_schedule(self):
+        self.task.dokan_qq_monitor.state.flags.return_value = (True, True)
+        config = self.task.config
+        config.scheduler_update_dt = datetime.now() - timedelta(seconds=1)
+        config.get_next = Mock(return_value=self.other)
+        config.get_schedule_data = MethodType(Config.get_schedule_data, config)
+        self.task.state_queue = Mock()
+        self.task._antiban_wake_time = Mock(return_value=None)
+        self.task._handle_continuous_task_rest = Mock(return_value=False)
+
+        self.assertEqual(self.task.get_next_task(), 'Dokan')
+        schedule = self.task.state_queue.put.call_args.args[0]['schedule']
+        self.assertEqual(schedule['running']['name'], 'Dokan')
+        self.assertEqual([item['name'] for item in schedule['pending']], ['RyouToppa'])
+        self.assertEqual(schedule['waiting'], [])
 
     def test_waiting_for_message_preserves_other_tasks_and_waits_when_dojo_is_only_task(self):
         self.task.dokan_qq_monitor.state.flags.return_value = (False, False)

@@ -33,6 +33,21 @@ class ScriptProcess(ScriptWSManager):
         self.state_queue = _SCRIPT_PROCESS_CONTEXT.Queue()
         self.state: ScriptState = ScriptState.INACTIVE
         self._process = None
+        self._latest_schedule: dict | None = None
+
+    def schedule_with_live_dokan(self, schedule: dict) -> dict:
+        """Keep an active dojo visible when a client refreshes or reconnects."""
+        if self.state != ScriptState.RUNNING or self._process is None or not self._process.is_alive():
+            return schedule
+        running = (self._latest_schedule or {}).get('running', {})
+        if running.get('name') != 'Dokan':
+            return schedule
+        return {
+            **schedule,
+            'running': dict(running),
+            'pending': [item for item in schedule.get('pending', []) if item['name'] != 'Dokan'],
+            'waiting': [item for item in schedule.get('waiting', []) if item['name'] != 'Dokan'],
+        }
 
     @staticmethod
     def _extract_log_dedup_key(log: str) -> str | None:
@@ -48,6 +63,7 @@ class ScriptProcess(ScriptWSManager):
         return message
 
     async def start(self):
+        self._latest_schedule = None
         self.state = ScriptState.RUNNING
         await self.broadcast_state({"state": self.state})
         if self._process:
@@ -65,6 +81,7 @@ class ScriptProcess(ScriptWSManager):
 
 
     async def stop(self):
+        self._latest_schedule = None
         self.state = ScriptState.INACTIVE
         await self.broadcast_state({"state": self.state})
         if self._process is None:
@@ -93,6 +110,8 @@ class ScriptProcess(ScriptWSManager):
                         continue
                     if 'state' in data and data['state'] == ScriptState.WARNING:
                         self.state = ScriptState.WARNING
+                    if isinstance(data.get('schedule'), dict):
+                        self._latest_schedule = data['schedule']
                     await self.broadcast_state(data)
                 except QueueEmpty as e:
                     logger.warning(f'QueueEmpty: {e}')
