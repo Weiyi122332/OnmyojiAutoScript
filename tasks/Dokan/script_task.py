@@ -42,6 +42,8 @@ class DokanRefreshLimitError(Exception):
 
 DOKAN_REWARD_SCREENSHOT_DIR = Path('log/screenshots/dokan')
 DOKAN_REWARD_CAPTURE_DELAY = 1.0
+DOKAN_NEXT_SELECTION_TIMEOUT = 120.0
+DOKAN_NEXT_SELECTION_POLL_INTERVAL = 2.0
 MAX_WELFARE_DOKAN_REFRESH_COUNT = 20
 
 class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
@@ -688,12 +690,51 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
 
     def wait_for_next_dokan_selection(self) -> None:
         """Wait for Battle Again to return to the map before the second selection."""
-        logger.info("Waiting for Battle Again to open the dojo selection screen")
-        # 游戏倒计时及跳转可能超过一分钟，使用已有的长等待标记保留完整的 120 秒识别窗口。
+        logger.info(f"道馆再战：立即开始识别筛选界面，检测间隔 {DOKAN_NEXT_SELECTION_POLL_INTERVAL:g} 秒，"
+                    f"最长等待 {DOKAN_NEXT_SELECTION_TIMEOUT:g} 秒")
+        # PAUSE 只延长卡死检测，实际等待始终截图识别，不能整段休眠。
         self.device.stuck_record_clear()
         self.device.stuck_record_add('PAUSE')
+        started_at = time.monotonic()
+        deadline = started_at + DOKAN_NEXT_SELECTION_TIMEOUT
+        next_log_at = started_at + 10
+        checks = 0
+        screenshot_seconds = recognition_seconds = 0.0
+        selection_visible = False
         try:
-            if not self.wait_until_appear(self.I_RYOU_DOKAN_FINDING_DOKAN, wait_time=120):
+            while time.monotonic() < deadline:
+                check_started_at = time.monotonic()
+                self.screenshot()
+                screenshot_finished_at = time.monotonic()
+                screenshot_seconds = screenshot_finished_at - check_started_at
+                recognition_seconds = 0.0
+                if screenshot_finished_at >= deadline:
+                    break
+                selection_visible = self.appear(self.I_RYOU_DOKAN_FINDING_DOKAN)
+                checked_at = time.monotonic()
+                recognition_seconds = checked_at - screenshot_finished_at
+                checks += 1
+                # 截图或识别调用可能阻塞，返回后仍须核对完整的等待耗时。
+                if checked_at >= deadline:
+                    selection_visible = False
+                    break
+                if selection_visible:
+                    logger.info(f"已识别道馆筛选界面：等待 {checked_at - started_at:.1f} 秒，"
+                                f"检测 {checks} 次，继续第二次道馆")
+                    break
+                if checked_at >= next_log_at:
+                    logger.info(f"道馆再战等待：已等待 {checked_at - started_at:.1f}/120 秒，"
+                                f"检测 {checks} 次；最近截图 {screenshot_seconds:.2f} 秒，"
+                                f"识图 {recognition_seconds:.2f} 秒")
+                    next_log_at = checked_at + 10
+                delay = min(max(0.0, DOKAN_NEXT_SELECTION_POLL_INTERVAL
+                                - (checked_at - check_started_at)), deadline - checked_at)
+                if delay > 0:
+                    sleep(delay)
+            if not selection_visible:
+                logger.warning(f"道馆再战等待超时：已等待 {time.monotonic() - started_at:.1f}/120 秒，"
+                               f"检测 {checks} 次；最近截图 {screenshot_seconds:.2f} 秒，"
+                               f"识图 {recognition_seconds:.2f} 秒")
                 raise DokanNotStartedError("Battle Again did not return to dojo selection")
         finally:
             self.device.stuck_record_clear()

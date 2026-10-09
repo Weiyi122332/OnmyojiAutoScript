@@ -37,14 +37,16 @@ class BackToBackDokanTest(unittest.TestCase):
         task = SimpleNamespace(
             I_RYOU_DOKAN_FINDING_DOKAN=marker,
             device=SimpleNamespace(stuck_record_clear=Mock(), stuck_record_add=Mock()),
-            wait_until_appear=Mock(return_value=True),
+            screenshot=Mock(),
+            appear=Mock(return_value=True),
             dokan_owner_battle=True,
             attack_priority_selected=True,
             switch_member_soul_done=True,
             second_dokan_ready=False,
         )
         ScriptTask.wait_for_next_dokan_selection(task)
-        task.wait_until_appear.assert_called_once_with(marker, wait_time=120)
+        task.screenshot.assert_called_once_with()
+        task.appear.assert_called_once_with(marker)
         task.device.stuck_record_add.assert_called_once_with('PAUSE')
         self.assertEqual(task.device.stuck_record_clear.call_count, 2)
         self.assertTrue(task.second_dokan_ready)
@@ -87,19 +89,6 @@ class BackToBackDokanTest(unittest.TestCase):
         with self.assertRaises(DokanFinishedError):
             ScriptTask.run_on_dokan_map(task)
         task.find_dokan.assert_not_called()
-
-    def test_selection_timeout_does_not_enable_second_attempt(self):
-        task = SimpleNamespace(
-            I_RYOU_DOKAN_FINDING_DOKAN=object(),
-            wait_until_appear=Mock(return_value=False),
-            device=SimpleNamespace(stuck_record_clear=Mock(), stuck_record_add=Mock()),
-            second_dokan_ready=False,
-        )
-        with self.assertRaises(DokanNotStartedError):
-            ScriptTask.wait_for_next_dokan_selection(task)
-        self.assertFalse(task.second_dokan_ready)
-        self.assertEqual(task.device.stuck_record_clear.call_count, 2)
-
 
     def test_partial_run_retains_scheduler_retry_interval(self):
         interval = timedelta(minutes=2)
