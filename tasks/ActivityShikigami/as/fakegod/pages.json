@@ -92,11 +92,11 @@
   {
     "itemName": "fg_as_to_pass",
     "imageName": "as_as_to_pass.png",
-    "roiFront": "655,411,29,47",
-    "roiBack": "0,225,1150,385",
+    "roiFront": "665,415,15,32",
+    "roiBack": "0,60,1150,600",
     "method": "Multi-scale template matching",
     "threshold": 0.78,
-    "description": "地图战斗据点"
+    "description": "地图据点的战斗文字（避开头像及光效）"
   },
   {
     "itemName": "fg_to_battle_ap",

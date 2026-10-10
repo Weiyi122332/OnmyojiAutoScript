@@ -159,8 +159,8 @@ class ActivityShikigamiAssets:
 	I_FG_AS_LOCATE = RuleImage(roi_front=(1212,394,34,36), roi_back=(1146,253,134,217), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/fakegod/as_as_locate.png")
 	# 暗黑地图标志 
 	I_FG_AS_CLOSE_EYE = RuleImage(roi_front=(1197,297,63,57), roi_back=(1146,253,134,217), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/fakegod/as_as_close_eye.png")
-	# 地图战斗据点
-	I_FG_AS_TO_PASS = RuleImage(roi_front=(655,411,29,47), roi_back=(0,225,1150,385), threshold=0.78, method="Multi-scale template matching", file="./tasks/ActivityShikigami/as/fakegod/as_as_to_pass.png")
+	# 地图据点的战斗文字（避开头像及光效）
+	I_FG_AS_TO_PASS = RuleImage(roi_front=(665,415,15,32), roi_back=(0,60,1150,600), threshold=0.78, method="Multi-scale template matching", file="./tasks/ActivityShikigami/as/fakegod/as_as_to_pass.png")
 	# 进入体力爬塔 
 	I_FG_TO_BATTLE_AP = RuleImage(roi_front=(825,321,39,139), roi_back=(720,255,238,269), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/fakegod/as_to_battle_ap.png")
 	# 磐长故地左侧进入古迹演武（体力）

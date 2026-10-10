@@ -2,13 +2,14 @@
 
 import unittest
 import json
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 from pydantic import ValidationError
 
 from module.config.config_model import ConfigModel
-from module.exception import TaskEnd
+from module.exception import GamePageUnknownError, TaskEnd
 from tasks.ActivityShikigami.config import ActivityShikigami, GeneralConfig
 from tasks.ActivityShikigami.activities.fake_god import select_fakegod_target
 from tasks.ActivityShikigami.assets import ActivityShikigamiAssets as Assets
@@ -425,14 +426,56 @@ class ActivityModesTest(unittest.TestCase):
                 task.appear = lambda rule: rule == visible
                 self.assertEqual(task._evaluate_exit_matcher(task._exit_matcher()), expected)
 
-    def test_fakegod_empty_map_stops_branch_without_random_clicks(self):
+    def test_fakegod_marker_matches_current_enemy_portraits(self):
+        import cv2
+        import numpy as np
+
+        fixture = Path(__file__).parent / 'fixtures/activity_shikigami/fakegod_map_targets.png'
+        targets = cv2.cvtColor(
+            cv2.imdecode(np.fromfile(fixture, dtype=np.uint8), cv2.IMREAD_COLOR),
+            cv2.COLOR_BGR2RGB,
+        )
+        frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+        frame[200:520, 350:1000] = targets
+        rule = deepcopy(Assets.I_FG_AS_TO_PASS)
+        self.assertTrue(rule.multi_scale_template_match(frame))
+        x, y, width, height = rule.roi_front
+        self.assertTrue(350 <= x < 1000 and 200 <= y < 520)
+
+    def test_fakegod_unrecognized_map_raises_navigation_error(self):
         task = Mock()
         task.appear.return_value = True
         task.appear_then_click.return_value = False
         with patch('tasks.ActivityShikigami.activities.fake_god.time.sleep'):
-            with self.assertRaises(ActivityResourceNotEnough):
+            with self.assertRaises(GamePageUnknownError):
                 select_fakegod_target(task)
         task.click.assert_not_called()
+        runtime = ScriptTask.__new__(ScriptTask)
+        runtime.goto_page = Mock(side_effect=GamePageUnknownError)
+        runtime._sync_fakegod_team_lock = Mock()
+        with self.assertRaises(GamePageUnknownError):
+            runtime._goto_fakegod_action(pages.page_fakegod_action)
+        runtime._sync_fakegod_team_lock.assert_not_called()
+
+    def test_fakegod_recognition_failure_does_not_run_ap_or_finish_successfully(self):
+        task = ScriptTask.__new__(ScriptTask)
+        task.conf = ActivityShikigami.model_validate({
+            'general_config': {
+                'task_sequence': ['伪神/爬塔', '体力'], 'fakegod_limit': 300, 'ap_limit': 300,
+            },
+        })
+        task.before_run = Mock()
+        task.time_limit_reached = Mock(return_value=False)
+        task.setup_fakegod_pages = Mock()
+        task.goto_page = Mock(side_effect=GamePageUnknownError)
+        task.run_climb = Mock()
+        task.finish_activity_task = Mock()
+        with self.assertRaises(GamePageUnknownError):
+            task.run()
+        task.run_climb.assert_not_called()
+        task.finish_activity_task.assert_not_called()
+
+    def test_fakegod_confirmed_resource_shortage_can_end_branch(self):
         runtime = ScriptTask.__new__(ScriptTask)
         runtime.goto_page = Mock(side_effect=ActivityResourceNotEnough)
         runtime._sync_fakegod_team_lock = Mock()

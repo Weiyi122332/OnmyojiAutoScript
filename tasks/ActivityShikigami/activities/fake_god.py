@@ -3,6 +3,7 @@
 import random
 import time
 
+from module.exception import GamePageUnknownError
 from module.logger import logger
 from tasks.ActivityShikigami.base_act import ActivityResourceNotEnough
 from tasks.ActivityShikigami.assets import ActivityShikigamiAssets
@@ -19,8 +20,9 @@ def select_fakegod_target(task):
             task.device.click_record_clear()
             return True
         time.sleep(0.5)
-    logger.info('磐长故地当前地图没有可识别的战斗据点，结束伪神分支')
-    raise ActivityResourceNotEnough
+    message = '磐长故地战斗据点识别失败，停止式神活动；未确认门票耗尽'
+    logger.warning(message)
+    raise GamePageUnknownError(message)
 
 
 class FakeGodAct:
