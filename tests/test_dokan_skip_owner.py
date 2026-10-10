@@ -193,7 +193,7 @@ class OwnerSkipTest(unittest.TestCase):
 
     def make_waiting_for_retry_task(self, counts=(1,)):
         task = ScriptTask.__new__(ScriptTask)
-        attack_count = SimpleNamespace(daily_attack_count=2, remain_attack_count=0)
+        attack_count = SimpleNamespace(remain_attack_count=0)
         task.conf = SimpleNamespace(attack_count_config=attack_count)
         task.dokan_owner_battle = True
         task.device = SimpleNamespace(stuck_record_clear=Mock())

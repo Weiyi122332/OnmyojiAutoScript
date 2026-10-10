@@ -36,9 +36,6 @@ class DokanCreationTest(unittest.TestCase):
             click=Mock(),
             wait_until_appear=Mock(return_value=True),
             creat_dokan=Mock(return_value=True),
-            config=SimpleNamespace(dokan=SimpleNamespace(
-                attack_count_config=SimpleNamespace(daily_attack_count=2),
-            )),
             found_dokan_cnt=0,
             second_dokan_ready=False,
             update_remain_attack_count=Mock(return_value=2),

@@ -275,14 +275,14 @@ class QQSchedulerTests(unittest.TestCase):
         self.task.dokan_qq_monitor.state.flags.return_value = (True, False)
         self.assertIs(self.task._select_dokan_qq_task(self.other), self.other)
 
-    def test_restart_remains_first_and_no_trigger_after_daily_attempts_exhausted(self):
+    def test_restart_remains_first_and_cached_count_does_not_replace_game_check(self):
         self.task.dokan_qq_monitor.state.flags.return_value = (True, True)
         restart = SimpleNamespace(command='Restart', next_run=datetime.now()-timedelta(seconds=1))
         self.assertIs(self.task._select_dokan_qq_task(restart), restart)
         self.dokan.attack_count_config.attack_date = datetime.now().strftime('%Y-%m-%d')
         self.dokan.attack_count_config.remain_attack_count = 0
-        self.assertIs(self.task._select_dokan_qq_task(self.other), self.other)
-        self.task.dokan_qq_monitor.state.consume.assert_called_once()
+        self.assertEqual(self.task._select_dokan_qq_task(self.other).command, 'Dokan')
+        self.task.dokan_qq_monitor.state.consume.assert_not_called()
 
     def test_idle_wait_wakes_immediately_for_message_without_device_actions(self):
         self.task.dokan_qq_monitor.state.flags.return_value = (True, True)

@@ -192,7 +192,7 @@ class DokanRewardNotificationTest(unittest.TestCase):
             with self.subTest(ending=ending):
                 task = ScriptTask.__new__(ScriptTask)
                 attack_count = SimpleNamespace(
-                    daily_attack_count=2, remain_attack_count=1, init_attack_count=Mock())
+                    remain_attack_count=1, init_attack_count=Mock())
                 dokan = SimpleNamespace(
                     dokan_config=SimpleNamespace(monday_to_thursday=False),
                     attack_count_config=attack_count)

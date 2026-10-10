@@ -1,30 +1,26 @@
-"""Exercise dojo retry waits against the real device watchdog using a fake clock."""
+"""Verify the courtyard retry wait and watchdog cleanup before reentering a dojo."""
 
 import unittest
 from unittest.mock import Mock, patch
 
 from module.base.timer import Timer
 from module.device.device import Device
-from tasks.Dokan.script_task import DokanNotStartedError, ScriptTask
+from tasks.Dokan import page as pages
+from tasks.Dokan.script_task import ScriptTask
 
 
-class DokanWaitTimeoutTest(unittest.TestCase):
+class DokanRetryWaitTest(unittest.TestCase):
     def setUp(self):
         self.now = 1000.0
-        self.wall_offset = 0.0
-        self.capture_duration = 1.0
-        self.capture_started = []
-        clock = patch('module.base.timer.time.time', side_effect=lambda: self.now + self.wall_offset)
+        self.events = []
+        clock = patch('module.base.timer.time.time', side_effect=lambda: self.now)
         clock.start()
         self.addCleanup(clock.stop)
-        monotonic = patch('tasks.Dokan.script_task.time.monotonic', side_effect=lambda: self.now)
-        monotonic.start()
-        self.addCleanup(monotonic.stop)
         sleeper = patch('tasks.Dokan.script_task.sleep', side_effect=self.sleep)
-        sleeper.start()
+        self.sleeper = sleeper.start()
         self.addCleanup(sleeper.stop)
         log = patch('tasks.Dokan.script_task.logger')
-        self.log = log.start()
+        log.start()
         self.addCleanup(log.stop)
         self.task = ScriptTask.__new__(ScriptTask)
         self.task.device = Device.__new__(Device)
@@ -36,92 +32,68 @@ class DokanWaitTimeoutTest(unittest.TestCase):
         self.task.attack_priority_selected = True
         self.task.switch_member_soul_done = True
         self.task.second_dokan_ready = False
-        self.task.screenshot = Mock(side_effect=self.screenshot)
+        self.task.goto_page = Mock(side_effect=self.goto_page)
 
-    def screenshot(self):
-        self.capture_started.append(self.now)
-        self.now += self.capture_duration
+    def goto_page(self, page):
+        self.assertFalse(self.task.second_dokan_ready)
         self.task.device.stuck_record_check()
+        self.events.append(page)
 
     def sleep(self, seconds):
+        self.assertEqual(self.events, [pages.page_main])
+        self.assertEqual(self.task.device.detect_record, {'PAUSE'})
+        self.events.append(seconds)
         self.now += seconds
+        for _ in range(61):
+            self.task.device.stuck_record_check()
 
-    def test_selection_is_detected_immediately_without_initial_sleep(self):
-        self.capture_duration = 0.1
-        self.task.appear = Mock(return_value=True)
-        ScriptTask.wait_for_next_dokan_selection(self.task)
-        self.assertAlmostEqual(self.now, 1000.1)
-        self.assertEqual(self.task.screenshot.call_count, 1)
+    def test_courtyard_wait_precedes_reentry_and_does_not_trip_watchdog(self):
+        with patch('tasks.Dokan.script_task.uniform', return_value=85.0):
+            self.task.wait_for_next_dokan_selection()
+        self.assertEqual(self.events, [pages.page_main, 85.0, pages.page_dokan_map])
         self.assertTrue(self.task.second_dokan_ready)
-
-    def test_fast_capture_polls_every_two_seconds_and_returns_as_soon_as_visible(self):
-        self.capture_duration = 0.1
-        self.task.appear = Mock(side_effect=lambda target: self.now >= 1003)
-        ScriptTask.wait_for_next_dokan_selection(self.task)
-        self.assertAlmostEqual(self.now, 1004.1)
-        self.assertEqual(len(self.capture_started), 3)
-        for previous, current in zip(self.capture_started, self.capture_started[1:]):
-            self.assertAlmostEqual(current - previous, 2.0)
-
-    def test_selection_after_one_minute_is_detected_without_watchdog_error(self):
-        self.task.appear = Mock(side_effect=lambda target: self.now >= 1085)
-        ScriptTask.wait_for_next_dokan_selection(self.task)
-        self.assertEqual(self.now, 1085)
-        self.assertTrue(self.task.second_dokan_ready)
-        self.assertTrue(self.task.switch_member_soul_done)
         self.assertFalse(self.task.dokan_owner_battle)
+        self.assertFalse(self.task.attack_priority_selected)
+        self.assertTrue(self.task.switch_member_soul_done)
         self.assertEqual(self.task.device.detect_record, set())
-        self.assertTrue(any('道馆再战等待：' in call.args[0]
-                            for call in self.log.info.call_args_list))
-        self.assertIn('等待 85.0 秒', self.log.info.call_args.args[0])
+        self.assertEqual(self.now, 1085.0)
 
-    def test_missing_selection_uses_full_two_minute_timeout(self):
-        self.task.appear = Mock(return_value=False)
-        with self.assertRaises(DokanNotStartedError):
-            ScriptTask.wait_for_next_dokan_selection(self.task)
-        self.assertEqual(self.now, 1120)
+    def test_random_wait_is_selected_between_70_and_90_seconds(self):
+        with patch('tasks.Dokan.script_task.uniform', return_value=70.0) as random_wait:
+            self.task.wait_for_next_dokan_selection()
+        random_wait.assert_called_once_with(70.0, 90.0)
+        self.sleeper.assert_called_once_with(70.0)
+
+    def test_courtyard_navigation_failure_does_not_wait_or_reenter(self):
+        self.task.goto_page.side_effect = RuntimeError('courtyard unavailable')
+        with self.assertRaisesRegex(RuntimeError, 'courtyard unavailable'):
+            self.task.wait_for_next_dokan_selection()
+        self.sleeper.assert_not_called()
+        self.task.goto_page.assert_called_once_with(pages.page_main)
         self.assertFalse(self.task.second_dokan_ready)
+
+    def test_interrupted_wait_clears_pause_and_does_not_reenter(self):
+        self.sleeper.side_effect = RuntimeError('wait interrupted')
+        with self.assertRaisesRegex(RuntimeError, 'wait interrupted'):
+            self.task.wait_for_next_dokan_selection()
+        self.task.goto_page.assert_called_once_with(pages.page_main)
         self.assertEqual(self.task.device.detect_record, set())
-        self.log.warning.assert_called_once()
-
-    def test_wall_clock_adjustment_does_not_extend_timeout(self):
-        def appear(target):
-            self.wall_offset -= 60
-            return False
-
-        self.task.appear = Mock(side_effect=appear)
-        with self.assertRaises(DokanNotStartedError):
-            ScriptTask.wait_for_next_dokan_selection(self.task)
-        self.assertEqual(self.now, 1120)
         self.assertFalse(self.task.second_dokan_ready)
 
-    def test_capture_overruns_deadline_without_accepting_a_late_selection(self):
-        self.capture_duration = 130
-        self.task.appear = Mock(return_value=True)
-        with self.assertRaises(DokanNotStartedError):
-            ScriptTask.wait_for_next_dokan_selection(self.task)
-        self.task.appear.assert_not_called()
-        self.assertFalse(self.task.second_dokan_ready)
-        self.assertEqual(self.task.device.detect_record, set())
-        self.assertIn('最近截图 130.00 秒', self.log.warning.call_args.args[0])
+    def test_failed_reentry_does_not_mark_second_selection_ready(self):
+        def goto_page(page):
+            self.goto_page(page)
+            if page is pages.page_dokan_map:
+                raise RuntimeError('dojo unavailable')
 
-    def test_recognition_overruns_deadline_without_accepting_a_late_selection(self):
-        def appear(target):
-            self.now += 130
-            return True
-
-        self.task.appear = Mock(side_effect=appear)
-        with self.assertRaises(DokanNotStartedError):
-            ScriptTask.wait_for_next_dokan_selection(self.task)
+        self.task.goto_page.side_effect = goto_page
+        with patch('tasks.Dokan.script_task.uniform', return_value=90.0):
+            with self.assertRaisesRegex(RuntimeError, 'dojo unavailable'):
+                self.task.wait_for_next_dokan_selection()
+        self.assertEqual(self.events, [pages.page_main, 90.0, pages.page_dokan_map])
         self.assertFalse(self.task.second_dokan_ready)
-        self.assertEqual(self.task.device.detect_record, set())
-        self.assertIn('识图 130.00 秒', self.log.warning.call_args.args[0])
-
-    def test_wait_marker_is_cleared_after_screenshot_error(self):
-        self.task.screenshot.side_effect = RuntimeError('screenshot failed')
-        with self.assertRaisesRegex(RuntimeError, 'screenshot failed'):
-            ScriptTask.wait_for_next_dokan_selection(self.task)
-        self.assertFalse(self.task.second_dokan_ready)
+        self.assertTrue(self.task.dokan_owner_battle)
+        self.assertTrue(self.task.switch_member_soul_done)
         self.assertEqual(self.task.device.detect_record, set())
 
 

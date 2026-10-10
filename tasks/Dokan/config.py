@@ -16,24 +16,20 @@ from tasks.Component.config_scheduler import Scheduler
 
 class AttackAccountConfig(BaseModel):
     # 当天可攻击次数,用以记录当天运行历史,用作状态恢复,不用配置
-    remain_attack_count: int = Field(default=2, description='remain_attack_count_help')
+    remain_attack_count: int = Field(default=-1, description='remain_attack_count_help')
     # remain_attack_count 值记录的时间,不用配置
-    attack_date: str = Field(default='2023-01-01', description='attack_date_help')
-    # 每日最大挑战次数(1-2,默认2次)
-    daily_attack_count: int = Field(default=2, description='daily_attack_count_help')
+    attack_date: str = Field(default='', description='attack_date_help')
 
     hide_fields = dynamic_hide('remain_attack_count', 'attack_date')
 
     def init_attack_count(self, callback=None):
-        today = datetime.now().strftime("%Y-%m-%d")
-        if today != self.attack_date:
-            self.attack_date = today
-            self.remain_attack_count = 2
+        self.attack_date = ''
+        self.remain_attack_count = -1
         if not callback:
             return
         callback()
 
-    def set_attack_count(self, count=2, callback=None):
+    def set_attack_count(self, count=-1, callback=None):
         if count < 0:
             return
         self.attack_date = datetime.now().strftime("%Y-%m-%d")
@@ -44,10 +40,11 @@ class AttackAccountConfig(BaseModel):
 
     def del_attack_count(self, count, callback=None):
         today = datetime.now().strftime("%Y-%m-%d")
-        if today != self.attack_date:
+        if today != self.attack_date or self.remain_attack_count < 0:
             self.attack_date = today
-            self.remain_attack_count = 2
-        self.remain_attack_count -= count
+            self.remain_attack_count = -1
+        else:
+            self.remain_attack_count = max(0, self.remain_attack_count - count)
         if not callback:
             return
         callback()
@@ -93,3 +90,5 @@ class Dokan(ConfigBase):
     dokan_member_battle_conf: DokanBattleConfig = Field(default_factory=DokanBattleConfig)
     dokan_member_switch_soul: SwitchSoulConfig = Field(default_factory=SwitchSoulConfig)
     attack_count_config: AttackAccountConfig = Field(default_factory=AttackAccountConfig)
+
+    hide_fields = dynamic_hide('attack_count_config')

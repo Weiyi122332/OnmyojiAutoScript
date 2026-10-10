@@ -29,7 +29,7 @@ class WelfareDokanFlowTest(unittest.TestCase):
         page = model.script_task('Dokan')
         self.assertEqual(set(page), {
             'scheduler', 'dokan_config', 'notification_config', 'dokan_member_battle_conf',
-            'dokan_member_switch_soul', 'attack_count_config', 'qq_message_config',
+            'dokan_member_switch_soul', 'qq_message_config',
         })
         self.assertEqual({field['name'] for field in page['dokan_config']}, {
             'dokan_run_time', 'dokan_attack_priority', 'monday_to_thursday',
@@ -39,6 +39,7 @@ class WelfareDokanFlowTest(unittest.TestCase):
         self.assertEqual(task.dokan_config.find_dokan_refresh_count, 5)
         self.assertEqual(task.attack_count_config.remain_attack_count, 1)
         self.assertEqual(task.attack_count_config.attack_date, '2026-10-08')
+        self.assertNotIn('daily_attack_count', task.attack_count_config.model_dump())
 
     def test_owner_prepare_never_clicks_ready_for_either_owner_team(self):
         for marker in ('I_RYOU_DOKAN_BATTLE_MASTER_FIRST', 'I_RYOU_DOKAN_BATTLE_MASTER_SECOND'):

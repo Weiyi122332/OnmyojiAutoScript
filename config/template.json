@@ -1905,9 +1905,8 @@
       "team_name": ""
     },
     "attack_count_config": {
-      "remain_attack_count": 2,
-      "attack_date": "2023-01-01",
-      "daily_attack_count": 2
+      "remain_attack_count": -1,
+      "attack_date": ""
     },
     "qq_message_config": {
       "qq_message_enable": false,

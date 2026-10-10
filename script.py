@@ -468,10 +468,8 @@ class Script:
             return task
         allowed, pending = monitor.state.flags(settings)
         now = datetime.now()
-        count = dokan.attack_count_config
-        exhausted = count.attack_date == now.strftime('%Y-%m-%d') and count.remain_attack_count <= 0
         weekend = dokan.dokan_config.monday_to_thursday and now.weekday() >= 4
-        if pending and (exhausted or weekend):
+        if pending and weekend:
             monitor.state.consume(settings)
             monitor.ready.clear()
         elif pending:

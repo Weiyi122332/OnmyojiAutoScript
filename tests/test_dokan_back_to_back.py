@@ -1,15 +1,43 @@
-"""Battle Again must lead straight into a second dojo selection."""
+"""Battle Again must continue the second dojo in the same task run."""
 
 import unittest
 from datetime import datetime, timedelta
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from tasks.Dokan.script_task import (
     DokanFinishedError,
     DokanNotStartedError,
     ScriptTask,
 )
+from tasks.Dokan import page as pages
+from tasks.Dokan.config import AttackAccountConfig
+
+
+class DokanAttackCountTest(unittest.TestCase):
+    def test_new_configuration_has_no_assumed_attempts_or_manual_limit(self):
+        counter = AttackAccountConfig()
+        self.assertEqual(counter.remain_attack_count, -1)
+        self.assertEqual(counter.attack_date, '')
+        self.assertNotIn('daily_attack_count', counter.model_dump())
+
+    def test_every_run_discards_even_todays_saved_attempt_count(self):
+        counter = AttackAccountConfig(attack_date=datetime.now().strftime('%Y-%m-%d'),
+                                     remain_attack_count=2)
+        save = Mock()
+        counter.init_attack_count(save)
+        self.assertEqual(counter.remain_attack_count, -1)
+        self.assertEqual(counter.attack_date, '')
+        save.assert_called_once()
+
+    def test_game_count_can_be_zero_and_unknown_count_never_creates_attempts(self):
+        counter = AttackAccountConfig()
+        counter.del_attack_count(1)
+        self.assertEqual(counter.remain_attack_count, -1)
+        counter.set_attack_count(0)
+        self.assertEqual(counter.remain_attack_count, 0)
+        counter.set_attack_count(-1)
+        self.assertEqual(counter.remain_attack_count, 0)
 
 
 class BackToBackDokanTest(unittest.TestCase):
@@ -19,9 +47,6 @@ class BackToBackDokanTest(unittest.TestCase):
             I_RYOU_DOKAN_FINDING_DOKAN=selection,
             I_RYOU_DOKAN_FOUND_DOKAN=object(),
             I_RYOU_DOKAN_CENTER_TOP=object(),
-            config=SimpleNamespace(dokan=SimpleNamespace(
-                attack_count_config=SimpleNamespace(daily_attack_count=2),
-            )),
             found_dokan_cnt=found,
             second_dokan_ready=ready,
             appear=lambda target: target is selection,
@@ -32,21 +57,21 @@ class BackToBackDokanTest(unittest.TestCase):
         )
         return task
 
-    def test_battle_again_waits_for_selection_and_preserves_switched_souls(self):
-        marker = object()
+    @patch('tasks.Dokan.script_task.uniform', return_value=80.0)
+    @patch('tasks.Dokan.script_task.sleep')
+    def test_battle_again_reenters_after_courtyard_wait_and_preserves_switched_souls(self, sleeper, _uniform):
         task = SimpleNamespace(
-            I_RYOU_DOKAN_FINDING_DOKAN=marker,
             device=SimpleNamespace(stuck_record_clear=Mock(), stuck_record_add=Mock()),
-            screenshot=Mock(),
-            appear=Mock(return_value=True),
+            goto_page=Mock(),
             dokan_owner_battle=True,
             attack_priority_selected=True,
             switch_member_soul_done=True,
             second_dokan_ready=False,
         )
         ScriptTask.wait_for_next_dokan_selection(task)
-        task.screenshot.assert_called_once_with()
-        task.appear.assert_called_once_with(marker)
+        self.assertEqual([call.args[0] for call in task.goto_page.call_args_list],
+                         [pages.page_main, pages.page_dokan_map])
+        sleeper.assert_called_once_with(80.0)
         task.device.stuck_record_add.assert_called_once_with('PAUSE')
         self.assertEqual(task.device.stuck_record_clear.call_count, 2)
         self.assertTrue(task.second_dokan_ready)
@@ -55,17 +80,16 @@ class BackToBackDokanTest(unittest.TestCase):
         self.assertTrue(task.switch_member_soul_done)
 
     def test_battle_again_requires_an_actual_remaining_attempt(self):
-        task = SimpleNamespace(conf=SimpleNamespace(attack_count_config=SimpleNamespace(
-            daily_attack_count=2, remain_attack_count=1,
-        )))
+        task = SimpleNamespace(found_dokan_cnt=1,
+            conf=SimpleNamespace(attack_count_config=SimpleNamespace(remain_attack_count=1)))
         self.assertTrue(ScriptTask.can_battle_again(task))
         task.conf.attack_count_config.remain_attack_count = 0
         self.assertFalse(ScriptTask.can_battle_again(task))
         task.conf.attack_count_config.remain_attack_count = 1
-        task.conf.attack_count_config.daily_attack_count = 1
+        task.found_dokan_cnt = 2
         self.assertFalse(ScriptTask.can_battle_again(task))
 
-    def test_no_second_selection_until_page_has_automatically_returned(self):
+    def test_no_second_selection_until_retry_reentry_is_ready(self):
         task = self.make_map_task(ready=False)
         with self.assertRaises(DokanNotStartedError):
             ScriptTask.run_on_dokan_map(task)
@@ -84,6 +108,13 @@ class BackToBackDokanTest(unittest.TestCase):
             ScriptTask.run_on_dokan_map(task)
         task.find_dokan.assert_not_called()
 
+    def test_unknown_count_cannot_be_treated_as_zero_or_start_selection(self):
+        task = self.make_map_task(remaining=-1, found=0, ready=False)
+        with self.assertRaises(DokanNotStartedError):
+            ScriptTask.run_on_dokan_map(task)
+        task.ensure_dokan_created.assert_not_called()
+        task.find_dokan.assert_not_called()
+
     def test_no_third_selection(self):
         task = self.make_map_task(found=2)
         with self.assertRaises(DokanFinishedError):
@@ -96,7 +127,7 @@ class BackToBackDokanTest(unittest.TestCase):
             config=SimpleNamespace(model=SimpleNamespace(dokan=SimpleNamespace(
                 dokan_config=SimpleNamespace(dokan_run_time=datetime.now().time()),
             )), dokan=SimpleNamespace(attack_count_config=SimpleNamespace(
-                remain_attack_count=1, daily_attack_count=2,
+                remain_attack_count=1,
             ), scheduler=SimpleNamespace(failure_interval=interval))),
             set_next_run=Mock(),
         )

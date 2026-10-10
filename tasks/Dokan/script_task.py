@@ -7,6 +7,7 @@ import time
 import re
 from datetime import timedelta
 from pathlib import Path
+from random import uniform
 from time import sleep
 from uuid import uuid4
 
@@ -42,8 +43,7 @@ class DokanRefreshLimitError(Exception):
 
 DOKAN_REWARD_SCREENSHOT_DIR = Path('log/screenshots/dokan')
 DOKAN_REWARD_CAPTURE_DELAY = 1.0
-DOKAN_NEXT_SELECTION_TIMEOUT = 120.0
-DOKAN_NEXT_SELECTION_POLL_INTERVAL = 2.0
+DOKAN_NEXT_SELECTION_WAIT_RANGE = (70.0, 90.0)
 MAX_WELFARE_DOKAN_REFRESH_COUNT = 20
 
 class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
@@ -284,7 +284,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             logger.warning("weekend, exit")
             self.next_run(True)
             raise TaskEnd
-        # 初始化相关动态参数,从配置文件读取相关记录,如果没有当天的记录则设置为默认值
+        # 清空历史次数，首次进入筛选页面后读取游戏实际剩余次数。
         self.conf.attack_count_config.init_attack_count(callback=self.config.save)
         unknown_page_timer = Timer(10)
         self.goto_page(pages.page_dokan_map)
@@ -386,10 +386,14 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             retrying_skipped_owner = self.second_dokan_ready
             if self.found_dokan_cnt > 0 and not retrying_skipped_owner:
                 raise DokanNotStartedError
-            if retrying_skipped_owner and (self.config.dokan.attack_count_config.daily_attack_count < 2
-                                           or self.found_dokan_cnt >= 2):
+            if retrying_skipped_owner and self.found_dokan_cnt >= 2:
                 raise DokanFinishedError
-            if self.update_remain_attack_count() <= 0:  # 可挑战次数为<=0,当作道馆成功完成
+            remaining = self.update_remain_attack_count()
+            if remaining < 0:
+                logger.warning('未识别到道馆剩余次数，结束本次筛选')
+                raise DokanNotStartedError
+            if remaining == 0:
+                logger.info('游戏显示道馆剩余0次，结束任务')
                 raise DokanFinishedError
             if not retrying_skipped_owner and not self.ensure_dokan_created():
                 logger.warning('Create Dokan failed, stop before selecting a target')
@@ -684,60 +688,24 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         return False
 
     def can_battle_again(self) -> bool:
-        """A second dojo is available only after starting the first with two attempts."""
+        """以游戏识别的剩余次数决定再战，单次任务最多挑战两馆。"""
         attack_count = self.conf.attack_count_config
-        return attack_count.daily_attack_count == 2 and attack_count.remain_attack_count > 0
+        return attack_count.remain_attack_count > 0 and self.found_dokan_cnt < 2
 
     def wait_for_next_dokan_selection(self) -> None:
-        """Wait for Battle Again to return to the map before the second selection."""
-        logger.info(f"道馆再战：立即开始识别筛选界面，检测间隔 {DOKAN_NEXT_SELECTION_POLL_INTERVAL:g} 秒，"
-                    f"最长等待 {DOKAN_NEXT_SELECTION_TIMEOUT:g} 秒")
-        # PAUSE 只延长卡死检测，实际等待始终截图识别，不能整段休眠。
+        """再战后回庭院等待70～90秒，再进入道馆进行第二次筛选。"""
+        logger.info("道馆再战：返回庭院")
+        self.goto_page(pages.page_main)
+        wait_seconds = uniform(*DOKAN_NEXT_SELECTION_WAIT_RANGE)
+        logger.info(f"道馆再战：在庭院等待 {wait_seconds:.1f} 秒")
         self.device.stuck_record_clear()
         self.device.stuck_record_add('PAUSE')
-        started_at = time.monotonic()
-        deadline = started_at + DOKAN_NEXT_SELECTION_TIMEOUT
-        next_log_at = started_at + 10
-        checks = 0
-        screenshot_seconds = recognition_seconds = 0.0
-        selection_visible = False
         try:
-            while time.monotonic() < deadline:
-                check_started_at = time.monotonic()
-                self.screenshot()
-                screenshot_finished_at = time.monotonic()
-                screenshot_seconds = screenshot_finished_at - check_started_at
-                recognition_seconds = 0.0
-                if screenshot_finished_at >= deadline:
-                    break
-                selection_visible = self.appear(self.I_RYOU_DOKAN_FINDING_DOKAN)
-                checked_at = time.monotonic()
-                recognition_seconds = checked_at - screenshot_finished_at
-                checks += 1
-                # 截图或识别调用可能阻塞，返回后仍须核对完整的等待耗时。
-                if checked_at >= deadline:
-                    selection_visible = False
-                    break
-                if selection_visible:
-                    logger.info(f"已识别道馆筛选界面：等待 {checked_at - started_at:.1f} 秒，"
-                                f"检测 {checks} 次，继续第二次道馆")
-                    break
-                if checked_at >= next_log_at:
-                    logger.info(f"道馆再战等待：已等待 {checked_at - started_at:.1f}/120 秒，"
-                                f"检测 {checks} 次；最近截图 {screenshot_seconds:.2f} 秒，"
-                                f"识图 {recognition_seconds:.2f} 秒")
-                    next_log_at = checked_at + 10
-                delay = min(max(0.0, DOKAN_NEXT_SELECTION_POLL_INTERVAL
-                                - (checked_at - check_started_at)), deadline - checked_at)
-                if delay > 0:
-                    sleep(delay)
-            if not selection_visible:
-                logger.warning(f"道馆再战等待超时：已等待 {time.monotonic() - started_at:.1f}/120 秒，"
-                               f"检测 {checks} 次；最近截图 {screenshot_seconds:.2f} 秒，"
-                               f"识图 {recognition_seconds:.2f} 秒")
-                raise DokanNotStartedError("Battle Again did not return to dojo selection")
+            sleep(wait_seconds)
         finally:
             self.device.stuck_record_clear()
+        logger.info("道馆再战：等待结束，重新进入道馆")
+        self.goto_page(pages.page_dokan_map)
         self.dokan_owner_battle = False
         self.attack_priority_selected = False
         self.second_dokan_ready = True
@@ -801,8 +769,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             return
         # 道馆已开启
         # 如果打两次,当前是第一次,设置为failure_interval后运行
-        if self.config.dokan.attack_count_config.remain_attack_count == 1 and \
-                self.config.dokan.attack_count_config.daily_attack_count == 2:
+        if self.config.dokan.attack_count_config.remain_attack_count == 1:
             self.set_next_run(task="Dokan", target=now + self.config.dokan.scheduler.failure_interval)
             return
         # 其余情况当作成功

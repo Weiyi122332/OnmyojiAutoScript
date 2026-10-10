@@ -881,6 +881,10 @@ class GeneralBattle(GeneralBuff, GeneralBattleAssets):
         confirm_clicks = 0
         while True:
             self.screenshot()
+            # 结算可能覆盖尚未消失的退出框，必须先判断前景是否已经结束战斗。
+            if self.appear(self.I_FALSE) or self.appear(self.I_WIN) or self.appear(self.I_DE_WIN):
+                logger.info('Exit battle success: settlement visible')
+                return True
             dialog_visible = self.appear(self.I_EXIT_DIALOG)
             confirm_visible = self.appear(self.I_EXIT_ENSURE)
             if not dialog_visible and not confirm_visible:

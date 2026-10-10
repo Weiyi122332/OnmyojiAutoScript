@@ -10,7 +10,7 @@ import numpy as np
 
 from module.exception import GameStuckError
 from tasks.GameUi.page import page_battle_prepare, page_battle_result
-from tasks.RealmRaid.script_task import ScriptTask
+from tasks.RealmRaid.script_task import BattleAction, ScriptTask
 
 
 class BattleExitFlowTest(unittest.TestCase):
@@ -31,6 +31,9 @@ class BattleExitFlowTest(unittest.TestCase):
             'exit_unknown': (task.I_EXIT, task.I_EXIT_ENSURE),
             'exit_title_only': (task.I_EXIT, task.I_EXIT_DIALOG),
             'loss': (task.I_FIRE_AGAIN,),
+            'loss_over_exit': (task.I_FALSE, task.I_FIRE_AGAIN, task.I_EXIT_DIALOG),
+            'win_over_exit': (task.I_WIN, task.I_EXIT_DIALOG, task.I_EXIT_ENSURE),
+            'de_win_over_exit': (task.I_DE_WIN, task.I_EXIT_DIALOG, task.I_EXIT_ENSURE),
             'retry_unchecked': (task.I_FIRE_AGAIN, task.I_FIRE_AGAIN_DIALOG,
                                 task.I_FIRE_AGAIN_CONFIRM, task.I_SHOW_AGAIN),
             'retry_checked': (task.I_FIRE_AGAIN, task.I_FIRE_AGAIN_DIALOG, task.I_FIRE_AGAIN_CONFIRM),
@@ -71,6 +74,24 @@ class BattleExitFlowTest(unittest.TestCase):
         task, clock = self.make_task([(0, 'exit_dialog'), (0.4, 'loss')])
         self.assertTrue(self.exit_battle(task, clock))
         self.assertEqual(clock.clicks, [task.I_EXIT_ENSURE])
+
+    def test_settlement_over_exit_dialog_finishes_without_clicking_background(self):
+        for scene in ('loss_over_exit', 'win_over_exit', 'de_win_over_exit'):
+            with self.subTest(scene=scene):
+                task, clock = self.make_task([(0, scene), (10.2, scene)])
+                self.assertTrue(self.exit_battle(task, clock))
+                task.click.assert_not_called()
+
+    def test_exit_confirmation_can_finish_with_loss_over_residual_dialog(self):
+        task, clock = self.make_task([
+            (0, 'prepare'), (0.4, 'exit_dialog'), (2.2, 'exit_dialog'), (2.6, 'loss_over_exit'),
+        ])
+        self.assertTrue(self.exit_battle(task, clock))
+        self.assertEqual(clock.clicks, [task.I_EXIT, task.I_EXIT_ENSURE])
+        context = SimpleNamespace(reward_no_battle_ts=123, is_win=True)
+        self.assertEqual(task._handle_result(context, SimpleNamespace(quick_exit=True)), BattleAction.EXIT_LOSE)
+        self.assertFalse(context.is_win)
+        self.assertEqual(clock.clicks, [task.I_EXIT, task.I_EXIT_ENSURE])
 
     def test_failed_exit_confirmation_retries_once(self):
         task, clock = self.make_task([
