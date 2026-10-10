@@ -2,7 +2,7 @@
   {
     "itemName": "ui_confirm",
     "imageName": "ui_ui_confirm.png",
-    "roiFront": "667,398,179,66",
+    "roiFront": "664,408,180,64",
     "roiBack": "547,368,322,122",
     "method": "Template matching",
     "threshold": 0.8,
@@ -20,7 +20,7 @@
   {
     "itemName": "ui_reward",
     "imageName": "ui_ui_reward.png",
-    "roiFront": "481,185,317,42",
+    "roiFront": "518,210,240,65",
     "roiBack": "464,142,350,145",
     "method": "Template matching",
     "threshold": 0.73,
