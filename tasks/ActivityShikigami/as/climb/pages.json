@@ -2,11 +2,11 @@
   {
     "itemName": "to_battle_main",
     "imageName": "as_to_battle_main.png",
-    "roiFront": "315,204,91,77",
-    "roiBack": "287,125,149,201",
+    "roiFront": "219,254,103,30",
+    "roiBack": "190,230,160,83",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": "进入爬塔主界面"
+    "description": "进入古迹演武（体力）"
   },
   {
     "itemName": "to_battle_boss",
@@ -52,5 +52,14 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": ""
+  },
+  {
+    "itemName": "to_battle_ap100",
+    "imageName": "to_battle_ap100.png",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "进入刹那试炼（百体）",
+    "roiFront": "403,459,103,29",
+    "roiBack": "373,435,163,78"
   }
 ]

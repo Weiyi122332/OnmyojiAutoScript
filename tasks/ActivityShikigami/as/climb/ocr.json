@@ -19,8 +19,8 @@
   },
   {
     "itemName": "remain_ap100",
-    "roiFront": "936,16,99,42",
-    "roiBack": "911,8,129,61",
+    "roiFront": "1107,20,104,40",
+    "roiBack": "1107,20,104,40",
     "mode": "Digit",
     "method": "Default",
     "keyword": "",
@@ -28,8 +28,8 @@
   },
   {
     "itemName": "remain_penta_pass",
-    "roiFront": "948,13,93,34",
-    "roiBack": "948,13,93,34",
+    "roiFront": "949,13,90,38",
+    "roiBack": "949,13,90,38",
     "mode": "Digit",
     "method": "Default",
     "keyword": "",
@@ -37,8 +37,8 @@
   },
   {
     "itemName": "remain_ap_pass",
-    "roiFront": "567,14,93,34",
-    "roiBack": "567,14,93,34",
+    "roiFront": "746,13,106,42",
+    "roiBack": "746,13,106,42",
     "mode": "Digit",
     "method": "Default",
     "keyword": "",

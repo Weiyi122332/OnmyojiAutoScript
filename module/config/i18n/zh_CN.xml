@@ -436,40 +436,33 @@ window_background >>> DroidCast_raw >  ADB_nc >> DroidCast > uiautomator2 ~= ADB
 建议执行时间设置成一个小时足够长，此时基于次数来判定设置为100次</translation></message>
 	<message><source>GeneralClimb</source><translation>通用爬塔</translation></message>
 	<message><source>GeneralConfig</source><translation>通用设置</translation></message>
-	<message><source>Activity Task Sequence</source><translation>任务启用顺序</translation></message>
-	<message><source>activity_task_sequence_help</source><translation>填写：大富翁,爬塔,伪神降临
-表示先执行大富翁，再执行爬塔，最后执行伪神降临。
-中间必须使用半角英文逗号分隔；对应次数为0的任务会自动跳过。</translation></message>
+	<message><source>Activity Task Sequence</source><translation>活动执行顺序</translation></message>
+	<message><source>activity_task_sequence_help</source><translation>支持体力、百体、首领和伪神/爬塔。点“新增任务”添加活动，拖动调整顺序，点右侧×删除；按从上到下执行，次数为0时跳过。</translation></message>
+	<message><source>activity_ap_limit_help</source><translation>本期对应古迹演武：普通挑战每次消耗6体力和1张活动门票。</translation></message>
+	<message><source>activity_ap100_limit_help</source><translation>本期对应刹那试炼：每次消耗100体力和1张百体门票。</translation></message>
+	<message><source>activity_fakegod_limit_help</source><translation>伪神/爬塔本期对应磐长故地：先选择地图战斗据点，每次消耗1张门票。</translation></message>
 	<message><source>Run Config</source><translation>运行设置</translation></message>
-	<message><source>Throw Limit</source><translation>骰子投掷次数限制</translation></message>
 	<message><source>Active Souls Clean</source><translation>运行结束后清理御魂</translation></message>
 	<message><source>active_souls_clean_help</source><translation>式神活动全部结束后接续执行御魂清理</translation></message>
 	<message><source>Activity Random Sleep</source><translation>执行前随机休眠</translation></message>
-	<message><source>activity_random_sleep_help</source><translation>在下一次投骰、爬塔战斗或伪神行动开始前随机休眠；插入位置与任务时间检查一致</translation></message>
+	<message><source>activity_random_sleep_help</source><translation>在下一次体力、百体、首领或伪神战斗开始前随机休眠；休眠后重新检查任务时间。</translation></message>
 	<message><source>Use Penta Pass</source><translation>使用五倍卷</translation></message>
-	<message><source>use_penta_pass_help</source><translation>开启后爬塔自动使用五倍卷；识别到五倍卷数量为0时自动关闭五倍模式</translation></message>
+	<message><source>use_penta_pass_help</source><translation>仅体力挑战使用五倍卷；数量为0时自动关闭五倍模式。次数上限仍按实际战斗场数计算。</translation></message>
+	<message><source>Climb Drink Break</source><translation>爬塔喝水时间</translation></message>
+	<message><source>climb_drink_break_help</source><translation>体力、首领和百体连续运行达到间隔后，在下一场开始前休息2~20分钟；休息不计入任务时限。</translation></message>
+	<message><source>Climb Drink Interval</source><translation>爬塔喝水间隔（分钟）</translation></message>
+	<message><source>climb_drink_interval_help</source><translation>格式：最小分钟数,最大分钟数，例如60,120。</translation></message>
 	<message><source>Activity Limit Time</source><translation>任务执行时间</translation></message>
-	<message><source>activity_limit_time_help</source><translation>到达时间后不打断当前流程，仅停止下一次投骰、爬塔战斗或伪神行动</translation></message>
+	<message><source>activity_limit_time_help</source><translation>到达时间后不打断当前流程，仅停止下一次爬塔战斗或伪神行动</translation></message>
 	<message><source>Ap Limit</source><translation>体力战斗次数</translation></message>
-	<message><source>Pass Limit</source><translation>门票战斗次数</translation></message>
 	<message><source>Boss Limit</source><translation>首领战斗次数</translation></message>
 	<message><source>Ap100 Limit</source><translation>百体战斗次数</translation></message>
-	<message><source>Fakegod Limit</source><translation>伪神行动次数</translation></message>
+	<message><source>Fakegod Limit</source><translation>伪神/爬塔战斗次数</translation></message>
 	<message><source>Run Sequence</source><translation>运行顺序</translation></message>
 	<message><source>Ap Battle Conf</source><translation>体力战斗配置</translation></message>
-	<message><source>Pass Battle Conf</source><translation>门票战斗配置</translation></message>
 	<message><source>Boss Battle Conf</source><translation>首领战斗配置</translation></message>
 	<message><source>Ap100 Battle Conf</source><translation>百体战斗配置</translation></message>
-	<message><source>Rich Man Battle Conf</source><translation>大富翁战斗配置</translation></message>
-	<message><source>Fakegod Battle Conf</source><translation>伪神战斗配置</translation></message>
-	<message><source>Ap Game Max</source><translation>活动每日使用体力挑战的最大次数</translation></message>
-	<message><source>ap_game_max_help</source><translation>保持默认300即可</translation></message>
-	<message><source>ApMode</source><translation>挂体力模式</translation></message>
-	<message><source>ap_mode_help</source><translation>设置是挂活动的次数(ap_activity)还是游戏的体力(ap_game)</translation></message>
-	<message><source>Activity Toggle</source><translation>挂完活动次数后切换到体力模式</translation></message>
-	<message><source>Buy Ap Activity</source><translation>游戏体力不足是否需要话勾玉购买</translation></message>
-	<message><source>buy_ap_activity_help</source><translation>该设置只有是设定为活动次数时有效</translation></message>
-	<message><source>activity_toggle_help</source><translation>该设置只有是设定为活动次数时有效</translation></message>
+	<message><source>Fakegod Battle Conf</source><translation>伪神/爬塔战斗配置</translation></message>
 	<message><source>dokan_attack_priority_help</source><translation>道馆攻击优先顺序</translation></message>
 	<message><source>anti_detect_click_fixed_random_area_help</source><translation>防封：使用固定的随机区域进行随机点击，若为False将自动识别当前画面中的最大纯色区域作为随机点击区域</translation></message>
 </context>
@@ -602,18 +595,10 @@ mode_3策略是刷到五个契灵后开始结契，选择高级、中级盘来�
 <context>
     <name>Args</name>
 	<message><source>SwitchSoulConfig</source><translation>执行任务前切换御魂</translation></message>	
-	<message><source>Enable Switch Rich Man</source><translation>切换大富翁御魂</translation></message>
-	<message><source>Rich Man Group Team</source><translation>大富翁预设组号,队伍号</translation></message>
-	<message><source>Enable Switch Rich Man By Name</source><translation>按名称切换大富翁御魂</translation></message>
-	<message><source>Rich Man Group Team Name</source><translation>大富翁预设组名,队伍名</translation></message>
 	<message><source>Enable Switch Ap</source><translation>切换体力战御魂</translation></message>
 	<message><source>Ap Group Team</source><translation>体力战预设组号,队伍号</translation></message>
 	<message><source>Enable Switch Ap By Name</source><translation>按名称切换体力战御魂</translation></message>
 	<message><source>Ap Group Team Name</source><translation>体力战预设组名,队伍名</translation></message>
-	<message><source>Enable Switch Pass</source><translation>切换门票战御魂</translation></message>
-	<message><source>Pass Group Team</source><translation>门票战预设组号,队伍号</translation></message>
-	<message><source>Enable Switch Pass By Name</source><translation>按名称切换门票战御魂</translation></message>
-	<message><source>Pass Group Team Name</source><translation>门票战预设组名,队伍名</translation></message>
 	<message><source>Enable Switch Boss</source><translation>切换首领战御魂</translation></message>
 	<message><source>Boss Group Team</source><translation>首领战预设组号,队伍号</translation></message>
 	<message><source>Enable Switch Boss By Name</source><translation>按名称切换首领战御魂</translation></message>

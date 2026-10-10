@@ -2,10 +2,10 @@
   {
     "itemName": "main_goto_act",
     "imageName": "as_main_goto_act.png",
-    "roiFront": "1188,304,35,28",
+    "roiFront": "1185,457,43,43",
     "roiBack": "1164,134,83,393",
     "method": "Template matching",
-    "threshold": 0.7,
+    "threshold": 0.8,
     "description": "庭院进入活动"
   },
   {
@@ -20,8 +20,8 @@
   {
     "itemName": "check_battle_main",
     "imageName": "as_check_battle_main.png",
-    "roiFront": "151,18,141,41",
-    "roiBack": "141,0,192,69",
+    "roiFront": "151,18,132,40",
+    "roiBack": "140,5,156,58",
     "method": "Template matching",
     "threshold": 0.8,
     "description": "活动主界面标志"

@@ -1,6 +1,5 @@
 """式神活动统一页面定义。"""
 
-import random
 import time
 
 from module.base.timer import Timer
@@ -10,15 +9,12 @@ from tasks.ActivityShikigami.assets import ActivityShikigamiAssets
 from tasks.Component.RightActivity.assets import RightActivityAssets
 from tasks.GameUi.page import (
     Page,
-    all_of,
     any_of,
-    conditional_action,
     page_battle,
     page_battle_prepare,
     page_battle_result,
     page_main,
     page_reward,
-    page_shikigami_records,
 )
 from tasks.GlobalGame.assets import GlobalGameAssets
 
@@ -156,40 +152,25 @@ page_act.add_enter_failure_hooks(
 page_act.connect(page_main, GlobalGameAssets.I_UI_BACK_YELLOW, key='activity->main')
 page_main.connect(page_act, ActivityShikigamiAssets.I_MAIN_GOTO_ACT, key='main->activity')
 
-# 当期爬塔入口中间层。
-page_activity_exploration = Page(ActivityShikigamiAssets.I_EXP_CHECK_EXPLORATION)
-page_act.connect(page_activity_exploration, ActivityShikigamiAssets.I_TO_EXPLORATION,
-                 key='activity->exploration')
-page_activity_exploration.connect(page_act, ActivityShikigamiAssets.I_EXPLORATION_TO_MAIN,
-                                  key='exploration->activity')
+# 古迹演武和刹那试炼支持活动主页入口及磐长故地地图左侧入口。
+page_climb_ap = Page(ActivityShikigamiAssets.I_CLIMB_MODE_AP, priority=75)
+page_climb_ap.connect(page_act, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_ap->activity')
 
-page_climb_main = Page(ActivityShikigamiAssets.I_CHECK_CLIMB_MAIN)
-page_climb_main.connect(page_act, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_main->activity')
-
-# 当期爬塔四种战斗页面。
-page_climb_ap = Page(all_of(
-    ActivityShikigamiAssets.I_CHECK_BATTLE_PASS,
-    ActivityShikigamiAssets.I_CLIMB_MODE_AP,
-))
-page_climb_ap.connect(page_climb_main, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_ap->climb_main')
-
-page_climb_pass = Page(all_of(
-    ActivityShikigamiAssets.I_CHECK_BATTLE_PASS,
-    ActivityShikigamiAssets.I_CLIMB_MODE_PASS,
-))
-page_climb_pass.connect(page_climb_main, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_pass->climb_main')
-
-page_climb_ap100 = Page(ActivityShikigamiAssets.I_CLIMB_MODE_AP100)
+page_climb_ap100 = Page(ActivityShikigamiAssets.I_CLIMB_MODE_AP100, priority=75)
 page_climb_ap100.add_enter_failure_hooks(GlobalGameAssets.I_UI_BACK_RED)
-page_climb_ap100.connect(page_climb_main, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_ap100->climb_main')
+page_climb_ap100.connect(page_act, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_ap100->activity')
 
-page_climb_boss = Page(ActivityShikigamiAssets.I_AS_BOSS_FIRE)
+# 首领保留原有模板，仅在执行首领分支时加入导航，避免干扰其他挑战页识别。
+page_climb_boss = Page(ActivityShikigamiAssets.I_AS_BOSS_FIRE, register=False)
 page_climb_boss.connect(page_act, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_boss->activity')
 
-# 大富翁棋盘。
-page_rich_man = Page(ActivityShikigamiAssets.I_CHECK_RM_RICHMAN)
-page_rich_man.connect(page_act, GlobalGameAssets.I_UI_BACK_YELLOW, key='rich_man->activity')
-
-# 伪神降临沿用旧素材作为占位；下次复刻时整体替换 fakegod 子目录。
-page_fakegod_action = Page(ActivityShikigamiAssets.I_FG_CLIMB_MODE_PASS)
-page_fakegod_action.connect(page_act, GlobalGameAssets.I_UI_BACK_YELLOW, key='fakegod_action->activity')
+# 磐长故地先选择地图据点，再进入门票挑战页面。
+page_fakegod_map = Page(ActivityShikigamiAssets.I_FG_AS_CHECK_MAIN_2, priority=75)
+page_fakegod_map.connect(page_act, GlobalGameAssets.I_UI_BACK_CIRCLE, key='fakegod_map->activity')
+page_fakegod_map.connect(page_climb_ap, ActivityShikigamiAssets.I_FG_MAP_TO_AP, key='fakegod_map->climb_ap')
+page_fakegod_map.connect(page_climb_ap100, ActivityShikigamiAssets.I_FG_MAP_TO_AP100, key='fakegod_map->climb_ap100')
+# 从地图快捷入口进入挑战页时，返回键先回地图；导航随后按实际页面重新规划。
+page_climb_ap.connect(page_fakegod_map, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_ap->fakegod_map')
+page_climb_ap100.connect(page_fakegod_map, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_ap100->fakegod_map')
+page_fakegod_action = Page(ActivityShikigamiAssets.I_FG_CLIMB_MODE_PASS, priority=75)
+page_fakegod_action.connect(page_fakegod_map, GlobalGameAssets.I_UI_BACK_YELLOW, key='fakegod_action->map')

@@ -194,7 +194,7 @@ class ConfigModel(ConfigBase):
 
     @staticmethod
     def _migrate_renamed_tasks(data: dict) -> dict:
-        """兼容 RichMan/FlightChess 更名前保存的用户配置。"""
+        """兼容旧任务名称和已移除的活动配置。"""
         data = dict(data)
         # 旧版「子任务组」（单个组 + 一行一个任务名的文本框）搬到任务组 1
         legacy_group = data.pop('task_group', None)
@@ -202,8 +202,10 @@ class ConfigModel(ConfigBase):
             migrated_group = migrate_legacy_group(legacy_group)
             if migrated_group:
                 data['task_group_1'] = migrated_group
-        if data.get('running_task') in ('RichMan', 'Fakegod', 'FlightChess'):
+        if data.get('running_task') == 'Fakegod':
             data['running_task'] = 'ActivityShikigami'
+        elif data.get('running_task') in ('RichMan', 'FlightChess'):
+            data['running_task'] = ''
         old_rich_man = data.get('rich_man')
         is_old_weekly_purchase = isinstance(old_rich_man, dict) and any(
             key in old_rich_man for key in ('special_room', 'thousand_things', 'guild_store')
@@ -212,29 +214,20 @@ class ConfigModel(ConfigBase):
         if is_old_weekly_purchase and 'weekly_purchase' not in data:
             data['weekly_purchase'] = old_rich_man
 
-        old_flight_chess = data.pop('flight_chess', None)
-        if old_flight_chess is not None:
-            data['rich_man'] = old_flight_chess
-        elif is_old_weekly_purchase:
-            data.pop('rich_man', None)
-
-        # 独立的大富翁和伪神降临重新并入式神活动，并由 ActivityShikigami
-        # 自身的配置迁移器完成字段级转换。
-        legacy_rich_man = data.pop('rich_man', None)
+        # 已移除的大富翁不再迁移为可执行任务；保留早期每周购买的兼容。
+        data.pop('flight_chess', None)
+        data.pop('rich_man', None)
+        # 独立伪神降临并入式神活动，由任务配置迁移器完成字段级转换。
         legacy_fakegod = data.pop('fakegod', None)
         activity = dict(data.get('activity_shikigami') or {})
-        if isinstance(legacy_rich_man, dict):
-            activity['_legacy_rich_man'] = legacy_rich_man
         if isinstance(legacy_fakegod, dict):
             activity['_legacy_fakegod'] = legacy_fakegod
 
         scheduler = activity.get('scheduler', {})
         if not scheduler.get('enable'):
-            for legacy in (legacy_rich_man, legacy_fakegod):
-                legacy_scheduler = legacy.get('scheduler', {}) if isinstance(legacy, dict) else {}
-                if legacy_scheduler.get('enable'):
-                    activity['scheduler'] = legacy_scheduler
-                    break
+            legacy_scheduler = legacy_fakegod.get('scheduler', {}) if isinstance(legacy_fakegod, dict) else {}
+            if legacy_scheduler.get('enable'):
+                activity['scheduler'] = legacy_scheduler
         data['activity_shikigami'] = activity
 
         return data

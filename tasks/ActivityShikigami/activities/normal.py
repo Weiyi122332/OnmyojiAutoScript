@@ -1,10 +1,9 @@
-"""当期爬塔独有页面与执行逻辑。"""
+"""体力、首领和百体挑战的页面与执行逻辑。"""
 
 from datetime import datetime
 import random
 import time
 
-from module.exception import GameStuckError
 from module.logger import logger
 from tasks.ActivityShikigami.assets import ActivityShikigamiAssets
 from tasks.ActivityShikigami.base_act import ActivityResourceNotEnough
@@ -12,119 +11,55 @@ import tasks.ActivityShikigami.page as pages
 
 
 class NormalClimbAct:
-    """体力、门票、首领和百体四种爬塔战斗。"""
+    """执行体力、首领和百体挑战。"""
 
     CLIMB_OCR_REDIRECT_AFTER_CORRECTIONS = 5
+    CURRENT_CLIMB_NAMES = {'ap': '古迹演武', 'boss': '首领', 'ap100': '刹那试炼'}
 
-    def setup_climb_pages(self):
+    def setup_climb_pages(self, *, include_boss: bool = False):
         page_act = self.navigator.resolve_page(pages.page_act)
-        page_climb_main = self.navigator.resolve_page(pages.page_climb_main)
-        page_pass = self.navigator.resolve_page(pages.page_climb_pass)
         page_ap = self.navigator.resolve_page(pages.page_climb_ap)
         page_ap100 = self.navigator.resolve_page(pages.page_climb_ap100)
-        page_boss = self.navigator.resolve_page(pages.page_climb_boss)
 
         page_act.connect(
-            page_climb_main,
-            ActivityShikigamiAssets.I_TO_BATTLE_MAIN,
-            key='activity->climb_main',
-        )
-        page_climb_main.connect(
             page_ap,
-            ActivityShikigamiAssets.I_TO_BATTLE_CLIMB,
-            key='climb_main->climb_ap',
-        )
-        page_ap.add_enter_failure_hooks(pages.conditional_action(
-            condition=ActivityShikigamiAssets.I_CLIMB_MODE_PASS,
-            action=ActivityShikigamiAssets.I_CLIMB_MODE_SWITCH,
-        ))
-        page_climb_main.connect(
-            page_pass,
-            ActivityShikigamiAssets.I_TO_BATTLE_CLIMB,
-            key='climb_main->climb_pass',
-        )
-        page_pass.add_enter_failure_hooks(pages.conditional_action(
-            condition=ActivityShikigamiAssets.I_CLIMB_MODE_AP,
-            action=ActivityShikigamiAssets.I_CLIMB_MODE_SWITCH,
-        ))
-        page_climb_main.connect(
-            page_ap100,
-            ActivityShikigamiAssets.I_TO_BATTLE_CLIMB,
-            key='climb_main->climb_ap100',
+            ActivityShikigamiAssets.I_TO_BATTLE_MAIN,
+            key='activity->climb_ap',
         )
         page_act.connect(
-            page_boss,
-            ActivityShikigamiAssets.I_TO_BATTLE_BOSS,
-            key='activity->climb_boss',
+            page_ap100,
+            ActivityShikigamiAssets.I_TO_BATTLE_AP100,
+            key='activity->climb_ap100',
         )
-        page_pass.connect(page_ap, ActivityShikigamiAssets.I_CLIMB_MODE_SWITCH, key='climb_pass->climb_ap')
-        page_ap.connect(page_pass, ActivityShikigamiAssets.I_CLIMB_MODE_SWITCH, key='climb_ap->climb_pass')
+        if include_boss:
+            page_boss = self.navigator.add_page(pages.page_climb_boss)
+            page_act.connect(
+                page_boss,
+                ActivityShikigamiAssets.I_TO_BATTLE_BOSS,
+                key='activity->climb_boss',
+            )
 
-    def run_climb(self):
+    def run_climb(self, action_type: str | None = None):
         logger.hr('Start activity: Climb', 1)
-        self.setup_climb_pages()
-        for action_type in self.conf.general_config.climb_sequence_v:
+        sequence = [action_type] if action_type is not None else self.conf.general_config.climb_sequence_v
+        self.setup_climb_pages(include_boss='boss' in sequence)
+        for action_type in sequence:
+            if action_type not in self.CURRENT_CLIMB_NAMES:
+                logger.info(f'Skip climb type {action_type}: no supported entry in current activity')
+                continue
             if self.time_limit_reached():
                 return
+            logger.info(f'Current climb entry: {self.CURRENT_CLIMB_NAMES[action_type]} ({action_type})')
             self._run_climb_type(action_type)
 
     def _run_climb_type(self, action_type: str):
-        if action_type == 'pass':
-            # 进入共用爬塔界面，不要求切到门票模式，先统一读取门票。
-            self.goto_page(pages.page_climb_ap, accepted_pages=(pages.page_climb_pass,))
-            remain = self._read_shared_climb_tickets()
-            # 困难模式收益优先；任一模式次数为 0 时直接跳过。
-            for pass_mode in ('hard', 'easy'):
-                pass_limit = self.conf.general_config.pass_limit_for(pass_mode)
-                if pass_limit <= 0:
-                    logger.info(f'Skip pass mode {pass_mode}: limit is 0')
-                    continue
-                if self.time_limit_reached():
-                    return
-                required = 5 if pass_mode == 'hard' else 1
-                if remain < required:
-                    logger.info(f'Skip pass mode {pass_mode}: tickets={remain}, required={required}')
-                    continue
-                self._run_climb_branch(action_type, pass_mode=pass_mode)
-                # 两种难度共用门票，前一分支消耗后更新余量再筛选下一分支。
-                remain = self._read_shared_climb_tickets()
-            self.current_pass_mode = None
-            return
-
-        self._run_climb_branch(action_type)
-
-    def _read_shared_climb_tickets(self):
-        self.screenshot()
-        if self.appear(self.I_ORCHI_SELECT_NONE):
-            self.climb_consumable_count['pass'] = 0
-            self.climb_pending_consumption['pass'] = 0
-            self.climb_ocr_correction_rounds['pass'] = 0
-            logger.info(
-                'Climb ticket selector is empty; skip all pass modes'
-            )
-            return 0
-        return self._update_climb_consumable_count(
-            'pass', self.O_REMAIN_PASS.ocr_digit(self.device.image))
-
-    def _run_climb_branch(self, action_type: str, pass_mode: str = None):
         logger.hr(f'Start climb type: {action_type}', 2)
         self.current_action_type = action_type
-        self.current_pass_mode = pass_mode
         destination = getattr(pages, f'page_climb_{action_type}')
         self.goto_page(destination)
-        if pass_mode is not None:
-            self._sync_pass_difficulty(pass_mode)
         self._sync_climb_team_lock(action_type)
 
         while True:
-            if pass_mode is not None:
-                mode_limit = self.conf.general_config.pass_limit_for(pass_mode)
-                if self.pass_action_count[pass_mode] >= mode_limit:
-                    logger.info(
-                        f'Pass mode {pass_mode} count limit reached: '
-                        f'{self.pass_action_count[pass_mode]}/{mode_limit}'
-                    )
-                    return
             self.screenshot()
             if self.appear_then_click(self.I_USELESS_MESSAGE_CLOSE, interval=1):
                 continue
@@ -136,7 +71,7 @@ class NormalClimbAct:
                 continue
             current_page = self.get_current_page()
             if current_page == destination:
-                # 五倍卷只支持普通体力战斗，门票等分支不读取也不切换。
+                # 五倍卷只支持普通体力战斗，首领和百体分支不读取也不切换。
                 if action_type == 'ap':
                     self._sync_climb_penta_pass()
                 if not self.prepare_next_action(action_type):
@@ -145,11 +80,8 @@ class NormalClimbAct:
                 try:
                     self._run_climb_action(action_type, destination)
                 except ActivityResourceNotEnough:
-                    branch = f'/{pass_mode}' if pass_mode else ''
-                    logger.info(
-                        f'Climb resource exhausted: {action_type}{branch}'
-                    )
-                    # 困难门票不足时关闭提示，仅结束困难分支，随后可执行简单模式。
+                    logger.info(f'Climb resource exhausted: {action_type}')
+                    # 关闭资源不足提示，结束当前挑战，随后执行下一项。
                     self.screenshot()
                     if self.appear_then_click(self.I_UI_BACK_RED, interval=0):
                         self.device.click_record_clear()
@@ -221,41 +153,26 @@ class NormalClimbAct:
         if not self._climb_resource_available(action_type):
             raise ActivityResourceNotEnough
 
-        soul_action_type = action_type
-        if action_type == 'pass' and self.current_pass_mode == 'hard':
-            # 困难门票复用百体模式的御魂预设及切换状态。
-            soul_action_type = 'ap100'
-            logger.info('Pass hard mode uses ap100 soul preset')
         self.switch_soul_for(
-            soul_action_type,
+            action_type,
             self.I_BATTLE_MAIN_TO_RECORDS,
             return_page=destination,
             exit_records=True,
         )
-        if action_type == 'pass' and self.current_pass_mode is not None:
-            # 首次切换御魂返回后重新确认难度，避免页面往返重置选择。
-            self._sync_pass_difficulty(self.current_pass_mode)
         entered = self._enter_climb_battle(action_type)
         if not entered:
             raise ActivityResourceNotEnough
 
         self._record_climb_consumption(action_type)
         self.record_action(action_type)
-        if action_type == 'pass' and self.current_pass_mode is not None:
-            self.pass_action_count[self.current_pass_mode] += 1
-            mode_limit = self.conf.general_config.pass_limit_for(
-                self.current_pass_mode
-            )
-            logger.info(
-                f'Pass mode {self.current_pass_mode} action count: '
-                f'{self.pass_action_count[self.current_pass_mode]}/{mode_limit}'
-            )
         self.run_general_battle(
             self.battle_config(action_type),
             battle_key=f'activity_{action_type}',
         )
 
     def _climb_fire_rule(self, action_type: str):
+        if action_type == 'ap100':
+            return self.I_AP100_FIRE
         return self.I_AS_BOSS_FIRE if action_type == 'boss' else self.I_ACT_FIRE
 
     def _climb_penta_enabled(self, action_type: str) -> bool:
@@ -270,11 +187,7 @@ class NormalClimbAct:
         """返回当前分支一场战斗应消耗的主资源数量。"""
         if action_type == 'ap':
             return 30 if self._climb_penta_enabled(action_type) else 6
-        hard_pass = (
-            action_type == 'pass'
-            and self.current_pass_mode == 'hard'
-        )
-        return 5 if hard_pass else 1
+        return 1
 
     def _climb_ap_pass_consumption(self, action_type: str) -> int:
         """返回体力挑战门票的单场消耗量。"""
@@ -352,37 +265,6 @@ class NormalClimbAct:
         )
         self.screenshot()
         self.penta_pass_active = self.appear(enabled_rule)
-
-    def _sync_pass_difficulty(self, mode: str) -> None:
-        """点击并确认门票简单/困难分支，失败三次后报错。"""
-        if mode == 'hard':
-            target_rule = self.I_CHECK_CLIMB_HARD
-            click_rule = self.C_CL_SELECT_HARD
-        elif mode == 'easy':
-            target_rule = self.I_CHECK_CLIMB_EASY
-            click_rule = self.C_CL_SELECT_EASY
-        else:
-            raise ValueError(f'Unsupported pass mode: {mode}')
-
-        for attempt in range(1, 4):
-            self.screenshot()
-            if self.appear(target_rule):
-                logger.info(f'Pass mode ready: {mode}')
-                return
-            self.click(click_rule, interval=0)
-            if self.wait_until_appear(target_rule, wait_time=3):
-                self.device.click_record_clear()
-                logger.info(
-                    f'Pass mode selected: {mode}, attempt={attempt}/3'
-                )
-                return
-            logger.warning(
-                f'Pass mode selection timeout: {mode}, attempt={attempt}/3'
-            )
-
-        raise GameStuckError(
-            f'Failed to select pass mode {mode} after 3 attempts'
-        )
 
     @staticmethod
     def _normalize_climb_consumable_count(
@@ -495,6 +377,8 @@ class NormalClimbAct:
         enable = self.battle_config(action_type).lock_team_enable
         if action_type == 'boss':
             lock_rule, unlock_rule = self.I_LOCK, self.I_UNLOCK
+        elif action_type == 'ap100':
+            lock_rule, unlock_rule = self.I_AP100_LOCK, self.I_AP100_UNLOCK
         else:
             lock_rule, unlock_rule = self.I_AP_LOCK, self.I_AP_UNLOCK
         if enable:
@@ -507,9 +391,7 @@ class NormalClimbAct:
     def _climb_resource_available(self, action_type: str) -> bool:
         logger.hr(f'Check {action_type} resource')
         self.screenshot()
-        if action_type == 'pass':
-            raw_remain = self.O_REMAIN_PASS.ocr_digit(self.device.image)
-        elif action_type == 'ap':
+        if action_type == 'ap':
             raw_ap_pass = self.O_REMAIN_AP_PASS.ocr_digit(
                 self.device.image
             )
@@ -546,8 +428,7 @@ class NormalClimbAct:
                 f'Climb {action_type} resource below branch requirement: '
                 f'remain={remain}, required={required}, '
                 f'ap_pass_remain={ap_pass_remain}, '
-                f'ap_pass_required={ap_pass_required}, '
-                f'mode={self.current_pass_mode}'
+                f'ap_pass_required={ap_pass_required}'
             )
             return False
         return True

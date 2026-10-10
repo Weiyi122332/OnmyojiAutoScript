@@ -5,7 +5,7 @@ from datetime import time, timedelta
 from enum import Enum
 import re
 
-from pydantic import BaseModel, Field, model_validator, validator
+from pydantic import BaseModel, Field, field_serializer, model_validator, validator
 
 from module.logger import logger
 from module.config.multi_select import normalize_multi_select
@@ -15,58 +15,89 @@ from tasks.Component.config_scheduler import Scheduler
 
 
 class ActivityTask(str, Enum):
-    EXPLORATION = '探索'
-    RICH_MAN = '大富翁'
-    FAKE_GOD = '伪神'
-    CLIMB = '爬塔'
+    AP = '体力'
+    AP100 = '百体'
+    BOSS = '首领'
+    FAKE_GOD = '伪神/爬塔'
 
 
-ACTIVITY_EXECUTION_ORDER = ('探索', '大富翁', '伪神', '爬塔')
+DEFAULT_ACTIVITY_SEQUENCE = ('体力', '百体', '首领', '伪神/爬塔')
 ACTIVITY_NAME_TO_FIELD = {
-    '大富翁': 'rich_man',
-    '伪神': 'fakegod',
-    '爬塔': 'climb',
-    '探索': 'exploration',
+    '体力': 'ap',
+    '百体': 'ap100',
+    '首领': 'boss',
+    '伪神/爬塔': 'fakegod',
 }
 ACTIVITY_NAME_ALIASES = {
-    '探索': '探索',
-    'exploration': '探索',
-    'exp': '探索',
-    'richman': '大富翁',
-    'rich_man': '大富翁',
-    '大富翁': '大富翁',
-    'climb': '爬塔',
-    'normal': '爬塔',
-    '爬塔': '爬塔',
-    'fakegod': '伪神',
-    'fake_god': '伪神',
-    '伪神': '伪神',
-    '伪神降临': '伪神',
+    'ap': '体力',
+    '体力': '体力',
+    '古迹演武': '体力',
+    'ap100': '百体',
+    '百体': '百体',
+    '100体': '百体',
+    '刹那试炼': '百体',
+    'boss': '首领',
+    '首领': '首领',
+    'fakegod': '伪神/爬塔',
+    'fake_god': '伪神/爬塔',
+    '伪神': '伪神/爬塔',
+    '伪神降临': '伪神/爬塔',
+    '磐长故地': '伪神/爬塔',
+    '伪神/爬塔': '伪神/爬塔',
+    '伟神/爬塔': '伪神/爬塔',
 }
-CLIMB_TYPES = ('pass', 'ap', 'boss', 'ap100')
-BATTLE_TYPES = ('rich_man', *CLIMB_TYPES, 'fakegod')
+LEGACY_CLIMB_NAMES = {'climb', 'normal', '爬塔'}
+# 旧配置中的已移除选项直接忽略，避免整个配置加载失败。
+REMOVED_ACTIVITY_NAMES = {
+    '探索', 'exploration', 'exp', '大富翁', 'richman', 'rich_man',
+    '门票', 'pass',
+}
+CLIMB_TYPES = ('ap', 'boss', 'ap100')
+BATTLE_TYPES = (*CLIMB_TYPES, 'fakegod')
+
+
+def normalize_activity_sequence(value) -> list[str]:
+    """保留列表顺序，兼容旧爬塔总开关及历史文本配置。"""
+    values = list(DEFAULT_ACTIVITY_SEQUENCE) if value is None else normalize_multi_select(value)
+    selected = []
+    for item in values:
+        raw_name = item.value if isinstance(item, ActivityTask) else str(item).strip()
+        alias = raw_name.lower()
+        if not alias or alias in REMOVED_ACTIVITY_NAMES:
+            continue
+        if alias in LEGACY_CLIMB_NAMES:
+            # 旧“爬塔”展开为体力、首领和百体，保持原分支顺序。
+            names = ('体力', '首领', '百体')
+        else:
+            name = ACTIVITY_NAME_ALIASES.get(alias)
+            if name is None:
+                raise ValueError(
+                    f'活动执行顺序仅支持 {", ".join(DEFAULT_ACTIVITY_SEQUENCE)}，当前为 {raw_name}'
+                )
+            names = (name,)
+        for name in names:
+            if name not in selected:
+                selected.append(name)
+    return selected
 
 
 class GeneralConfig(ConfigBase):
     task_sequence: list[ActivityTask] = Field(
         default=[
-            ActivityTask.RICH_MAN,
+            ActivityTask.AP,
+            ActivityTask.AP100,
+            ActivityTask.BOSS,
             ActivityTask.FAKE_GOD,
-            ActivityTask.CLIMB,
         ],
+        max_length=4,
         title='Activity Task Sequence',
         description='activity_task_sequence_help',
+        json_schema_extra={'x-ui-type': 'task_list'},
     )
-    throw_limit: int = Field(default=0, title='Throw Limit', ge=0)
-    ap_limit: int = Field(default=0, title='Ap Limit', ge=0)
-    pass_limit: str = Field(
-        default='0',
-        title='Pass Limit',
-        description='pass_limit_help',
-    )
+    ap_limit: int = Field(default=0, title='Ap Limit', ge=0, description='activity_ap_limit_help')
     boss_limit: int = Field(default=0, title='Boss Limit', ge=0)
-    ap100_limit: int = Field(default=0, title='Ap100 Limit', ge=0)
-    fakegod_limit: int = Field(default=0, title='Fakegod Limit', ge=0)
+    ap100_limit: int = Field(default=0, title='Ap100 Limit', ge=0, description='activity_ap100_limit_help')
+    fakegod_limit: int = Field(default=0, title='Fakegod Limit', ge=0, description='activity_fakegod_limit_help')
     limit_time: Time = Field(
         default=Time(hour=1, minute=30),
         title='Activity Limit Time',
@@ -110,95 +141,31 @@ class GeneralConfig(ConfigBase):
 
     @property
     def task_sequence_v(self) -> list[str]:
-        selected = {
-            item.value if isinstance(item, ActivityTask) else str(item)
-            for item in self.task_sequence
-        }
+        """按列表从上到下执行，删除或次数为零的活动不参与运行。"""
         return [
-            name for name in ACTIVITY_EXECUTION_ORDER
-            if name in selected and self.activity_enabled(name)
+            name for name in normalize_activity_sequence(self.task_sequence)
+            if self.activity_enabled(name)
         ]
 
     @property
     def climb_sequence_v(self) -> list[str]:
-        """爬塔四种战斗按 UI 约定顺序执行，并跳过次数为零的项。"""
+        """体力、首领和百体按原分支顺序执行，并跳过次数为零的项。"""
         return [name for name in CLIMB_TYPES if self.limit_for(name) > 0]
-
-    @property
-    def pass_limits_v(self) -> tuple[int, int]:
-        """返回门票简单、困难模式的次数限制。"""
-        parts = [int(part) for part in self.pass_limit.split(',')]
-        if len(parts) == 1:
-            return parts[0], 0
-        return parts[0], parts[1]
-
-    def pass_limit_for(self, mode: str) -> int:
-        easy_limit, hard_limit = self.pass_limits_v
-        if mode == 'easy':
-            return easy_limit
-        if mode == 'hard':
-            return hard_limit
-        raise ValueError(f'Unsupported pass mode: {mode}')
 
     def activity_enabled(self, activity_name: str) -> bool:
         field = ACTIVITY_NAME_TO_FIELD[activity_name]
-        if field == 'exploration':
-            return True
-        if field == 'rich_man':
-            return self.throw_limit > 0
-        if field == 'climb':
-            return bool(self.climb_sequence_v)
-        return self.fakegod_limit > 0
+        return self.limit_for(field) > 0
 
     def limit_for(self, action_type: str) -> int:
-        if action_type == 'pass':
-            return sum(self.pass_limits_v)
-        field = 'throw_limit' if action_type == 'rich_man' else f'{action_type}_limit'
-        return getattr(self, field, 0)
-
-    @validator('pass_limit', pre=True, always=True)
-    def parse_pass_limit(cls, value):
-        """兼容“简单次数”及“简单次数,困难次数”两种写法。"""
-        raw_value = '0' if value is None else str(value).strip()
-        parts = [part.strip() for part in raw_value.split(',')]
-        if len(parts) not in (1, 2) or any(not part for part in parts):
-            raise ValueError('门票战斗次数必须填写数字或“简单次数,困难次数”')
-        if any(not part.isdigit() for part in parts):
-            raise ValueError('门票战斗次数只能填写非负整数')
-        return ','.join(str(int(part)) for part in parts)
+        return getattr(self, f'{action_type}_limit', 0)
 
     @validator('task_sequence', pre=True, always=True)
     def parse_task_sequence(cls, value):
-        """兼容旧版填空字符串和多选列表，统一为现有活动选项。"""
-        if value is None:
-            values = list(ACTIVITY_EXECUTION_ORDER)
-        else:
-            values = normalize_multi_select(value)
+        return normalize_activity_sequence(value)
 
-        # 旧版文本框可能使用中文分隔符；部分界面会将整段文本包装成列表。
-        names = []
-        for item in values:
-            if isinstance(item, ActivityTask):
-                names.append(item)
-            else:
-                names.extend(re.split(r'[,，;；\n\r]+', str(item)))
-
-        selected = []
-        for raw_name in names:
-            if isinstance(raw_name, ActivityTask):
-                name = raw_name.value
-            else:
-                raw_name = str(raw_name).strip()
-                if not raw_name:
-                    continue
-                name = ACTIVITY_NAME_ALIASES.get(raw_name.lower())
-            if name is None:
-                raise ValueError(
-                    f'任务启用项仅支持 {", ".join(ACTIVITY_EXECUTION_ORDER)}，当前为 {raw_name}'
-                )
-            if name not in selected:
-                selected.append(name)
-        return selected
+    @field_serializer('task_sequence')
+    def serialize_task_sequence(self, value) -> list[str]:
+        return normalize_activity_sequence(value)
 
     @validator('limit_time', pre=True, always=True)
     def parse_limit_time(cls, value):
@@ -245,25 +212,10 @@ def check_soul_by_ocr(enable_switch: bool, group_team_name: str, label: str):
 
 
 class SwitchSoulConfig(BaseModel):
-    enable_switch_exp_encounter: bool = Field(default=False)
-    exp_encounter_group_team: str = Field(default='-1,-1', description='switch_group_team_help')
-    enable_switch_exp_encounter_by_name: bool = Field(default=False, description='enable_switch_by_name_help')
-    exp_encounter_group_team_name: str = Field(default='')
-
-    enable_switch_rich_man: bool = Field(default=False)
-    rich_man_group_team: str = Field(default='-1,-1', description='switch_group_team_help')
-    enable_switch_rich_man_by_name: bool = Field(default=False, description='enable_switch_by_name_help')
-    rich_man_group_team_name: str = Field(default='')
-
     enable_switch_ap: bool = Field(default=False)
     ap_group_team: str = Field(default='-1,-1', description='switch_group_team_help')
     enable_switch_ap_by_name: bool = Field(default=False, description='enable_switch_by_name_help')
     ap_group_team_name: str = Field(default='')
-
-    enable_switch_pass: bool = Field(default=False)
-    pass_group_team: str = Field(default='-1,-1', description='switch_group_team_help')
-    enable_switch_pass_by_name: bool = Field(default=False, description='enable_switch_by_name_help')
-    pass_group_team_name: str = Field(default='')
 
     enable_switch_boss: bool = Field(default=False)
     boss_group_team: str = Field(default='-1,-1', description='switch_group_team_help')
@@ -281,7 +233,7 @@ class SwitchSoulConfig(BaseModel):
     fakegod_group_team_name: str = Field(default='')
 
     def validate_switch_soul(self):
-        for label in ('exp_encounter', *BATTLE_TYPES):
+        for label in BATTLE_TYPES:
             check_soul_by_number(
                 getattr(self, f'enable_switch_{label}'),
                 getattr(self, f'{label}_group_team'),
@@ -296,94 +248,56 @@ class SwitchSoulConfig(BaseModel):
 
 
 class ActivityShikigami(ConfigBase):
-    # OASX 按字段顺序排版：任务调度、通用设置、切换御魂、六种战斗配置。
+    # OASX 按字段顺序排版：任务调度、通用设置、切换御魂、四种战斗配置。
     scheduler: Scheduler = Field(default_factory=Scheduler)
     general_config: GeneralConfig = Field(default_factory=GeneralConfig)
     switch_soul_config: SwitchSoulConfig = Field(default_factory=SwitchSoulConfig)
 
-    rich_man_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
     ap_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
-    pass_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
     boss_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
     ap100_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
     fakegod_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
-    exp_encounter_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
 
     @model_validator(mode='before')
     @classmethod
     def migrate_legacy_configs(cls, data):
-        """合并旧爬塔、大富翁和伪神降临配置。"""
+        """保留旧爬塔和伪神配置，移除已废弃玩法的配置。"""
         if not isinstance(data, dict):
             return data
         data = dict(data)
-        old_encounter = data.pop('exp_encounter_soul_config', None)
-        if isinstance(old_encounter, dict):
-            soul = dict(data.get('switch_soul_config') or {})
-            for old_key, new_key in (
-                ('enable', 'enable_switch_exp_encounter'),
-                ('switch_group_team', 'exp_encounter_group_team'),
-                ('enable_switch_by_name', 'enable_switch_exp_encounter_by_name'),
-            ):
-                if old_key in old_encounter:
-                    soul.setdefault(new_key, old_encounter[old_key])
-            soul.setdefault('exp_encounter_group_team_name',
-                            f"{old_encounter.get('group_name', '')},{old_encounter.get('team_name', '')}")
-            data['switch_soul_config'] = soul
-        old_climb = data.get('general_climb')
-        old_rich_man = data.pop('_legacy_rich_man', None)
+        for removed_field in ('exp_encounter_soul_config', 'exp_encounter_battle_conf',
+                              'rich_man_battle_conf', '_legacy_rich_man',
+                              'pass_battle_conf'):
+            data.pop(removed_field, None)
+        old_climb = data.pop('general_climb', None)
         old_fakegod = data.pop('_legacy_fakegod', None)
 
-        if 'general_config' not in data:
-            general = {}
-            if isinstance(old_climb, dict):
-                for key in (
-                    'limit_time', 'ap_limit', 'pass_limit', 'boss_limit', 'ap100_limit',
-                    'active_souls_clean', 'random_sleep',
-                ):
-                    if key in old_climb:
-                        general[key] = old_climb[key]
-                general['task_sequence'] = '爬塔'
+        general = dict(data.get('general_config') or {})
+        if isinstance(old_climb, dict):
+            for key in (
+                'limit_time', 'ap_limit', 'boss_limit', 'ap100_limit', 'active_souls_clean',
+                'random_sleep', 'use_penta_pass', 'climb_drink_break', 'climb_drink_interval',
+            ):
+                if key in old_climb:
+                    general.setdefault(key, old_climb[key])
 
-            if isinstance(old_rich_man, dict):
-                run = old_rich_man.get('run_config', old_rich_man.get('general_climb', {}))
-                if isinstance(run, dict):
-                    general['throw_limit'] = run.get('throw_limit', run.get('pass_limit', 0))
-                    general.setdefault('limit_time', run.get('limit_time', '01:30:00'))
-                    general['active_souls_clean'] = bool(
-                        general.get('active_souls_clean', False) or run.get('active_souls_clean', False)
-                    )
-                    general['random_sleep'] = bool(
-                        general.get('random_sleep', False) or run.get('random_sleep', False)
-                    )
+        if isinstance(old_fakegod, dict):
+            run = old_fakegod.get('general_climb', {})
+            if isinstance(run, dict):
+                general.setdefault('fakegod_limit', run.get('pass_limit', 0))
+                general.setdefault('limit_time', run.get('limit_time', '01:30:00'))
 
-            if isinstance(old_fakegod, dict):
-                run = old_fakegod.get('general_climb', {})
-                if isinstance(run, dict):
-                    general['fakegod_limit'] = run.get('pass_limit', 0)
-                    general.setdefault('limit_time', run.get('limit_time', '01:30:00'))
-
+        if 'task_sequence' not in general:
             enabled_sequence = []
-            if isinstance(old_rich_man, dict) and old_rich_man.get('scheduler', {}).get('enable'):
-                enabled_sequence.append('大富翁')
             if isinstance(old_climb, dict):
                 enabled_sequence.append('爬塔')
             if isinstance(old_fakegod, dict) and old_fakegod.get('scheduler', {}).get('enable'):
                 enabled_sequence.append('伪神降临')
             if enabled_sequence:
                 general['task_sequence'] = ','.join(enabled_sequence)
-            data['general_config'] = general
+        data['general_config'] = general
 
         soul = dict(data.get('switch_soul_config') or {})
-        if isinstance(old_rich_man, dict):
-            old_soul = old_rich_man.get('switch_soul', old_rich_man.get('common_switch_soul', {}))
-            if isinstance(old_soul, dict):
-                soul.setdefault('enable_switch_rich_man', old_soul.get('enable', False))
-                soul.setdefault('rich_man_group_team', old_soul.get('switch_group_team', '-1,-1'))
-                soul.setdefault(
-                    'enable_switch_rich_man_by_name', old_soul.get('enable_switch_by_name', False),
-                )
-                combined = ','.join(filter(None, [old_soul.get('group_name', ''), old_soul.get('team_name', '')]))
-                soul.setdefault('rich_man_group_team_name', combined)
         if isinstance(old_fakegod, dict):
             old_soul = old_fakegod.get('switch_soul_config', {})
             if isinstance(old_soul, dict):
@@ -395,8 +309,6 @@ class ActivityShikigami(ConfigBase):
                 soul.setdefault('fakegod_group_team_name', old_soul.get('pass_group_team_name', ''))
         data['switch_soul_config'] = soul
 
-        if isinstance(old_rich_man, dict):
-            data.setdefault('rich_man_battle_conf', old_rich_man.get('general_battle', {}))
         if isinstance(old_fakegod, dict):
             data.setdefault('fakegod_battle_conf', old_fakegod.get('pass_battle_conf', {}))
         return data

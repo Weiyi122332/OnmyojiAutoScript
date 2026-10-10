@@ -1,4 +1,4 @@
-"""伪神降临兼容占位流程；素材下次复刻时重做。"""
+"""磐长故地地图选点及门票挑战流程。"""
 
 import random
 import time
@@ -7,40 +7,45 @@ from module.logger import logger
 from tasks.ActivityShikigami.base_act import ActivityResourceNotEnough
 from tasks.ActivityShikigami.assets import ActivityShikigamiAssets
 import tasks.ActivityShikigami.page as pages
-from tasks.GlobalGame.assets import GlobalGameAssets
+
+
+def select_fakegod_target(task):
+    """从当前地图识别可挑战据点，兼容地图缩放及据点位置变化。"""
+    for _ in range(3):
+        task.screenshot()
+        if not task.appear(ActivityShikigamiAssets.I_FG_AS_CHECK_MAIN_2):
+            return False
+        if task.appear_then_click(ActivityShikigamiAssets.I_FG_AS_TO_PASS, interval=0):
+            task.device.click_record_clear()
+            return True
+        time.sleep(0.5)
+    logger.info('磐长故地当前地图没有可识别的战斗据点，结束伪神分支')
+    raise ActivityResourceNotEnough
 
 
 class FakeGodAct:
     def setup_fakegod_pages(self):
         page_act = self.navigator.resolve_page(pages.page_act)
+        page_map = self.navigator.resolve_page(pages.page_fakegod_map)
         page_action = self.navigator.resolve_page(pages.page_fakegod_action)
 
-        page_second = self.navigator.add_page(pages.Page(
-            ActivityShikigamiAssets.I_FG_AS_CHECK_MAIN_2,
-            category='activity_shikigami',
-        ))
-        page_second.add_enter_success_hooks(GlobalGameAssets.I_UI_BACK_RED)
-        page_act.connect(page_second, ActivityShikigamiAssets.I_FG_TO_BATTLE_MAIN, key='activity->fakegod_second')
-        page_second.connect(page_act, GlobalGameAssets.I_UI_BACK_CIRCLE, key='fakegod_second->activity')
+        page_act.connect(page_map, ActivityShikigamiAssets.I_FG_TO_BATTLE_MAIN, key='activity->fakegod_map')
+        page_map.connect(page_action, select_fakegod_target, key='fakegod_map->action')
 
-        page_dark = self.navigator.add_page(pages.Page(
-            ActivityShikigamiAssets.I_FG_AS_CLOSE_EYE,
-            category='activity_shikigami',
-            priority=75,
-        ))
-        page_dark.add_enter_failure_hooks(GlobalGameAssets.I_UI_BACK_RED)
-        page_dark.add_enter_success_hooks(ActivityShikigamiAssets.I_FG_AS_LOCATE)
-        page_dark.connect(page_act, GlobalGameAssets.I_UI_BACK_CIRCLE, key='fakegod_dark->activity')
-        page_second.connect(page_dark, ActivityShikigamiAssets.I_FG_AS_OPEN_EYE, key='fakegod_second->dark')
-        page_action.connect(page_dark, GlobalGameAssets.I_UI_BACK_YELLOW, key='fakegod_action->dark')
-        page_dark.connect(page_action, ActivityShikigamiAssets.I_FG_AS_TO_PASS, key='fakegod_dark->action')
+    def _goto_fakegod_action(self, destination) -> bool:
+        try:
+            self.goto_page(destination)
+        except ActivityResourceNotEnough:
+            return False
+        self._sync_fakegod_team_lock()
+        return True
 
     def run_fakegod(self):
         logger.hr('Start activity: Fakegod', 1)
         self.setup_fakegod_pages()
         destination = pages.page_fakegod_action
-        self.goto_page(destination)
-        self._sync_fakegod_team_lock()
+        if not self._goto_fakegod_action(destination):
+            return
 
         while True:
             self.screenshot()
@@ -66,7 +71,10 @@ class FakeGodAct:
             if current_page is None:
                 time.sleep(0.5)
                 continue
-            self.goto_page(destination)
+            if self.time_limit_reached() or self.action_count['fakegod'] >= self.action_limit('fakegod'):
+                return
+            if not self._goto_fakegod_action(destination):
+                return
 
     def _run_fakegod_action(self, destination):
         self.screenshot()
@@ -76,6 +84,7 @@ class FakeGodAct:
             'fakegod',
             self.I_FG_BATTLE_MAIN_TO_RECORDS,
             return_page=destination,
+            exit_records=True,
         )
         if trial:
             entered = self.verify_zero_ticket(

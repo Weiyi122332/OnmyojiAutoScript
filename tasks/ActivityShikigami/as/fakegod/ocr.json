@@ -10,9 +10,9 @@
   },
   {
     "itemName": "fg_remain_pass",
-    "roiFront": "539,23,88,31",
-    "roiBack": "539,23,88,31",
-    "mode": "DigitCounter",
+    "roiFront": "1104,24,105,34",
+    "roiBack": "1104,24,105,34",
+    "mode": "Digit",
     "method": "Default",
     "keyword": "",
     "description": "活动门票数量"

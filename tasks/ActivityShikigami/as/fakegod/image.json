@@ -2,29 +2,29 @@
   {
     "itemName": "fg_lock",
     "imageName": "as_lock.png",
-    "roiFront": "779,648,31,30",
-    "roiBack": "685,612,330,86",
+    "roiFront": "896,654,27,28",
+    "roiBack": "884,642,52,48",
     "method": "Template matching",
-    "threshold": 0.7,
+    "threshold": 0.8,
     "description": "上锁图标"
   },
   {
     "itemName": "fg_unlock",
     "imageName": "as_unlock.png",
-    "roiFront": "779,648,31,30",
-    "roiBack": "686,610,313,92",
+    "roiFront": "896,654,27,28",
+    "roiBack": "884,642,52,48",
     "method": "Template matching",
-    "threshold": 0.7,
+    "threshold": 0.8,
     "description": "阵容未锁定"
   },
   {
     "itemName": "fg_climb_mode_pass",
     "imageName": "as_climb_mode_pass.png",
-    "roiFront": "1143,544,21,21",
-    "roiBack": "1118,510,119,186",
+    "roiFront": "151,18,132,40",
+    "roiBack": "140,5,156,58",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": "门票爬塔标志"
+    "description": "磐长故地挑战页标志"
   },
   {
     "itemName": "fg_climb_mode_ap",
@@ -65,8 +65,8 @@
   {
     "itemName": "fg_act_fire",
     "imageName": "as_act_fire.png",
-    "roiFront": "1139,599,84,45",
-    "roiBack": "1080,530,192,190",
+    "roiFront": "1133,591,91,40",
+    "roiBack": "1100,550,160,140",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "More",

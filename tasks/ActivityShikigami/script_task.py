@@ -4,28 +4,22 @@
 from module.logger import logger
 from tasks.ActivityShikigami.activities.fake_god import FakeGodAct
 from tasks.ActivityShikigami.activities.normal import NormalClimbAct
-from tasks.ActivityShikigami.activities.rich_man import RichManAct
 from tasks.ActivityShikigami.base_act import BaseAct
-from tasks.ActivityShikigami.activities.exploration import ExplorationAct
+from tasks.ActivityShikigami.config import ACTIVITY_NAME_TO_FIELD
 
 
-ACTIVITY_METHOD_FIELDS = {
-    '大富翁': 'run_rich_man',
-    '伪神': 'run_fakegod',
-    '爬塔': 'run_climb',
-    '探索': 'run_exploration',
-}
-
-
-class ScriptTask(ExplorationAct, RichManAct, NormalClimbAct, FakeGodAct, BaseAct):
+class ScriptTask(NormalClimbAct, FakeGodAct, BaseAct):
 
     def run(self):
         self.before_run()
         sequence = self.conf.general_config.task_sequence_v
-        logger.info(f'ActivityShikigami enabled sequence: {sequence}')
+        logger.info(f'ActivityShikigami execution sequence: {sequence}')
         for activity_name in sequence:
             if self.time_limit_reached():
                 break
-            method_name = ACTIVITY_METHOD_FIELDS[activity_name]
-            getattr(self, method_name)()
+            action_type = ACTIVITY_NAME_TO_FIELD[activity_name]
+            if action_type == 'fakegod':
+                self.run_fakegod()
+            else:
+                self.run_climb(action_type)
         self.finish_activity_task()

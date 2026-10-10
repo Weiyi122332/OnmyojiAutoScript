@@ -76,6 +76,20 @@ class FluentApp():
 
 # 新增界面文字的中文兜底（module/config/i18n/zh_CN.qm 里还没有这些字符串）
 _FALLBACK_ZH = {
+    'Activity Task Sequence': '活动执行顺序',
+    'activity_task_sequence_help': '支持体力、百体、首领和伪神/爬塔。点“新增任务”添加活动，拖动调整顺序，点右侧×删除；按从上到下执行，次数为0时跳过。',
+    'activity_ap_limit_help': '本期对应古迹演武：普通挑战每次消耗6体力和1张活动门票。',
+    'activity_ap100_limit_help': '本期对应刹那试炼：每次消耗100体力和1张百体门票。',
+    'activity_fakegod_limit_help': '伪神/爬塔本期对应磐长故地：先选择地图战斗据点，每次消耗1张门票。',
+    'Fakegod Limit': '伪神/爬塔战斗次数',
+    'Fakegod Battle Conf': '伪神/爬塔战斗配置',
+    'activity_random_sleep_help': '在下一次体力、百体、首领或伪神战斗开始前随机休眠；休眠后重新检查任务时间。',
+    'activity_limit_time_help': '到达时间后不打断当前流程，仅停止下一次爬塔战斗或伪神行动',
+    'use_penta_pass_help': '仅体力挑战使用五倍卷；数量为0时自动关闭五倍模式。次数上限仍按实际战斗场数计算。',
+    'Climb Drink Break': '爬塔喝水时间',
+    'climb_drink_break_help': '体力、首领和百体连续运行达到间隔后，在下一场开始前休息2~20分钟；休息不计入任务时限。',
+    'Climb Drink Interval': '爬塔喝水间隔（分钟）',
+    'climb_drink_interval_help': '格式：最小分钟数,最大分钟数，例如60,120。',
     'Task Group': '任务组',
     'TaskGroup1': '任务组 1',
     'TaskGroup2': '任务组 2',

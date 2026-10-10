@@ -32,8 +32,8 @@
   {
     "itemName": "climb_mode_ap",
     "imageName": "as_climb_mode_ap.png",
-    "roiFront": "1093,542,22,25",
-    "roiBack": "1055,495,202,219",
+    "roiFront": "151,18,132,40",
+    "roiBack": "140,5,156,58",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "Default",
@@ -52,8 +52,8 @@
   {
     "itemName": "climb_mode_ap100",
     "imageName": "as_climb_mode_ap100.png",
-    "roiFront": "1186,665,22,25",
-    "roiBack": "1055,495,202,219",
+    "roiFront": "151,18,132,40",
+    "roiBack": "140,5,156,58",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "Default",
@@ -62,8 +62,8 @@
   {
     "itemName": "ap_unlock",
     "imageName": "as_ap_unlock.png",
-    "roiFront": "796,653,31,30",
-    "roiBack": "758,628,313,92",
+    "roiFront": "802,653,27,27",
+    "roiBack": "790,642,49,47",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "Default",
@@ -72,8 +72,8 @@
   {
     "itemName": "ap_lock",
     "imageName": "as_ap_lock.png",
-    "roiFront": "796,653,31,30",
-    "roiBack": "758,628,313,92",
+    "roiFront": "802,653,27,27",
+    "roiBack": "790,642,49,47",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "Default",
@@ -82,8 +82,8 @@
   {
     "itemName": "act_fire",
     "imageName": "as_act_fire.png",
-    "roiFront": "1125,578,99,97",
-    "roiBack": "1080,530,192,190",
+    "roiFront": "1131,601,91,40",
+    "roiBack": "1100,550,160,140",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "More",
@@ -112,8 +112,8 @@
   {
     "itemName": "fight_penta_disuse",
     "imageName": "climb_fight_penta_disuse.png",
-    "roiFront": "867,650,31,30",
-    "roiBack": "746,629,330,86",
+    "roiFront": "873,651,32,32",
+    "roiBack": "866,644,47,47",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "Default",
@@ -168,5 +168,33 @@
     "threshold": 0.8,
     "profile": "Default",
     "description": "未选御魂"
+  },
+  {
+    "itemName": "ap100_fire",
+    "imageName": "ap100_fire.png",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "百体活动挑战按钮",
+    "roiFront": "1133,598,92,44",
+    "roiBack": "1100,550,160,140",
+    "profile": "More"
+  },
+  {
+    "itemName": "ap100_unlock",
+    "imageName": "ap100_unlock.png",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "百体阵容未锁定",
+    "roiFront": "748,651,27,28",
+    "roiBack": "735,640,54,48"
+  },
+  {
+    "itemName": "ap100_lock",
+    "imageName": "ap100_lock.png",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "百体阵容已锁定",
+    "roiFront": "748,651,27,28",
+    "roiBack": "735,640,54,48"
   }
 ]

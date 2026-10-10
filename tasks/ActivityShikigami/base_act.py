@@ -1,4 +1,4 @@
-"""式神活动三种玩法共用运行能力。"""
+"""伪神和爬塔共用运行能力。"""
 
 from datetime import datetime
 
@@ -30,7 +30,7 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
         super().__init__(config, device)
         self.action_count = {name: 0 for name in BATTLE_TYPES}
         climb_consumables = (
-            'pass', 'ap_pass', 'boss', 'ap100', 'penta_pass'
+            'ap_pass', 'boss', 'ap100', 'penta_pass'
         )
         self.climb_consumable_count = {
             name: -1 for name in climb_consumables
@@ -42,8 +42,6 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
             name: 0 for name in climb_consumables
         }
         self.penta_pass_active = False
-        self.pass_action_count = {'easy': 0, 'hard': 0}
-        self.current_pass_mode = None
         self.switched_soul = {name: False for name in BATTLE_TYPES}
         self.current_action_type = ''
         self.activity_time_reached = False
@@ -60,20 +58,18 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
         self.C_SAFE_RANDOM_CLICK_AREA_ACT.reset_click_focuses()
         pages.page_battle_result = self.navigator.resolve_page(pages.page_battle_result)
         pages.page_battle_result.recognizer = pages.any_of(
-            pages.all_of(
-                lambda task: not task.current_action_type.startswith('exp_')
-                or not task.appear(task.I_EVENT_FIGHT),
-                self.I_UI_BACK_RED,
-            ),
+            self.I_UI_BACK_RED,
             pages.page_battle_result.recognizer,
         )
 
     def _exit_matcher(self):
         if self.current_action_type == 'fakegod':
-            return self.I_FG_ACT_FIRE
+            return pages.any_of(self.I_FG_ACT_FIRE, self.I_FG_AS_CHECK_MAIN_2)
         if self.current_action_type == 'boss':
             return self.I_AS_BOSS_FIRE
-        if self.current_action_type in ('ap', 'pass', 'ap100'):
+        if self.current_action_type == 'ap100':
+            return self.I_AP100_FIRE
+        if self.current_action_type == 'ap':
             return self.I_ACT_FIRE
         return None
 
@@ -99,7 +95,7 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
         return self.activity_time_reached
 
     def prepare_next_action(self, action_type: str) -> bool:
-        """下一次骰子/战斗/行动的唯一软停止与随机休眠节点。"""
+        """下一次战斗/行动的软停止与随机休眠节点。"""
         limit = self.action_limit(action_type)
         if limit <= 0 or self.action_count[action_type] >= limit:
             logger.info(
@@ -133,7 +129,7 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
         return_page=None,
         exit_records: bool = False,
     ):
-        """按六种战斗字段切换一次御魂。"""
+        """按体力、首领、百体或伪神配置切换一次御魂。"""
         if self.switched_soul[action_type]:
             return
         conf = self.conf.switch_soul_config
@@ -156,30 +152,6 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
             self.exit_shikigami_records()
         if return_page is not None:
             self.goto_page(return_page)
-
-    def switch_soul_for_from_courtyard(self, action_type: str):
-        """从庭院进入式神录，按原配置切换指定玩法的御魂预设。"""
-        if self.switched_soul[action_type]:
-            return
-        conf = self.conf.switch_soul_config
-        enable_number = getattr(conf, f'enable_switch_{action_type}')
-        enable_name = getattr(conf, f'enable_switch_{action_type}_by_name')
-        self.switched_soul[action_type] = True
-        if not enable_number and not enable_name:
-            return
-
-        conf.validate_switch_soul()
-        logger.hr(f'Start switch soul from courtyard: {action_type}', 2)
-        self.goto_page(pages.page_main)
-        self.goto_page(pages.page_shikigami_records)
-        if enable_name:
-            group, team = getattr(conf, f'{action_type}_group_team_name').split(',', 1)
-            self.run_switch_soul_by_name(group.strip(), team.strip())
-        elif enable_number:
-            self.run_switch_soul(getattr(conf, f'{action_type}_group_team'))
-
-        self.exit_shikigami_records()
-        self.goto_page(pages.page_main)
 
     def finish_activity_task(self):
         self.goto_page(pages.page_main)

@@ -20,11 +20,11 @@
   {
     "itemName": "fg_to_battle_main",
     "imageName": "as_to_battle_main.png",
-    "roiFront": "598,407,39,139",
-    "roiBack": "533,291,155,370",
+    "roiFront": "814,459,108,30",
+    "roiBack": "784,435,167,80",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": "进入伪神第二页面"
+    "description": "进入磐长故地地图"
   },
   {
     "itemName": "fg_to_battle_boss",
@@ -56,11 +56,11 @@
   {
     "itemName": "fg_as_check_main_2",
     "imageName": "as_as_check_main_2.png",
-    "roiFront": "153,19,164,39",
-    "roiBack": "116,0,256,92",
+    "roiFront": "591,2,139,40",
+    "roiBack": "573,0,175,60",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": "活动第二页面"
+    "description": "磐长故地地图标志"
   },
   {
     "itemName": "fg_as_open_eye",
@@ -92,11 +92,11 @@
   {
     "itemName": "fg_as_to_pass",
     "imageName": "as_as_to_pass.png",
-    "roiFront": "624,505,38,35",
-    "roiBack": "273,141,759,475",
-    "method": "Template matching",
-    "threshold": 0.65,
-    "description": "进入门票爬塔"
+    "roiFront": "655,411,29,47",
+    "roiBack": "0,225,1150,385",
+    "method": "Multi-scale template matching",
+    "threshold": 0.78,
+    "description": "地图战斗据点"
   },
   {
     "itemName": "fg_to_battle_ap",
@@ -106,5 +106,23 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "进入体力爬塔"
+  },
+  {
+    "itemName": "fg_map_to_ap",
+    "imageName": "fg_map_to_ap.png",
+    "roiFront": "74,149,95,30",
+    "roiBack": "65,140,220,50",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "磐长故地左侧进入古迹演武（体力）"
+  },
+  {
+    "itemName": "fg_map_to_ap100",
+    "imageName": "fg_map_to_ap100.png",
+    "roiFront": "74,244,95,30",
+    "roiBack": "65,235,220,50",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "磐长故地左侧进入刹那试炼（百体）"
   }
 ]
