@@ -1,10 +1,12 @@
 """Welfare dojo selection must never challenge a different emblem."""
 
 import unittest
+from collections import deque
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from module.exception import TaskEnd
+from module.device.device import Device
 from tasks.Dokan.script_task import DokanRefreshLimitError, ScriptTask
 
 
@@ -14,7 +16,8 @@ class FakeDokanSelection:
         self.has_xin = has_xin
         self.selected_item = None
         self.I_RIGHTPAD_POINT_BOUNTY = SimpleNamespace(roi_back=(1077, 0, 171, 602))
-        self.I_RIGHTPAD_XIN_ICON = SimpleNamespace(roi_back=(1110, 20, 110, 610))
+        self.I_RIGHTPAD_XIN_ICON = SimpleNamespace(
+            roi_back=(1110, 20, 110, 610), roi_front=[0, 0, 45, 50], is_xin=True)
         self.I_CENTER_POINT_PEOPLE_NUMBER = SimpleNamespace(
             roi_back=(0, 0, 1280, 720), roi_front=(400, 420, 20, 20)
         )
@@ -41,12 +44,14 @@ class FakeDokanSelection:
         self.ui_click_until_disappear = Mock()
         self.swipe = Mock()
         self.screenshot = Mock()
+        self._wait_for_dokan_list_ready = Mock(return_value=True)
+        self.prepare_appear_cache = Mock()
 
     def find_all_element(self, item, offset):
         return [(1125, 126, 27, 29), (1125, 418, 27, 29)]
 
     def appear(self, target):
-        if target is self.I_RIGHTPAD_XIN_ICON:
+        if getattr(target, 'is_xin', False):
             return self.has_xin and target.roi_back[1] == 328
         if target is self.I_CENTER_POINT_PEOPLE_NUMBER:
             return True
@@ -58,6 +63,55 @@ class FakeDokanSelection:
 
 
 class WelfareGuildFilterTest(unittest.TestCase):
+    def test_non_xin_candidates_share_a_frame_without_per_item_screenshots_or_ocr(self):
+        selection = FakeDokanSelection(people=170, has_xin=False)
+        with patch('tasks.Dokan.script_task.logger'):
+            with self.assertRaises(DokanRefreshLimitError):
+                ScriptTask.find_dokan(selection)
+        selection.screenshot.assert_not_called()
+        selection.O_DOKAN_CENTER_PEOPLE_NUMBER.detect_text.assert_not_called()
+        self.assertIsNone(selection.selected_item)
+        rules = selection.prepare_appear_cache.call_args_list[0].args[0]
+        self.assertEqual([rule.roi_back for rule in rules],
+                         [(1110, 36, 100, 95), (1110, 328, 100, 95)])
+        self.assertIsNot(rules[0], rules[1])
+
+    def test_candidate_losing_xin_emblem_before_click_is_never_selected(self):
+        selection = FakeDokanSelection(people=170, has_xin=True)
+        selection.screenshot.side_effect = lambda: setattr(selection, 'has_xin', False)
+        with patch('tasks.Dokan.script_task.logger'):
+            with self.assertRaises(DokanRefreshLimitError):
+                ScriptTask.find_dokan(selection)
+        self.assertIsNone(selection.selected_item)
+        selection.O_DOKAN_CENTER_PEOPLE_NUMBER.detect_text.assert_not_called()
+        selection.config.dokan.attack_count_config.del_attack_count.assert_not_called()
+
+    def test_moving_list_is_not_scanned_or_clicked(self):
+        selection = FakeDokanSelection(people=170, has_xin=True)
+        selection._wait_for_dokan_list_ready.return_value = False
+        with patch('tasks.Dokan.script_task.logger'):
+            with self.assertRaises(DokanRefreshLimitError):
+                ScriptTask.find_dokan(selection)
+        selection.prepare_appear_cache.assert_not_called()
+        self.assertIsNone(selection.selected_item)
+        selection.O_DOKAN_CENTER_PEOPLE_NUMBER.detect_text.assert_not_called()
+
+    def test_no_xin_list_can_reach_twenty_refreshes_without_click_watchdog_error(self):
+        selection = FakeDokanSelection(people=170, has_xin=False)
+        selection.device = Device.__new__(Device)
+        selection.device.click_record = deque(maxlen=20)
+
+        def record_control(name):
+            selection.device.click_record_add(name)
+            selection.device.click_record_check()
+
+        selection.swipe.side_effect = lambda *args: record_control('list swipe')
+        selection.ui_click.side_effect = lambda click, *args, **kwargs: record_control(str(click))
+        with patch('tasks.Dokan.script_task.logger'):
+            with self.assertRaises(DokanRefreshLimitError):
+                ScriptTask.find_dokan(selection)
+        self.assertEqual(selection.swipe.call_count, 60)
+
     @patch('tasks.Dokan.script_task.sleep', return_value=None)
     def test_only_xin_emblem_with_enough_defenders_is_challenged(self, _sleep):
         selection = FakeDokanSelection(people=170, has_xin=True)

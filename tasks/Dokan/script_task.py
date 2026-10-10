@@ -5,6 +5,7 @@
 import time
 
 import re
+from copy import copy
 from datetime import timedelta
 from pathlib import Path
 from random import uniform
@@ -13,6 +14,7 @@ from uuid import uuid4
 
 from future.backports.datetime import datetime
 
+from module.atom.animate import RuleAnimate
 from module.base.timer import Timer
 from module.exception import TaskEnd
 from module.logger import logger
@@ -44,6 +46,8 @@ class DokanRefreshLimitError(Exception):
 DOKAN_REWARD_SCREENSHOT_DIR = Path('log/screenshots/dokan')
 DOKAN_REWARD_CAPTURE_DELAY = 1.0
 DOKAN_NEXT_SELECTION_WAIT_RANGE = (70.0, 90.0)
+DOKAN_LIST_STABLE_INTERVAL = 0.3
+DOKAN_LIST_STABLE_TIMEOUT = 1.5
 MAX_WELFARE_DOKAN_REFRESH_COUNT = 20
 
 class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
@@ -426,6 +430,30 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         self.goto_page(pages.page_dokan)
         self.attack_priority_selected = True
 
+    def _wait_for_dokan_list_ready(self) -> bool:
+        """列表连续两次稳定后使用当前帧筛选，避免滑动中读取旧位置。"""
+        animation = RuleAnimate(self.I_RIGHTPAD_POINT_BOUNTY, threshold=0.98, name='DOKAN_LIST')
+        deadline = time.monotonic() + DOKAN_LIST_STABLE_TIMEOUT
+        stable_checks = 0
+        while time.monotonic() < deadline:
+            check_started = time.monotonic()
+            self.screenshot()
+            if time.monotonic() >= deadline:
+                break
+            stable_checks = stable_checks + 1 if animation.stable(
+                self.device.image, frame_id=self.device.image_frame_id) else 0
+            checked_at = time.monotonic()
+            if checked_at >= deadline:
+                break
+            if stable_checks >= 2:
+                return True
+            delay = min(max(0.0, DOKAN_LIST_STABLE_INTERVAL - (checked_at - check_started)),
+                        deadline - checked_at)
+            if delay > 0:
+                sleep(delay)
+        logger.warning('道馆列表仍在变化，跳过当前屏，继续筛选')
+        return False
+
     def find_dokan(self) -> bool:
         """只挑战带“鑫”图标且符合防守人数要求的福利寮。"""
         self.found_dokan_cnt += 1
@@ -443,10 +471,26 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
 
         def find_challengeable():
             restore_roi()
-            self.screenshot()
+            self.device.click_record_clear()
+            if not self._wait_for_dokan_list_ready():
+                return False
             candidates = self.find_all_element(self.I_RIGHTPAD_POINT_BOUNTY, (0, 0, 0, 50))
             logger.info(f'find elements list:{candidates}')
+            xin_rules = []
             for idx, item in enumerate(candidates):
+                rule = copy(self.I_RIGHTPAD_XIN_ICON)
+                rule.roi_front = list(rule.roi_front)
+                rule.roi_back = (item[0] - 15, max(0, item[1] - 90), 100, 95)
+                xin_rules.append(rule)
+            # 同一帧批量判断当前屏的图标，普通道馆无需逐项截图或打开详情。
+            self.prepare_appear_cache(xin_rules)
+            welfare_candidates = []
+            for idx, (item, rule) in enumerate(zip(candidates, xin_rules)):
+                if self.appear(rule):
+                    welfare_candidates.append((idx, item, rule))
+                else:
+                    logger.info(f"skip dojo without Xin emblem: idx={idx} item={item}")
+            for idx, item, rule in welfare_candidates:
                 self.device.click_record_clear()
                 logger.info(f"------start no.{idx} =={item}-----------")
                 self.screenshot()
@@ -454,10 +498,9 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                     self.click(self.C_DOKAN_CANCEL_SELECT_DOKAN, interval=1.5)
                     self.wait_animate_stable(self.C_DOKAN_CANCEL_SELECT_DOKAN_CHECK_ANIMATE,
                                              interval=0.5, timeout=1.5)
-                self.I_RIGHTPAD_XIN_ICON.roi_back = (item[0] - 15, max(0, item[1] - 90), 100, 95)
-                self.screenshot()
-                if not self.appear(self.I_RIGHTPAD_XIN_ICON):
-                    logger.info(f"skip dojo without Xin emblem: idx={idx} item={item}")
+                # 关闭详情会改变画面，点击前在最新帧复核候选，防止列表位置变化。
+                if not self.appear(rule):
+                    logger.info(f"Xin emblem moved before selection: idx={idx} item={item}")
                     continue
                 self.I_RIGHTPAD_POINT_BOUNTY.roi_back = position_offset(item, (-10, -10, 20, 20))
                 if not self.ui_click_until_appear_or_timeout(self.I_RIGHTPAD_POINT_BOUNTY, self.I_CENTER_CHALLENGE,
@@ -489,7 +532,6 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         try:
             while num_fresh < MAX_WELFARE_DOKAN_REFRESH_COUNT:
                 for _ in range(3):
-                    sleep(3)
                     if find_challengeable():
                         logger.info("find challengeable welfare dokan")
                         self.ui_click(self.I_CENTER_CHALLENGE, self.I_CHALLENGE_ENSURE, interval=1)
