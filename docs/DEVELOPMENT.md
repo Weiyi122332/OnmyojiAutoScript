@@ -35,7 +35,6 @@ Device（截图、点击、ADB）       GameUi / 通用战斗 / 资源规则 / O
 | `server.py`、`module/server/` | HTTP、WebSocket、脚本进程、日志、统计、标注工具和更新入口 |
 | `script.py`、`module/script/` | 调度主循环、任务准备、模拟器和游戏生命周期、失败恢复 |
 | `module/config/`、`config/` | Pydantic 配置模型、任务菜单、调度、实例 JSON、部署配置 |
-| `configs/` | 仓库保留的设备辅助 JSON；不是 `config/<实例名>.json` 运行实例目录 |
 | `tasks/` | 具体业务任务；目录与注册约定见 [`tasks/README.md`](../tasks/README.md)。`tasks/Component/` 是复用组件，`tasks/GameUi/` 是页面导航 |
 | `module/device/` | 设备连接、截图、输入、应用控制与模拟器适配 |
 | `module/atom/`、`module/image/`、`module/ocr/` | 图片、点击、滑动、OCR 等规则对象及其 RPC 运行时 |

@@ -8,6 +8,8 @@
 
 因此由如下方式使用：
 
+仓库仅保留 OAS 桌面界面所需的 FluentUI 库源码；上游演示项目、预览图片及演示发布依赖已移出。
+
 1. Clone FluentUI repo to the root directory of this project
 2. Modify the source code and record the changes
 3. Build and generate the plugin by `msvc2019 release`

@@ -282,3 +282,16 @@ oas.bat
 OAS-需求.json
 OAS-需求*.json
 需求备份/
+
+# 外部插件及已清理的非运行内容
+/plugins/
+/configs/
+/fluentui/example/
+/fluentui/doc/
+/fluentui/3rdparty/
+/fluentui/scripts/
+/fluentui/example.svg
+/module/gui/qml_rc.py
+/module/gui/res_rc.py
+/tests/test_dokan_plugin_integration.py
+/.github/workflows/auto-create-pr.yaml
