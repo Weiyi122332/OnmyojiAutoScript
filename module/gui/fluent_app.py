@@ -13,7 +13,6 @@ from module.gui.utils import get_work_path
 from module.gui.Bridge import bridge
 from module.logger import logger
 
-# import module.gui.qml_rcc
 import module.gui.res_rcc
 
 class FluentApp():

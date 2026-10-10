@@ -295,3 +295,7 @@ OAS-需求*.json
 /module/gui/res_rc.py
 /tests/test_dokan_plugin_integration.py
 /.github/workflows/auto-create-pr.yaml
+/Configure-OASSsh.ps1
+/module/gui/qml_rcc.py
+/module/team_flow/mqtt_test.py
+/tasks/Hyakkiyakou/utils/exp_test.py

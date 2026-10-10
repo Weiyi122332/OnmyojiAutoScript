@@ -1,11 +1,10 @@
-### 在pyside6中不能直接使用qrc， 需要转成rcc
+# 桌面界面资源
 
-根目录有一个console.bat。打开进入命令行
+桌面界面直接读取 `module/gui/qml/app.qml` 及其 QML 源文件，不需要提交 QML 编译副本。图标等资源由 `res.qrc` 编译为 `res_rcc.py`，供 `fluent_app.py` 导入。修改图标资源后，在项目根目录执行：
 
 ```
 where python
 cd module/gui
-pyside6-rcc -o qml_rcc.py qml.qrc
 pyside6-rcc -o res_rcc.py res.qrc
 ```
 
@@ -13,10 +12,10 @@ pyside6-rcc -o res_rcc.py res.qrc
 
 ```
 可以这样导入
-import module.gui.qml_rcc, module.gui.res_rcc
+import module.gui.res_rcc
 ```
 
-**但是很显然由于qml文件需要修改不能将其每次都rcc一次**
+`res_rcc.py`、QML 源文件和 `FluentUI` 运行库属于界面依赖，应随项目保留。
 
 所以可以使用
 
