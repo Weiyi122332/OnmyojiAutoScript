@@ -1,12 +1,13 @@
-"""集体任务切换后的状态、识别重试及提交窗口检查。"""
+"""集体任务的多个目标、刷新上限、识别重试及提交窗口检查。"""
 
 import unittest
 import numpy as np
 from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
+from pydantic import ValidationError
 
 from module.exception import TaskEnd
-from tasks.CollectiveMissions.config import MC
+from tasks.CollectiveMissions.config import MC, MissionsConfig
 from tasks.CollectiveMissions.page import page_collective_missions
 from tasks.CollectiveMissions.script_task import ScriptTask
 from tasks.GameUi.page import page_main
@@ -39,9 +40,47 @@ class CollectiveMissionsTest(unittest.TestCase):
         return task
 
     def select(self, task, target=MC.GR1, max_switch=2):
-        with patch('tasks.CollectiveMissions.script_task.random.randint', side_effect=[2, max_switch]), \
+        with patch('tasks.CollectiveMissions.script_task.random.randint', return_value=2), \
                 patch('tasks.CollectiveMissions.script_task.random.uniform', return_value=0.6):
-            return task.select_and_update_cur_mission(target)
+            return task.select_and_update_cur_mission(target, max_switch=max_switch)
+
+    def test_each_of_three_targets_is_accepted_without_refresh(self):
+        targets = (MC.AW1, MC.GR1, MC.SO1)
+        for target in targets:
+            with self.subTest(target=target):
+                task = self.make_selection_task([target.value])
+                self.assertTrue(self.select(task, target=targets))
+                self.assertEqual(task.current_mission, target)
+                task.appear_then_click.assert_not_called()
+
+    def test_second_accepted_target_after_final_refresh_is_selected(self):
+        task = self.make_selection_task(['御魂一', '养成', '御灵一'])
+        self.assertTrue(self.select(task, target=(MC.AW1, MC.GR1, MC.GR3)))
+        self.assertEqual(task.current_mission, MC.GR1)
+        self.assertEqual(task.appear_then_click.call_count, 2)
+
+    def test_zero_refresh_limit_checks_current_mission_only(self):
+        for name, success in (('御灵一', True), ('养成', False)):
+            with self.subTest(name=name):
+                task = self.make_selection_task([name])
+                self.assertEqual(self.select(task, max_switch=0), success)
+                self.assertEqual(task.current_mission, MC.GR1 if success else None)
+                task.appear_then_click.assert_not_called()
+                task.O_CM_2.ocr_single_line.assert_called_once()
+
+    def test_custom_limit_above_old_maximum_is_used(self):
+        names = ['觉醒二' if index % 2 == 0 else '觉醒三' for index in range(17)]
+        task = self.make_selection_task(names + ['御灵一'])
+        self.assertTrue(self.select(task, max_switch=17))
+        self.assertEqual(task.appear_then_click.call_count, 17)
+        self.assertEqual(task.current_mission, MC.GR1)
+
+    def test_no_targets_does_not_read_or_refresh_mission(self):
+        task = self.make_selection_task([])
+        self.assertFalse(self.select(task, target=(MC.NONE, MC.NONE, MC.NONE)))
+        self.assertIsNone(task.current_mission)
+        task.O_CM_2.ocr_single_line.assert_not_called()
+        task.appear_then_click.assert_not_called()
 
     def test_target_after_last_allowed_switch_is_recognized(self):
         task = self.make_selection_task(['御魂一', '养成', '御灵一'])
@@ -120,7 +159,7 @@ class CollectiveMissionsTest(unittest.TestCase):
     def make_run_task(self, selected, current):
         task = ScriptTask.__new__(ScriptTask)
         task.config = SimpleNamespace(collective_missions=SimpleNamespace(
-            missions_config=SimpleNamespace(missions_select=MC.GR1)))
+            missions_config=MissionsConfig(missions_select=MC.GR1)))
         task.current_mission = current
         task.goto_page = Mock()
         task.get_task_reward = Mock()
@@ -156,6 +195,25 @@ class CollectiveMissionsTest(unittest.TestCase):
                 task._feed.assert_not_called()
                 task._soul.assert_not_called()
                 task.set_next_run.assert_called_once_with(task='CollectiveMissions', success=success)
+
+    def test_run_submits_each_accepted_type_and_passes_custom_refresh_limit(self):
+        handlers = {MC.AW1: '_donate', MC.SO1: '_soul', MC.FEED: '_feed'}
+        for current, handler in handlers.items():
+            with self.subTest(current=current):
+                task = self.make_run_task(True, current)
+                task.config.collective_missions.missions_config = MissionsConfig(
+                    missions_select=MC.AW1, missions_select_2=MC.SO1,
+                    missions_select_3=MC.FEED, refresh_count=6)
+                with self.assertRaises(TaskEnd):
+                    task.run()
+                task.select_and_update_cur_mission.assert_called_once_with(
+                    (MC.AW1, MC.SO1, MC.FEED), max_switch=6)
+                for candidate in handlers.values():
+                    if candidate == handler:
+                        getattr(task, candidate).assert_called_once()
+                    else:
+                        getattr(task, candidate).assert_not_called()
+                task.set_next_run.assert_called_once_with(task='CollectiveMissions', success=True)
 
     def make_window_task(self, frames):
         task = ScriptTask.__new__(ScriptTask)
@@ -218,6 +276,43 @@ class CollectiveMissionsTest(unittest.TestCase):
                 self.assertFalse(getattr(task, handler)())
                 task.get_reward_and_close.assert_not_called()
                 task.ui_click.assert_not_called()
+
+
+class CollectiveMissionsConfigTest(unittest.TestCase):
+    def test_legacy_selection_is_preserved_without_extra_targets(self):
+        config = MissionsConfig.model_validate({'missions_select': '御灵一'})
+        self.assertEqual(config.selected_missions, (MC.GR1,))
+        self.assertEqual(config.refresh_count, 15)
+        self.assertEqual(config.missions_select_2, MC.NONE)
+        self.assertEqual(config.missions_select_3, MC.NONE)
+
+    def test_duplicate_and_disabled_choices_are_ignored(self):
+        config = MissionsConfig(missions_select=MC.SO1, missions_select_2=MC.SO1,
+                                missions_select_3=MC.NONE)
+        self.assertEqual(config.selected_missions, (MC.SO1,))
+
+    def test_three_distinct_choices_are_all_accepted(self):
+        config = MissionsConfig(missions_select=MC.AW1, missions_select_2=MC.GR1,
+                                missions_select_3=MC.FEED, refresh_count=0)
+        self.assertEqual(config.selected_missions, (MC.AW1, MC.GR1, MC.FEED))
+        self.assertEqual(config.refresh_count, 0)
+
+    def test_negative_refresh_count_is_rejected(self):
+        with self.assertRaises(ValidationError):
+            MissionsConfig(refresh_count=-1)
+
+    def test_settings_api_exposes_three_dropdowns_and_refresh_count(self):
+        from module.config.config_model import ConfigModel
+        fields = ConfigModel().script_task('CollectiveMissions')['missions_config']
+        by_name = {field['name']: field for field in fields}
+        for key in ('missions_select', 'missions_select_2', 'missions_select_3'):
+            with self.subTest(key=key):
+                self.assertEqual(by_name[key]['type'], 'enum')
+                self.assertIn('御灵一', by_name[key]['enumEnum'])
+                self.assertIn('不选择', by_name[key]['enumEnum'])
+        self.assertEqual(by_name['refresh_count']['type'], 'integer')
+        self.assertEqual(by_name['refresh_count']['value'], 15)
+        self.assertEqual(by_name['refresh_count']['title'], '刷新次数上限')
 
 
 if __name__ == '__main__':

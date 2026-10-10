@@ -56,11 +56,38 @@
   {
     "itemName": "sou_switch_sure",
     "imageName": "ss_sou_switch_sure.png",
-    "roiFront": "668,401,180,61",
-    "roiBack": "668,401,180,61",
+    "roiFront": "664,408,180,64",
+    "roiBack": "640,380,230,110",
     "method": "Template matching",
-    "threshold": 0.8,
-    "description": "description"
+    "threshold": 0.9,
+    "description": "更换全队预设御魂的确定按钮"
+  },
+  {
+    "itemName": "sou_switch_dialog",
+    "imageName": "ss_sou_switch_dialog.png",
+    "roiFront": "460,302,365,31",
+    "roiBack": "430,275,425,85",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "description": "更换全队预设御魂确认框标题"
+  },
+  {
+    "itemName": "sou_switch_detail",
+    "imageName": "ss_sou_switch_detail.png",
+    "roiFront": "424,273,162,30",
+    "roiBack": "410,250,450,140",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "description": "御魂切换确认提示的固定前缀：即将更换式神，不含名单"
+  },
+  {
+    "itemName": "sou_spirit_replace",
+    "imageName": "ss_sou_spirit_replace.png",
+    "roiFront": "438,286,405,58",
+    "roiBack": "420,265,440,105",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "description": "预设契灵已装配于其他阴阳师的替换确认标题"
   },
   {
     "itemName": "sou_check_in",

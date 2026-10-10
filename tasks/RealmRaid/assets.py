@@ -1,5 +1,6 @@
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
+from module.atom.scatter import RuleScatter
 from module.atom.long_click import RuleLongClick
 from module.atom.swipe import RuleSwipe
 from module.atom.ocr import RuleOcr
@@ -53,6 +54,10 @@ class RealmRaidAssets:
 	I_MEDAL_3_3 = RuleImage(roi_front=(902,479,201,50), roi_back=(902,479,201,50), threshold=0.8, method="Template matching", file="./tasks/RealmRaid/res/res_medal_3_3.png")
 	# 失败再次挑战 
 	I_FIRE_AGAIN = RuleImage(roi_front=(830,506,61,36), roi_back=(256,384,773,231), threshold=0.8, method="Template matching", file="./tasks/RealmRaid/res/res_fire_again.png")
+	# 是否再次挑战确认弹窗标题
+	I_FIRE_AGAIN_DIALOG = RuleImage(roi_front=(551,267,181,31), roi_back=(510,245,265,85), threshold=0.9, method="Template matching", file="./tasks/RealmRaid/res/res_fire_again_dialog.png")
+	# 再次挑战弹窗的确定按钮
+	I_FIRE_AGAIN_CONFIRM = RuleImage(roi_front=(664,408,180,64), roi_back=(640,380,230,110), threshold=0.9, method="Template matching", file="./tasks/RealmRaid/res/res_fire_again_confirm.png")
 	# 不再提示 
 	I_SHOW_AGAIN = RuleImage(roi_front=(539,344,32,36), roi_back=(397,218,485,275), threshold=0.8, method="Template matching", file="./tasks/RealmRaid/res/res_show_again.png")
 

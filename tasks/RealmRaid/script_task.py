@@ -18,7 +18,8 @@ from tasks.RealmRaid.page import page_shikigami_records
 
 
 from module.logger import logger
-from module.exception import TaskEnd
+from module.exception import GameStuckError, TaskEnd
+from module.base.timer import Timer
 from module.atom.image_grid import ImageGrid
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
@@ -460,19 +461,36 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, RealmRaidAssets):
         失败界面再次挑战
         :return: 是否再战成功
         """
-        self.wait_until_appear(self.I_FIRE_AGAIN)
+        timeout = Timer(10).start()
+        click_timer = Timer(2)
+        retry_clicks = 0
+        confirm_clicks = 0
+        suppress_clicked = False
         while True:
             self.screenshot()
-            if self.appear(self.I_EXIT):
-                logger.info(f'Click fire again success')
+            dialog_visible = self.appear(self.I_FIRE_AGAIN_DIALOG)
+            confirm_visible = self.appear(self.I_FIRE_AGAIN_CONFIRM)
+            if not dialog_visible and not confirm_visible and self.appear(self.I_EXIT):
+                logger.info('Click fire again success')
                 return True
-            if self.appear_then_click(self.I_SHOW_AGAIN, interval=2):
-                continue
-            if self.appear_then_click(self.I_FRESH_ENSURE, interval=2):
-                continue
-            if self.appear_then_click(self.I_FIRE_AGAIN, interval=2):
-                continue
-        return False
+            if timeout.reached():
+                raise GameStuckError('Realm raid retry did not reach battle within 10s')
+            if dialog_visible:
+                if not suppress_clicked and self.appear(self.I_SHOW_AGAIN):
+                    self.click(self.I_SHOW_AGAIN)
+                    suppress_clicked = True
+                    continue
+                if confirm_visible and confirm_clicks < 2 and click_timer.reached():
+                    self.click(self.I_FIRE_AGAIN_CONFIRM)
+                    confirm_clicks += 1
+                    click_timer.reset()
+                    logger.info(f'Confirm realm raid retry ({confirm_clicks}/2)')
+            elif not confirm_visible and retry_clicks < 2 and click_timer.reached():
+                if self.appear(self.I_FIRE_AGAIN):
+                    self.click(self.I_FIRE_AGAIN)
+                    retry_clicks += 1
+                    click_timer.reset()
+            time.sleep(0.2)
 
     @cached_property
     def false_roi(self) -> list:

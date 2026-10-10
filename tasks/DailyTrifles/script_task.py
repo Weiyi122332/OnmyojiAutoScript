@@ -399,12 +399,17 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
         side = random.choice(('left', 'right'))
         side_x = side_margin - click_width if side == 'left' else image_width - side_margin
         close_area = (side_x, image_height // 4, click_width, image_height // 2)
-        self.click(RuleClick(roi_front=close_area, roi_back=close_area,
-                            name=f'gift_daily_popup_close_{side}'))
-        sleep(0.5)
-        self.screenshot()
-        if self.appear(self.I_GIFT_DAILY_POPUP):
-            raise GameStuckError('Daily gift popup did not close')
+        close_action = RuleClick(roi_front=close_area, roi_back=close_area,
+                                 name=f'gift_daily_popup_close_{side}')
+        for attempt in range(2):
+            self.click(close_action)
+            sleep(0.5)
+            self.screenshot()
+            if not self.appear(self.I_GIFT_DAILY_POPUP):
+                return
+            if attempt == 0:
+                logger.info('Daily gift popup still visible, retry closing once')
+        raise GameStuckError('Daily gift popup did not close after 2 clicks')
 
     def run_buy_sushi(self):
         logger.hr('store sushi', 2)

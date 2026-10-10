@@ -2,11 +2,13 @@
 # @author runhey
 # github https://github.com/runhey
 from time import sleep
-from typing import Union
+from typing import Callable, Union
 
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
 from module.atom.ocr import RuleOcr
+from module.base.timer import Timer
+from module.exception import GameStuckError
 from tasks.base_task import BaseTask
 from tasks.Component.SwitchSoul.assets import SwitchSoulAssets
 from module.logger import logger
@@ -55,6 +57,75 @@ class SwitchSoul(BaseTask, SwitchSoulAssets):
             if self.appear_then_click(self.I_SOUL_PRESET, interval=2):
                 continue
         logger.info('Click preset in switch soul')
+
+    def _apply_soul_preset(self, select_team: Callable[[], bool], target_name: str,
+                           max_attempts: int = 3) -> None:
+        """兼容直接切换和弹窗确认，只在当前界面允许继续时结束。"""
+        timeout = Timer(10).start()
+        select_timer = Timer(2)
+        dialog_wait = Timer(3)
+        attempts = 0
+        selected = False
+        while 1:
+            self.screenshot()
+            if (self.appear(self.I_SOU_SWITCH_DIALOG) or self.appear(self.I_SOU_SWITCH_DETAIL)
+                    or self.appear(self.I_SOU_SPIRIT_REPLACE)
+                    or self.appear(self.I_SOU_SWITCH_SURE)):
+                self._confirm_soul_switch()
+                return
+            block_visible = self.appear(self.I_CHECK_BLOCK)
+            if (selected and dialog_wait.reached() and not block_visible
+                    and self.appear(self.I_SOU_TEAM_PRESENT)):
+                logger.info('Soul preset selected without confirmation dialog')
+                return
+            if timeout.reached():
+                raise GameStuckError(f'Soul preset selection could not be verified: {target_name}')
+            if not selected and not block_visible and attempts < max_attempts and select_timer.reached():
+                attempts += 1
+                select_timer.reset()
+                selected = bool(select_team())
+                if selected:
+                    dialog_wait.start()
+                else:
+                    logger.warning(f'Cannot select soul preset {target_name} ({attempts}/{max_attempts})')
+            sleep(0.2)
+
+    def _confirm_soul_switch(self) -> None:
+        """依次处理御魂和契灵确认，每个弹窗最多两次，列表稳定后才继续。"""
+        timeout = Timer(10).start()
+        click_timer = Timer(2)
+        preset_stable = Timer(1.5, count=2)
+        confirm_clicks = {'soul': 0, 'spirit': 0}
+        block_clicks = 0
+        while 1:
+            self.screenshot()
+            dialog_visible = (self.appear(self.I_SOU_SWITCH_DIALOG)
+                              or self.appear(self.I_SOU_SWITCH_DETAIL))
+            spirit_visible = self.appear(self.I_SOU_SPIRIT_REPLACE)
+            confirm_visible = self.appear(self.I_SOU_SWITCH_SURE)
+            block_visible = self.appear(self.I_CHECK_BLOCK)
+            if (any(confirm_clicks.values()) and not dialog_visible and not spirit_visible and not confirm_visible
+                    and not block_visible and self.appear(self.I_SOU_TEAM_PRESENT)):
+                preset_stable.start()
+                if preset_stable.reached():
+                    logger.info('Soul switch confirmations closed and preset list stable')
+                    return
+            else:
+                preset_stable.clear()
+            if timeout.reached():
+                raise GameStuckError('Soul switch confirmation did not finish')
+            dialog_kind = 'spirit' if spirit_visible else 'soul' if dialog_visible else None
+            if block_visible and block_clicks < 2 and click_timer.reached():
+                self.click(self.I_CHECK_BLOCK)
+                block_clicks += 1
+                click_timer.reset()
+            elif (not block_visible and dialog_kind and confirm_visible and confirm_clicks[dialog_kind] < 2
+                    and click_timer.reached()):
+                self.click(self.I_SOU_SWITCH_SURE)
+                confirm_clicks[dialog_kind] += 1
+                click_timer.reset()
+                logger.info(f'Confirm {dialog_kind} switch ({confirm_clicks[dialog_kind]}/2)')
+            sleep(0.2)
 
     def switch_soul_one(self, group: int, team: int) -> None:
         """
@@ -118,22 +189,8 @@ class SwitchSoul(BaseTask, SwitchSoulAssets):
             sleep(0.5)
         # 点击队伍
         target_team = get_team_asset(team)
-        for i in range(3):
-            sleep(0.8)
-            self.screenshot()
-            if self.appear(self.I_SOU_SWITCH_SURE):
-                while 1:
-                    self.click(self.I_SOU_SWITCH_SURE, 3)
-                    self.screenshot()
-                    if self.appear_then_click(self.I_CHECK_BLOCK, 3):
-                        continue
-                    if not self.appear(self.I_SOU_SWITCH_SURE):
-                        break
-                continue
-            if not self.appear_then_click(target_team, interval=3):
-                logger.warning(f'Click team {team} failed in group {group}')
-        # 兜底若还出现确认按钮则点击
-        self.ui_click_until_disappear(self.I_SOU_SWITCH_SURE)
+        self._apply_soul_preset(lambda: self.appear_then_click(target_team),
+                                f'group {group} team {team}')
         logger.info(f'Switch soul_one group {group} team {team}')
 
     def switch_souls(self, target: tuple or list[tuple]) -> None:
@@ -244,17 +301,11 @@ class SwitchSoul(BaseTask, SwitchSoulAssets):
         # 选中分组
         logger.info(f'Select team {teamName}')
         # 切换御魂
-        cnt_click: int = 0
         self.O_SS_TEAM_NAME.keyword = teamName
-        while 1:
-            self.screenshot()
-            if cnt_click >= 4:
-                break
-            if self.appear_then_click(self.I_SOU_SWITCH_SURE, interval=0.8):
-                continue
-            if self.ocr_appear_click_by_rule(self.O_SS_TEAM_NAME, self.I_SOU_CLICK_PRESENT, interval=1.5):
-                cnt_click += 1
-                continue
+        self._apply_soul_preset(
+            lambda: self.ocr_appear_click_by_rule(self.O_SS_TEAM_NAME, self.I_SOU_CLICK_PRESENT),
+            f'group {groupName} team {teamName}', max_attempts=4,
+        )
         logger.info(f'Switch soul_one group {groupName} team {teamName}')
 
     def ocr_appear_click_by_rule(self,

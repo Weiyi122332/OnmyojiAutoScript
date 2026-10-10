@@ -1862,7 +1862,10 @@
       "cron": ""
     },
     "missions_config": {
-      "missions_select": "觉醒一"
+      "missions_select": "觉醒一",
+      "missions_select_2": "不选择",
+      "missions_select_3": "不选择",
+      "refresh_count": 15
     }
   },
   "hunt": {

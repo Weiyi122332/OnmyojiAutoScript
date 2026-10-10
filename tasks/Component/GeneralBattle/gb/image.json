@@ -102,12 +102,21 @@
   {
     "itemName": "exit_ensure",
     "imageName": "gb_exit_ensure.png",
-    "roiFront": "674,388,135,63",
-    "roiBack": "674,388,135,63",
+    "roiFront": "664,408,180,64",
+    "roiBack": "640,380,230,110",
     "method": "Template matching",
-    "threshold": 0.8,
+    "threshold": 0.9,
     "profile": "Default",
     "description": "退出确认"
+  },
+  {
+    "itemName": "exit_dialog",
+    "imageName": "gb_exit_dialog.png",
+    "roiFront": "538,301,208,31",
+    "roiBack": "505,275,280,85",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "description": "确认退出战斗弹窗标题"
   },
   {
     "itemName": "friends",

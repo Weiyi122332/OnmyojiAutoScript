@@ -189,6 +189,24 @@
     "description": "失败再次挑战"
   },
   {
+    "itemName": "fire_again_dialog",
+    "imageName": "res_fire_again_dialog.png",
+    "roiFront": "551,267,181,31",
+    "roiBack": "510,245,265,85",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "description": "是否再次挑战确认弹窗标题"
+  },
+  {
+    "itemName": "fire_again_confirm",
+    "imageName": "res_fire_again_confirm.png",
+    "roiFront": "664,408,180,64",
+    "roiBack": "640,380,230,110",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "description": "再次挑战弹窗的确定按钮"
+  },
+  {
     "itemName": "show_again",
     "imageName": "res_show_again.png",
     "roiFront": "539,344,32,36",

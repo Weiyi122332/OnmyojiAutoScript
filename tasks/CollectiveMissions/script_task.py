@@ -37,10 +37,12 @@ class ScriptTask(GameUi, CollectiveMissionsAssets):
             self.goto_page(page_main)
             self.set_next_run(task='CollectiveMissions', success=True)
             raise TaskEnd
-        target_mission = self.config.collective_missions.missions_config.missions_select
-        selected = self.select_and_update_cur_mission(target_mission)
-        if not selected or self.current_mission != target_mission:
-            logger.warning(f'Mission selection failed, skip target: {target_mission.value}')
+        mission_config = self.config.collective_missions.missions_config
+        target_missions = mission_config.selected_missions
+        selected = self.select_and_update_cur_mission(target_missions, max_switch=mission_config.refresh_count)
+        if not selected or self.current_mission not in target_missions:
+            target_names = ', '.join(mission.value for mission in target_missions)
+            logger.warning(f'Mission selection failed, skip targets: {target_names}')
             self.goto_page(page_main)
             self.set_next_run(task='CollectiveMissions', success=False)
             raise TaskEnd
@@ -74,25 +76,32 @@ class ScriptTask(GameUi, CollectiveMissionsAssets):
                 sleep(0.4)
         return ''
 
-    def select_and_update_cur_mission(self, mission: MC) -> bool:
-        """选择目标任务；失败时清空当前任务，防止使用切换前的识别结果。
-        :return: 已确认当前任务为目标时返回True
+    def select_and_update_cur_mission(self, mission: MC | tuple[MC, ...], max_switch: int = 15) -> bool:
+        """当前任务匹配任意目标就提交，最多刷新配置的次数。
+        :return: 已确认当前任务属于可提交任务时返回True
         """
         self.current_mission = None
+        target_missions = (mission,) if isinstance(mission, MC) else mission
+        target_missions = tuple(dict.fromkeys(target for target in target_missions if target != MC.NONE))
+        if not target_missions:
+            logger.warning('No collective mission selected, skip')
+            return False
+        target_names = ', '.join(target.value for target in target_missions)
         pre_mission = ''
         switch_fail_cnt, max_retry = 0, random.randint(2, 3)  # 点了没反应, 可能之前已经做了其他任务导致无法切换
-        switch_cnt, max_switch = 0, random.randint(12, 15)  # 尝试最多15次内能中奖找到对应任务
+        switch_cnt = 0
+        logger.info(f'Accepted missions: {target_names}; refresh limit: {max_switch}')
         while True:
             mission_text = self._read_mission_text()
             if not mission_text:
-                logger.warning(f'Cannot identify current mission, skip target: {mission.value}')
+                logger.warning(f'Cannot identify current mission, skip targets: {target_names}')
                 return False
             # 识别当前任务
             try:
                 detect_mission = MC(mission_text)
-                logger.info(f"Current: {detect_mission.value}, target: {mission.value}")
+                logger.info(f"Current: {detect_mission.value}, targets: {target_names}")
                 self.current_mission = detect_mission
-                if detect_mission == mission:
+                if detect_mission in target_missions:
                     logger.info(f"Success select mission[{mission_text}]")
                     return True
             except ValueError:
@@ -101,16 +110,16 @@ class ScriptTask(GameUi, CollectiveMissionsAssets):
             # 最后一次切换也必须先识别，再检查上限。
             switch_fail_cnt = 0 if pre_mission != mission_text else (switch_fail_cnt + 1)
             if switch_fail_cnt >= max_retry:
-                logger.warning(f'Cannot switch mission: current={mission_text}, target={mission.value}')
+                logger.warning(f'Cannot switch mission: current={mission_text}, targets={target_names}')
                 self.current_mission = None
                 return False
             if switch_cnt >= max_switch:
-                logger.warning(f'Cannot find target mission: {mission.value}, current={mission_text}, exit')
+                logger.warning(f'Cannot find target missions: {target_names}, current={mission_text}, exit')
                 self.current_mission = None
                 return False
             logger.info('Try switch to next mission')
             if not self.appear_then_click(self.I_CM_SWITCH, interval=0.6):
-                logger.warning(f'Mission switch button unavailable: current={mission_text}, target={mission.value}')
+                logger.warning(f'Mission switch button unavailable: current={mission_text}, targets={target_names}')
                 self.current_mission = None
                 return False
             pre_mission = mission_text

@@ -460,7 +460,7 @@ class ScriptTask(KU, KekkaiActivationAssets):
 
                 return target
             else:
-                if ocr_count > 3:
+                if ocr_count > 5:
                     logger.error('多次未找到符合条件的结果, 退出')
                     return None
                 logger.warning("未找到符合条件的结果, 准备往上滑动")

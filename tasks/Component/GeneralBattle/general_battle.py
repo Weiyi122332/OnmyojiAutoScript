@@ -873,19 +873,34 @@ class GeneralBattle(GeneralBuff, GeneralBattleAssets):
         """
         if skip_first:
             self.screenshot()
-        if not self.appear(self.I_EXIT):
+        if not self.appear(self.I_EXIT) and not self.appear(self.I_EXIT_DIALOG):
             return False
+        timeout = Timer(10).start()
+        click_timer = Timer(2)
+        exit_clicks = 0
+        confirm_clicks = 0
         while True:
             self.screenshot()
-            if self.appear_then_click(self.I_EXIT_ENSURE, interval=0.8):
-                continue
-            if GameUi.get_current_page(self) in (page_battle_result, page_reward):
-                break
-            if self.appear_then_click(self.I_EXIT, interval=6):
-                continue
-        self.ui_click_until_disappear(self.I_EXIT_ENSURE, interval=0.8)
-        logger.info('Exit battle success')
-        return True
+            dialog_visible = self.appear(self.I_EXIT_DIALOG)
+            confirm_visible = self.appear(self.I_EXIT_ENSURE)
+            if not dialog_visible and not confirm_visible:
+                if GameUi.get_current_page(self) in (page_battle_result, page_reward):
+                    logger.info('Exit battle success')
+                    return True
+            if timeout.reached():
+                raise GameStuckError('Battle exit did not finish within 10s')
+            if dialog_visible:
+                if confirm_visible and confirm_clicks < 2 and click_timer.reached():
+                    self.click(self.I_EXIT_ENSURE)
+                    confirm_clicks += 1
+                    click_timer.reset()
+                    logger.info(f'Confirm battle exit ({confirm_clicks}/2)')
+            elif not confirm_visible and exit_clicks < 2 and click_timer.reached():
+                if self.appear(self.I_EXIT):
+                    self.click(self.I_EXIT)
+                    exit_clicks += 1
+                    click_timer.reset()
+            time.sleep(0.2)
 
     def green_mark(self, enable: bool = False, mark_mode: GreenMarkType = GreenMarkType.GREEN_MAIN,
                    green_mark_type: GreenMarkEnum = GreenMarkEnum.CHOOSE, green_mark_name: str = ''):

@@ -1,5 +1,6 @@
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
+from module.atom.scatter import RuleScatter
 from module.atom.long_click import RuleLongClick
 from module.atom.swipe import RuleSwipe
 from module.atom.ocr import RuleOcr
@@ -42,8 +43,14 @@ class SwitchSoulAssets:
 	I_SOU_SWITCH_3 = RuleImage(roi_front=(978,455,25,26), roi_back=(962,442,52,48), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchSoul/ss/ss_sou_switch_3.png")
 	# description 
 	I_SOU_SWITCH_4 = RuleImage(roi_front=(978,603,25,22), roi_back=(962,592,53,34), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchSoul/ss/ss_sou_switch_4.png")
-	# description 
-	I_SOU_SWITCH_SURE = RuleImage(roi_front=(668,401,180,61), roi_back=(668,401,180,61), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchSoul/ss/ss_sou_switch_sure.png")
+	# 更换全队预设御魂的确定按钮
+	I_SOU_SWITCH_SURE = RuleImage(roi_front=(664,408,180,64), roi_back=(640,380,230,110), threshold=0.9, method="Template matching", file="./tasks/Component/SwitchSoul/ss/ss_sou_switch_sure.png")
+	# 更换全队预设御魂确认框标题
+	I_SOU_SWITCH_DIALOG = RuleImage(roi_front=(460,302,365,31), roi_back=(430,275,425,85), threshold=0.9, method="Template matching", file="./tasks/Component/SwitchSoul/ss/ss_sou_switch_dialog.png")
+	# 御魂切换确认提示的固定前缀：即将更换式神，不含名单
+	I_SOU_SWITCH_DETAIL = RuleImage(roi_front=(424,273,162,30), roi_back=(410,250,450,140), threshold=0.9, method="Template matching", file="./tasks/Component/SwitchSoul/ss/ss_sou_switch_detail.png")
+	# 预设契灵已装配于其他阴阳师的替换确认标题
+	I_SOU_SPIRIT_REPLACE = RuleImage(roi_front=(438,286,405,58), roi_back=(420,265,440,105), threshold=0.9, method="Template matching", file="./tasks/Component/SwitchSoul/ss/ss_sou_spirit_replace.png")
 	# 用于判断是否在式神录里面 
 	I_SOU_CHECK_IN = RuleImage(roi_front=(269,69,50,49), roi_back=(269,69,50,49), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchSoul/ss/ss_sou_check_in.png")
 	# description 
