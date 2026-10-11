@@ -18,6 +18,58 @@ def task_boundary(name: str) -> list[str]:
 
 
 class TaskEndStatisticsTest(unittest.TestCase):
+    def test_triggered_dojo_overrides_the_waiting_task_and_ends_before_idle(self):
+        lines = [
+            log(0, "[Task] RyouToppa (Enable, 5, later)"),
+            log(1, "Scheduler is waiting"),
+            log(2, "Scheduler: Start task `Dokan`"),
+        ]
+        lines += task_boundary("Dokan")
+        lines += [
+            log(3, "Dokan starts"),
+            "─" * 20 + " GENERAL BATTLE START " + "─" * 20 + "\n",
+            log(4, "Member battle started"),
+            log(8, "Scheduler: End task `Dokan`"),
+            log(40, "Scheduler is waiting"),
+            log(50, "[Task] RyouToppa (Enable, 5, now)"),
+            log(51, "Scheduler: Start task `RyouToppa`"),
+        ]
+        lines += task_boundary("RyouToppa")
+        lines += [log(52, "RyouToppa starts"), log(53, "Scheduler: End task `RyouToppa`")]
+
+        snapshot = LogStatsParser.parse_lines(lines)
+
+        self.assertEqual(set(snapshot["tasks"]), {"Dokan", "RyouToppa"})
+        self.assertEqual(snapshot["total_task_run_count"], 2)
+        dojo = snapshot["tasks"]["Dokan"]
+        self.assertEqual(dojo["run_count"], 1)
+        self.assertEqual(dojo["runs"][0]["duration_seconds"], 5.0)
+        self.assertEqual(dojo["runs"][0]["end_time"], "2026-09-28 08:00:08.000")
+        self.assertEqual(dojo["battle"], {"count": 1, "avg_duration_seconds": 4.0})
+        self.assertEqual(snapshot["tasks"]["RyouToppa"]["total_duration_seconds"], 1.0)
+        self.assertIsNone(snapshot["tasks"]["RyouToppa"]["battle"])
+
+    def test_triggered_dojo_keeps_its_name_and_battles_across_stream_updates(self):
+        parser = LogStatsParser()
+        parser.consume_lines([
+            log(0, "[Task] RyouToppa (Enable, 5, later)"),
+            log(1, "Scheduler: Start task `Dokan`"),
+        ])
+        self.assertEqual(parser.snapshot()["tasks"], {})
+        parser.consume_lines(task_boundary("Dokan") + [
+            log(2, "Dokan starts"),
+            "─" * 20 + " GENERAL BATTLE START " + "─" * 20 + "\n",
+            log(3, "Member battle started"),
+        ])
+        self.assertEqual(set(parser.snapshot()["tasks"]), {"Dokan"})
+        parser.consume_lines([log(7, "Scheduler: End task `Dokan`")])
+        completed = parser.snapshot()["tasks"]["Dokan"]
+        parser.consume_lines([log(55, "Scheduler is waiting")])
+        self.assertEqual(parser.snapshot()["tasks"]["Dokan"], completed)
+        self.assertEqual(completed["run_count"], 1)
+        self.assertEqual(completed["total_duration_seconds"], 5.0)
+        self.assertEqual(completed["battle"], {"count": 1, "avg_duration_seconds": 4.0})
+
     def test_scheduler_end_stops_duration_before_idle_and_next_task(self):
         lines = [log(0, "[Task] AreaBoss (Enable, 5, now)")]
         lines += task_boundary("AreaBoss")

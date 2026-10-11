@@ -22,6 +22,7 @@ _EQ_LINE_RE = re.compile(r"^═{15,}\s*$")
 _EQ_TITLE_LINE_RE = re.compile(r"^═{10,}\s+(?P<title>.*?)\s+═{10,}\s*$")
 _TITLE_LINE_RE = re.compile(r"^─{10,}\s*(?P<title>.*?)\s*─{10,}\s*$")
 _TASK_ENDED_RE = re.compile(r"^(?P<title>.+?)\s+task ended\b", re.IGNORECASE)
+_SCHEDULER_TASK_START_RE = re.compile(r"^Scheduler:\s*Start task\s+`(?P<task>[A-Za-z0-9_]+)`", re.IGNORECASE)
 _SCHEDULER_TASK_END_RE = re.compile(r"^Scheduler:\s*End task\s+`(?P<task>[A-Za-z0-9_]+)`", re.IGNORECASE)
 _TASK_GROUP_RE = re.compile(r"^TASKGROUP(?:[1-5])?$", re.IGNORECASE)
 _TASK_GROUP_ITEM_RE = re.compile(
@@ -293,6 +294,13 @@ class LogStatsParser:
         if matched:
             self._pending_task_name = matched.group("task").strip()
 
+        message = line.rsplit("|", 1)[-1].strip()
+        matched = _SCHEDULER_TASK_START_RE.match(message)
+        if matched:
+            # 调度预览可能仍是等待任务，自动触发任务以实际启动日志为准。
+            task_name = matched.group("task")
+            self._pending_task_name = _TASK_NAMES.get(task_name.upper(), task_name)
+
         ts = self._extract_timestamp(line)
         if ts is None:
             return
@@ -318,7 +326,6 @@ class LogStatsParser:
         if task_ended_title is not None:
             self._handle_task_ended(task_ended_title)
 
-        message = line.rsplit("|", 1)[-1].strip()
         self._handle_task_group_message(message)
         self._handle_scheduler_task_end(message)
 
