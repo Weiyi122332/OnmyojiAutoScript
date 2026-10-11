@@ -360,7 +360,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         if not self.appear(self.I_DOKAN_BOSS_WAITING) and self.appear(self.I_RYOU_DOKAN_START_CHALLENGE):  # 可挑战
             self.switch_soul_in_dokan()  # 防止进来晚了错过集结阶段的御魂切换
             if self.click_until_in_battle():
-                self.run_general_battle(self.conf.dokan_member_battle_conf, battle_key='dokan_member')
+                self.run_general_battle(GeneralBattleConfig(continuous_battle=True), battle_key='dokan_member')
             return
         if not self.appear(self.I_DOKAN_BOSS_WAITING) and self.appear(self.I_RYOU_DOKAN_CD):  # 可观战
             self.device.click_record_clear()
@@ -414,13 +414,14 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
 
     def run_on_battle(self):
         """处理战斗页面逻辑(正常来说是一定不会进入该逻辑的)"""
+        battle_config = GeneralBattleConfig(continuous_battle=True)
         if self.appear(self.I_RYOU_DOKAN_BATTLE_MASTER_FIRST) or \
                 self.appear(self.I_RYOU_DOKAN_BATTLE_MASTER_SECOND):
             self.dokan_owner_battle = True
-            self.run_general_battle(self.build_quick_exit_config(self.conf.dokan_member_battle_conf),
+            self.run_general_battle(self.build_quick_exit_config(battle_config),
                                     battle_key='dokan_member')
             return
-        self.run_general_battle(self.conf.dokan_member_battle_conf, battle_key='dokan_member')
+        self.run_general_battle(battle_config, battle_key='dokan_member')
 
     def switch_priority(self):
         """选择优先级"""

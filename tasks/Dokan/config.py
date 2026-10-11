@@ -5,9 +5,8 @@
 # github    https://github.com/roarhill/oas
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
-from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 from tasks.Component.SwitchSoul.switch_soul_config import SwitchSoulConfig
 from tasks.Component.config_base import ConfigBase, Time, dynamic_hide
 from tasks.Component.config_notify import TaskNotifyConfig
@@ -73,21 +72,11 @@ class QQMessageConfig(BaseModel):
     qq_poll_interval: int = Field(default=60, ge=1, le=86400, description='qq_poll_interval_help')
 
 
-class DokanBattleConfig(GeneralBattleConfig):
-    continuous_battle: bool = True
-
-    @field_validator('continuous_battle', mode='after')
-    @classmethod
-    def validate_continuous_battle(cls, v):
-        return True
-
-
 class Dokan(ConfigBase):
     scheduler: Scheduler = Field(default_factory=Scheduler)
     dokan_config: DokanConfig = Field(default_factory=DokanConfig)
     qq_message_config: QQMessageConfig = Field(default_factory=QQMessageConfig)
     notification_config: TaskNotifyConfig = Field(default_factory=TaskNotifyConfig)
-    dokan_member_battle_conf: DokanBattleConfig = Field(default_factory=DokanBattleConfig)
     dokan_member_switch_soul: SwitchSoulConfig = Field(default_factory=SwitchSoulConfig)
     attack_count_config: AttackAccountConfig = Field(default_factory=AttackAccountConfig)
 

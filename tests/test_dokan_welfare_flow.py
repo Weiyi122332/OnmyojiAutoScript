@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 from module.config.config_model import ConfigModel
 from tasks.Component.GeneralBattle.general_battle import BattleAction, GeneralBattle
-from tasks.Dokan.config import Dokan, DokanBattleConfig
+from tasks.Dokan.config import Dokan
 from tasks.Dokan.script_task import ScriptTask
 
 
@@ -20,6 +20,10 @@ class WelfareDokanFlowTest(unittest.TestCase):
                 'find_dokan_refresh_count': 5, 'monday_to_thursday': False,
             },
             'dokan_owner_battle_conf': {}, 'dokan_owner_switch_soul': {},
+            'dokan_member_battle_conf': {
+                'preset_enable': True, 'green_enable': True, 'quick_exit': True,
+                'continuous_battle': False, 'max_continuous': 1, 'battle_timeout': 5,
+            },
             'attack_count_config': {
                 'attack_dokan_master': 'ATTACK_TWO_TWO', 'daily_attack_count': 2,
                 'attack_date': '2026-10-08', 'remain_attack_count': 1,
@@ -28,7 +32,7 @@ class WelfareDokanFlowTest(unittest.TestCase):
         model = ConfigModel(dokan=task)
         page = model.script_task('Dokan')
         self.assertEqual(set(page), {
-            'scheduler', 'dokan_config', 'notification_config', 'dokan_member_battle_conf',
+            'scheduler', 'dokan_config', 'notification_config',
             'dokan_member_switch_soul', 'qq_message_config',
         })
         self.assertEqual({field['name'] for field in page['dokan_config']}, {
@@ -40,6 +44,7 @@ class WelfareDokanFlowTest(unittest.TestCase):
         self.assertEqual(task.attack_count_config.remain_attack_count, 1)
         self.assertEqual(task.attack_count_config.attack_date, '2026-10-08')
         self.assertNotIn('daily_attack_count', task.attack_count_config.model_dump())
+        self.assertNotIn('dokan_member_battle_conf', task.model_dump())
 
     def test_owner_prepare_never_clicks_ready_for_either_owner_team(self):
         for marker in ('I_RYOU_DOKAN_BATTLE_MASTER_FIRST', 'I_RYOU_DOKAN_BATTLE_MASTER_SECOND'):
@@ -62,17 +67,46 @@ class WelfareDokanFlowTest(unittest.TestCase):
         prepare.assert_called_once()
         battle.assert_called_once()
 
-    def test_recovering_inside_owner_battle_uses_quick_exit_without_changing_member_configuration(self):
+    def test_recovering_inside_owner_battle_does_not_make_member_battles_exit(self):
         task = ScriptTask.__new__(ScriptTask)
-        config = DokanBattleConfig()
-        task.conf = SimpleNamespace(dokan_member_battle_conf=config)
+        task.conf = Dokan()
         task.appear = Mock(side_effect=lambda target: target is task.I_RYOU_DOKAN_BATTLE_MASTER_FIRST)
         task.run_general_battle = Mock()
         task.run_on_battle()
         sent_config = task.run_general_battle.call_args.args[0]
         self.assertTrue(sent_config.quick_exit)
-        self.assertFalse(config.quick_exit)
         self.assertTrue(task.dokan_owner_battle)
+        task.dokan_owner_battle = False
+        task.appear = Mock(return_value=False)
+        task.run_on_battle()
+        member_config = task.run_general_battle.call_args.args[0]
+        self.assertTrue(member_config.continuous_battle)
+        self.assertFalse(member_config.quick_exit)
+        self.assertEqual(member_config.max_continuous, 0)
+        self.assertIsNot(member_config, sent_config)
+
+    def test_starting_member_battle_ignores_removed_configuration_in_old_profiles(self):
+        task = ScriptTask.__new__(ScriptTask)
+        task.conf = Dokan.model_validate({'dokan_member_battle_conf': {
+            'preset_enable': True, 'green_enable': True, 'continuous_battle': False,
+            'max_continuous': 1, 'quick_exit': True, 'battle_timeout': 5,
+        }})
+        task.dokan_owner_battle = False
+        task.device = SimpleNamespace(stuck_record_clear=Mock())
+        task.prepare_appear_cache = Mock()
+        task.appear = Mock(side_effect=lambda target: target is task.I_RYOU_DOKAN_START_CHALLENGE)
+        task.switch_soul_in_dokan = Mock()
+        task.click_until_in_battle = Mock(return_value=True)
+        task.run_general_battle = Mock()
+        task.run_on_dokan()
+        sent_config = task.run_general_battle.call_args.args[0]
+        self.assertEqual(task.run_general_battle.call_args.kwargs['battle_key'], 'dokan_member')
+        self.assertTrue(sent_config.continuous_battle)
+        self.assertEqual(sent_config.max_continuous, 0)
+        self.assertEqual(sent_config.battle_timeout, -1)
+        self.assertFalse(sent_config.preset_enable)
+        self.assertFalse(sent_config.green_enable)
+        self.assertFalse(sent_config.quick_exit)
 
     def test_member_soul_is_switched_once_across_two_dojos(self):
         task = ScriptTask.__new__(ScriptTask)

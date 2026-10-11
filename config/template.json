@@ -1882,21 +1882,6 @@
       "task_notify_enable": true,
       "task_notify_config": ""
     },
-    "dokan_member_battle_conf": {
-      "lock_team_enable": false,
-      "preset_enable": false,
-      "preset_group": 1,
-      "preset_team": 1,
-      "green_enable": false,
-      "green_mark_type": "choose",
-      "green_mark": "green_left1",
-      "green_mark_name": "",
-      "random_click_swipt_enable": false,
-      "battle_timeout": -1,
-      "continuous_battle": true,
-      "max_continuous": 0,
-      "quick_exit": false
-    },
     "dokan_member_switch_soul": {
       "enable": false,
       "switch_group_team": "-1,-1",
