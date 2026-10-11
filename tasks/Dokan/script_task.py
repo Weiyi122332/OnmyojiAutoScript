@@ -45,7 +45,7 @@ class DokanRefreshLimitError(Exception):
 
 DOKAN_REWARD_SCREENSHOT_DIR = Path('log/screenshots/dokan')
 DOKAN_REWARD_CAPTURE_DELAY = 1.0
-DOKAN_NEXT_SELECTION_WAIT_RANGE = (70.0, 90.0)
+DOKAN_NEXT_SELECTION_WAIT_RANGE = (60.0, 65.0)
 DOKAN_LIST_STABLE_INTERVAL = 0.3
 DOKAN_LIST_STABLE_TIMEOUT = 1.5
 MAX_WELFARE_DOKAN_REFRESH_COUNT = 20
@@ -736,7 +736,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         return attack_count.remain_attack_count > 0 and self.found_dokan_cnt < 2
 
     def wait_for_next_dokan_selection(self) -> None:
-        """再战后回庭院等待70～90秒，再进入道馆进行第二次筛选。"""
+        """再战后确认返回庭院，再等待60～65秒并进入道馆进行第二次筛选。"""
         logger.info("道馆再战：返回庭院")
         self.goto_page(pages.page_main)
         wait_seconds = uniform(*DOKAN_NEXT_SELECTION_WAIT_RANGE)

@@ -57,7 +57,7 @@ class BackToBackDokanTest(unittest.TestCase):
         )
         return task
 
-    @patch('tasks.Dokan.script_task.uniform', return_value=80.0)
+    @patch('tasks.Dokan.script_task.uniform', return_value=62.5)
     @patch('tasks.Dokan.script_task.sleep')
     def test_battle_again_reenters_after_courtyard_wait_and_preserves_switched_souls(self, sleeper, _uniform):
         task = SimpleNamespace(
@@ -71,7 +71,7 @@ class BackToBackDokanTest(unittest.TestCase):
         ScriptTask.wait_for_next_dokan_selection(task)
         self.assertEqual([call.args[0] for call in task.goto_page.call_args_list],
                          [pages.page_main, pages.page_dokan_map])
-        sleeper.assert_called_once_with(80.0)
+        sleeper.assert_called_once_with(62.5)
         task.device.stuck_record_add.assert_called_once_with('PAUSE')
         self.assertEqual(task.device.stuck_record_clear.call_count, 2)
         self.assertTrue(task.second_dokan_ready)

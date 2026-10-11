@@ -48,21 +48,21 @@ class DokanRetryWaitTest(unittest.TestCase):
             self.task.device.stuck_record_check()
 
     def test_courtyard_wait_precedes_reentry_and_does_not_trip_watchdog(self):
-        with patch('tasks.Dokan.script_task.uniform', return_value=85.0):
+        with patch('tasks.Dokan.script_task.uniform', return_value=63.0):
             self.task.wait_for_next_dokan_selection()
-        self.assertEqual(self.events, [pages.page_main, 85.0, pages.page_dokan_map])
+        self.assertEqual(self.events, [pages.page_main, 63.0, pages.page_dokan_map])
         self.assertTrue(self.task.second_dokan_ready)
         self.assertFalse(self.task.dokan_owner_battle)
         self.assertFalse(self.task.attack_priority_selected)
         self.assertTrue(self.task.switch_member_soul_done)
         self.assertEqual(self.task.device.detect_record, set())
-        self.assertEqual(self.now, 1085.0)
+        self.assertEqual(self.now, 1063.0)
 
-    def test_random_wait_is_selected_between_70_and_90_seconds(self):
-        with patch('tasks.Dokan.script_task.uniform', return_value=70.0) as random_wait:
+    def test_random_wait_is_selected_between_60_and_65_seconds(self):
+        with patch('tasks.Dokan.script_task.uniform', return_value=60.0) as random_wait:
             self.task.wait_for_next_dokan_selection()
-        random_wait.assert_called_once_with(70.0, 90.0)
-        self.sleeper.assert_called_once_with(70.0)
+        random_wait.assert_called_once_with(60.0, 65.0)
+        self.sleeper.assert_called_once_with(60.0)
 
     def test_courtyard_navigation_failure_does_not_wait_or_reenter(self):
         self.task.goto_page.side_effect = RuntimeError('courtyard unavailable')
@@ -87,10 +87,10 @@ class DokanRetryWaitTest(unittest.TestCase):
                 raise RuntimeError('dojo unavailable')
 
         self.task.goto_page.side_effect = goto_page
-        with patch('tasks.Dokan.script_task.uniform', return_value=90.0):
+        with patch('tasks.Dokan.script_task.uniform', return_value=65.0):
             with self.assertRaisesRegex(RuntimeError, 'dojo unavailable'):
                 self.task.wait_for_next_dokan_selection()
-        self.assertEqual(self.events, [pages.page_main, 90.0, pages.page_dokan_map])
+        self.assertEqual(self.events, [pages.page_main, 65.0, pages.page_dokan_map])
         self.assertFalse(self.task.second_dokan_ready)
         self.assertTrue(self.task.dokan_owner_battle)
         self.assertTrue(self.task.switch_member_soul_done)
