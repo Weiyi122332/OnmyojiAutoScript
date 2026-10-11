@@ -98,6 +98,9 @@ def handle_activity_overlay(task) -> bool:
     while not timer.reached():
         task.screenshot()
 
+        if handle_activity_story(task):
+            continue
+
         if task.appear(GlobalGameAssets.I_UI_REWARD):
             if not award_clicked:
                 _settle_activity_auxiliary(task)
@@ -121,7 +124,9 @@ def handle_activity_overlay(task) -> bool:
             # 主界面标志可能先于延迟弹窗出现，等待一秒后再确认稳定。
             _settle_activity_auxiliary(task)
             if task.appear(GlobalGameAssets.I_UI_REWARD) or \
-                    task.appear(ActivityShikigamiAssets.I_ACTIVITY_SIGNIN_CLOSE):
+                    task.appear(ActivityShikigamiAssets.I_ACTIVITY_SIGNIN_CLOSE) or \
+                    task.appear(ActivityShikigamiAssets.I_SKIP_BUTTON) or \
+                    task.appear(ActivityShikigamiAssets.I_CONFIRM_SKIP):
                 continue
             if task.appear(ActivityShikigamiAssets.I_CHECK_BATTLE_MAIN):
                 logger.info('ActivityShikigami main page ready')
@@ -139,6 +144,8 @@ page_act = Page(
         ActivityShikigamiAssets.I_CHECK_BATTLE_MAIN,
         GlobalGameAssets.I_UI_REWARD,
         ActivityShikigamiAssets.I_ACTIVITY_SIGNIN_CLOSE,
+        ActivityShikigamiAssets.I_SKIP_BUTTON,
+        ActivityShikigamiAssets.I_CONFIRM_SKIP,
     ),
     priority=70,
 )
@@ -166,6 +173,7 @@ page_climb_boss.connect(page_act, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_
 
 # 磐长故地先选择地图据点，再进入门票挑战页面。
 page_fakegod_map = Page(ActivityShikigamiAssets.I_FG_AS_CHECK_MAIN_2, priority=75)
+page_fakegod_map.add_enter_success_hooks(handle_activity_close)
 page_fakegod_map.connect(page_act, GlobalGameAssets.I_UI_BACK_CIRCLE, key='fakegod_map->activity')
 page_fakegod_map.connect(page_climb_ap, ActivityShikigamiAssets.I_FG_MAP_TO_AP, key='fakegod_map->climb_ap')
 page_fakegod_map.connect(page_climb_ap100, ActivityShikigamiAssets.I_FG_MAP_TO_AP100, key='fakegod_map->climb_ap100')

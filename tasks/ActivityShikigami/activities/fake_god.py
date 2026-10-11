@@ -16,6 +16,8 @@ def select_fakegod_target(task):
         task.screenshot()
         if not task.appear(ActivityShikigamiAssets.I_FG_AS_CHECK_MAIN_2):
             return False
+        if pages.handle_activity_close(task):
+            continue
         if task.appear_then_click(ActivityShikigamiAssets.I_FG_AS_TO_PASS, interval=0):
             task.device.click_record_clear()
             return True
