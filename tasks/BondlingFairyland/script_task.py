@@ -10,7 +10,7 @@ from datetime import datetime
 from datetime import timedelta, time
 from module.base.timer import Timer
 from module.base.protect import random_sleep
-from module.exception import TaskEnd
+from module.exception import GameStuckError, TaskEnd
 from module.logger import logger
 from tasks.BondlingFairyland.assets import BondlingFairylandAssets
 from tasks.BondlingFairyland.config import BondlingMode, BondlingClass, BondlingSwitchSoul, BondlingConfig, UserStatus
@@ -734,6 +734,38 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
         limit_time = self.config.bondling_fairyland.bondling_config.limit_time
         return timedelta(hours=limit_time.hour, minutes=limit_time.minute, seconds=limit_time.second)
 
+    def _handle_low_plate_dialog(self) -> bool:
+        """勾选盘子不足提示的今日不再提示，再继续挑战。"""
+        if not self.appear(self.I_LOW_PLATE_DIALOG):
+            return False
+
+        logger.info('Handle low plate warning')
+        timeout = Timer(10).start()
+        suppress_timer = Timer(2)
+        confirm_timer = Timer(2)
+        suppress_clicks = 0
+        confirm_clicks = 0
+        while True:
+            dialog_visible = self.appear(self.I_LOW_PLATE_DIALOG)
+            confirm_visible = self.appear(self.I_LOW_PLATE_CONTINUE)
+            if not dialog_visible and not confirm_visible:
+                logger.info('Low plate warning closed')
+                return True
+            if timeout.reached():
+                raise GameStuckError('Low plate warning did not close within 10s')
+            if dialog_visible:
+                if self.appear(self.I_LOW_PLATE_SKIP_TODAY):
+                    if suppress_clicks < 2 and suppress_timer.reached():
+                        self.click(self.I_LOW_PLATE_SKIP_TODAY)
+                        suppress_clicks += 1
+                        suppress_timer.reset()
+                elif confirm_visible and confirm_clicks < 2 and confirm_timer.reached():
+                    self.click(self.I_LOW_PLATE_CONTINUE)
+                    confirm_clicks += 1
+                    confirm_timer.reset()
+            sleep(0.2)
+            self.screenshot()
+
     def run_alone(self):
         """
         单人 挑战， 主要是结契时的挑战
@@ -741,6 +773,8 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
         click_count = 0
         while 1:
             self.screenshot()
+            if self._handle_low_plate_dialog():
+                continue
             if not self.appear(self.I_BALL_FIRE, threshold=0.7):
                 break
             if self.appear_then_click(self.I_BALL_FIRE, interval=1):

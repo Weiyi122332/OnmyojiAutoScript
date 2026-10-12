@@ -70,5 +70,32 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "地域页面"
+  },
+  {
+    "itemName": "low_plate_dialog",
+    "imageName": "ball_low_plate_dialog.png",
+    "roiFront": "435,256,284,29",
+    "roiBack": "410,240,450,105",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "description": "契灵自动结契盘子不足提示"
+  },
+  {
+    "itemName": "low_plate_skip_today",
+    "imageName": "ball_low_plate_skip_today.png",
+    "roiFront": "544,344,34,34",
+    "roiBack": "530,333,65,60",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "description": "盘子不足提示未勾选的今日不再提示"
+  },
+  {
+    "itemName": "low_plate_continue",
+    "imageName": "ball_low_plate_continue.png",
+    "roiFront": "664,408,180,64",
+    "roiBack": "640,390,230,95",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "description": "盘子不足提示继续挑战"
   }
 ]

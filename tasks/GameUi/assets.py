@@ -151,6 +151,8 @@ class GameUiAssets:
 	# Image Rule Assets
 	# 阵容助手页
 	I_CHECK_LINEUP_HELPER = RuleImage(roi_front=(90,15,126,50), roi_back=(85,10,136,60), threshold=0.8, method="Template matching", file="./tasks/GameUi/page/page_check_lineup_helper.png")
+	# 左上角一键返回庭院
+	I_RETURN_MAIN = RuleImage(roi_front=(93,17,42,39), roi_back=(70,0,160,100), threshold=0.85, method="Template matching", file="./tasks/GameUi/page/page_return_main.png")
 
 
 	# Image Rule Assets

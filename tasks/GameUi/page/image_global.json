@@ -8,5 +8,15 @@
     "threshold": 0.8,
     "profile": "Default",
     "description": "阵容助手页"
+  },
+  {
+    "itemName": "return_main",
+    "imageName": "page_return_main.png",
+    "roiFront": "93,17,42,39",
+    "roiBack": "70,0,160,100",
+    "method": "Template matching",
+    "threshold": 0.85,
+    "profile": "Default",
+    "description": "左上角一键返回庭院"
   }
 ]

@@ -27,6 +27,12 @@ class BondlingFairylandAssets:
 	I_BALL_AREA = RuleImage(roi_front=(61,631,50,48), roi_back=(8,582,138,137), threshold=0.8, method="Template matching", file="./tasks/BondlingFairyland/ball/ball_ball_area.png")
 	# 地域页面 
 	I_CHECK_AREA = RuleImage(roi_front=(489,377,238,95), roi_back=(454,337,314,170), threshold=0.8, method="Template matching", file="./tasks/BondlingFairyland/ball/ball_check_area.png")
+	# 契灵自动结契盘子不足提示
+	I_LOW_PLATE_DIALOG = RuleImage(roi_front=(435,256,284,29), roi_back=(410,240,450,105), threshold=0.9, method="Template matching", file="./tasks/BondlingFairyland/ball/ball_low_plate_dialog.png")
+	# 盘子不足提示未勾选的今日不再提示
+	I_LOW_PLATE_SKIP_TODAY = RuleImage(roi_front=(544,344,34,34), roi_back=(530,333,65,60), threshold=0.9, method="Template matching", file="./tasks/BondlingFairyland/ball/ball_low_plate_skip_today.png")
+	# 盘子不足提示继续挑战
+	I_LOW_PLATE_CONTINUE = RuleImage(roi_front=(664,408,180,64), roi_back=(640,390,230,95), threshold=0.9, method="Template matching", file="./tasks/BondlingFairyland/ball/ball_low_plate_continue.png")
 
 
 	# Click Rule Assets

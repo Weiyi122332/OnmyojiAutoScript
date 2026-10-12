@@ -786,6 +786,21 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
                 return True
         raise GamePageUnknownError("Main scroll did not open")
 
+    def _try_return_to_main(self, destination: Page) -> bool | None:
+        """识别一键返回按钮，并等待庭院稳定出现；无按钮时沿用页面路径。"""
+        if not self.appear(self.I_RETURN_MAIN):
+            return None
+
+        logger.info("Return to main via courtyard shortcut")
+        self.click(self.I_RETURN_MAIN)
+        if self._wait_for_destination(destination, timeout=6.0):
+            return True
+
+        # 点击后可能已切换页面，清除旧页面缓存后重新规划逐级返回路径。
+        self.navigator.current_page = None
+        logger.warning("Courtyard shortcut did not reach main; use normal navigation")
+        return False
+
     def goto_page(self, destination: Page, confirm_wait: float = 0, skip_first_screenshot: bool = True,
                   timeout: int = 30, *, accepted_pages: tuple[Page, ...] = ()) -> bool | None:
         """导航到目标页面。
@@ -813,6 +828,7 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
         repeated_failure_transition_key: str | None = None
         repeated_failure_count = 0
         last_repeated_failure_close_result: str | None = None
+        quick_return_attempted = False
 
         def reset_repeated_transition_failures() -> None:
             nonlocal repeated_failure_transition_key, repeated_failure_count
@@ -822,6 +838,18 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
         while True:
             current = self._refresh_current_page(destination, skip_first_screenshot)
             skip_first_screenshot = False
+
+            can_stay = current is not None and (
+                current == destination or any(current.key == page.key for page in accepted_pages)
+            )
+            if destination.key == "page_main" and not can_stay and not quick_return_attempted:
+                shortcut_result = self._try_return_to_main(destination)
+                if shortcut_result is not None:
+                    quick_return_attempted = True
+                    if shortcut_result:
+                        return self._finalize_arrival(destination, confirm_wait, start_time)
+                    progress_timer.reset()
+                    continue
 
             if current is None:
                 if self.close_unknown_pages(skip_first_screenshot=False):
