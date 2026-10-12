@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 
 from module.exception import TaskEnd
 from module.device.device import Device
-from tasks.Dokan.script_task import DokanRefreshLimitError, ScriptTask
+from tasks.Dokan.script_task import DokanNotStartedError, DokanRefreshLimitError, ScriptTask
 
 
 class FakeDokanSelection:
@@ -90,11 +90,25 @@ class WelfareGuildFilterTest(unittest.TestCase):
         selection = FakeDokanSelection(people=170, has_xin=True)
         selection._wait_for_dokan_list_ready.return_value = False
         with patch('tasks.Dokan.script_task.logger'):
-            with self.assertRaises(DokanRefreshLimitError):
+            with self.assertRaises(DokanNotStartedError):
                 ScriptTask.find_dokan(selection)
+        self.assertEqual(selection._wait_for_dokan_list_ready.call_count, 2)
         selection.prepare_appear_cache.assert_not_called()
         self.assertIsNone(selection.selected_item)
         selection.O_DOKAN_CENTER_PEOPLE_NUMBER.detect_text.assert_not_called()
+        selection.swipe.assert_not_called()
+        selection.ui_click.assert_not_called()
+        selection.config.dokan.attack_count_config.del_attack_count.assert_not_called()
+
+    def test_list_is_retried_in_place_before_selecting_a_welfare_dojo(self):
+        selection = FakeDokanSelection(people=170, has_xin=True)
+        selection._wait_for_dokan_list_ready.side_effect = [False, True]
+        with patch('tasks.Dokan.script_task.logger'):
+            self.assertTrue(ScriptTask.find_dokan(selection))
+        self.assertEqual(selection._wait_for_dokan_list_ready.call_count, 2)
+        selection.swipe.assert_not_called()
+        self.assertEqual(selection.selected_item[1], 408)
+        selection.config.dokan.attack_count_config.del_attack_count.assert_called_once()
 
     def test_no_xin_list_can_reach_twenty_refreshes_without_click_watchdog_error(self):
         selection = FakeDokanSelection(people=170, has_xin=False)

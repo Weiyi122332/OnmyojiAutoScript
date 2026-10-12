@@ -76,14 +76,30 @@ class DokanListStabilityTest(unittest.TestCase):
         self.assertIs(self.task.device.image, self.images[-1])
 
     def test_one_stable_comparison_between_movements_is_not_enough(self):
-        self.frames = [self.images[0], self.images[0], self.images[1],
-                       self.images[1], self.images[2]]
+        self.frames = [self.images[0], self.images[0], self.images[1], self.images[1],
+                       self.images[2], self.images[2], self.images[0], self.images[0],
+                       self.images[1], self.images[1], self.images[2], self.images[2]]
         self.assertFalse(self.task._wait_for_dokan_list_ready())
-        self.assertAlmostEqual(self.now - 1000, 1.5)
+        self.assertAlmostEqual(self.now - 1000, 3.0)
+
+    def test_scroll_settling_near_old_deadline_is_screened_after_second_confirmation(self):
+        self.frames = [self.images[0], self.images[1], self.images[2],
+                       self.images[0], self.images[0], self.images[0]]
+        self.capture_duration = 0.05
+        self.assertTrue(self.task._wait_for_dokan_list_ready())
+        self.assertEqual(len(self.capture_times), 6)
+        self.assertAlmostEqual(self.now - 1000, 1.55)
+
+    def test_slow_screenshot_does_not_make_a_still_list_skip_the_page(self):
+        self.frames = [self.images[0]]
+        self.capture_duration = 0.6
+        self.assertTrue(self.task._wait_for_dokan_list_ready())
+        self.assertEqual(len(self.capture_times), 3)
+        self.assertAlmostEqual(self.now - 1000, 1.8)
 
     def test_capture_past_deadline_cannot_provide_a_ready_frame(self):
         self.frames = [self.images[0]]
-        self.capture_duration = 2.0
+        self.capture_duration = 4.0
         self.assertFalse(self.task._wait_for_dokan_list_ready())
         self.client.match_dynamic_template.assert_not_called()
 

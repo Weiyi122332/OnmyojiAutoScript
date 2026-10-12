@@ -47,7 +47,7 @@ DOKAN_REWARD_SCREENSHOT_DIR = Path('log/screenshots/dokan')
 DOKAN_REWARD_CAPTURE_DELAY = 1.0
 DOKAN_NEXT_SELECTION_WAIT_RANGE = (60.0, 65.0)
 DOKAN_LIST_STABLE_INTERVAL = 0.3
-DOKAN_LIST_STABLE_TIMEOUT = 1.5
+DOKAN_LIST_STABLE_TIMEOUT = 3.0
 MAX_WELFARE_DOKAN_REFRESH_COUNT = 20
 
 class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
@@ -452,7 +452,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                         deadline - checked_at)
             if delay > 0:
                 sleep(delay)
-        logger.warning('道馆列表仍在变化，跳过当前屏，继续筛选')
+        logger.warning('道馆列表稳定确认超时，保留当前列表位置')
         return False
 
     def find_dokan(self) -> bool:
@@ -474,7 +474,9 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             restore_roi()
             self.device.click_record_clear()
             if not self._wait_for_dokan_list_ready():
-                return False
+                logger.info('道馆列表未稳定，在原位置重试确认')
+                if not self._wait_for_dokan_list_ready():
+                    raise DokanNotStartedError('道馆列表仍未稳定，结束本次筛选，未滑动或刷新未检查的页面')
             candidates = self.find_all_element(self.I_RIGHTPAD_POINT_BOUNTY, (0, 0, 0, 50))
             logger.info(f'find elements list:{candidates}')
             xin_rules = []
