@@ -1,4 +1,4 @@
-"""御魂切换兼容可选确认框、延迟的契灵替换框和有限重试。"""
+"""Soul switching uses the original preset and confirmation controls."""
 
 import unittest
 from pathlib import Path
@@ -8,303 +8,110 @@ from unittest.mock import Mock, patch
 import cv2
 import numpy as np
 
-from module.exception import GameStuckError
 from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
+from tasks.Component.CostumeShikigami.assets import CostumeShikigamiAssets
 
 
-class SoulConfirmationFlowTest(unittest.TestCase):
+class SoulControlFlowTest(unittest.TestCase):
     def make_task(self, frames):
         task = SwitchSoul.__new__(SwitchSoul)
-        clock = SimpleNamespace(now=1000.0, visible=(), clicks=[])
+        state = SimpleNamespace(scene=None, clicks=[])
         frames = iter(frames)
-        scenes = {
-            'preset': (task.I_SOU_TEAM_PRESENT,),
-            'dialog': (task.I_SOU_TEAM_PRESENT, task.I_SOU_SWITCH_DIALOG, task.I_SOU_SWITCH_SURE),
-            'detail': (task.I_SOU_TEAM_PRESENT, task.I_SOU_SWITCH_DETAIL, task.I_SOU_SWITCH_SURE),
-            'detail_title_only': (task.I_SOU_TEAM_PRESENT, task.I_SOU_SWITCH_DETAIL),
-            'spirit': (task.I_SOU_TEAM_PRESENT, task.I_SOU_SPIRIT_REPLACE, task.I_SOU_SWITCH_SURE),
-            'spirit_title_only': (task.I_SOU_TEAM_PRESENT, task.I_SOU_SPIRIT_REPLACE),
-            'title_only': (task.I_SOU_TEAM_PRESENT, task.I_SOU_SWITCH_DIALOG),
-            'button_only': (task.I_SOU_TEAM_PRESENT, task.I_SOU_SWITCH_SURE),
-            'blocked': (task.I_SOU_TEAM_PRESENT, task.I_CHECK_BLOCK),
-            'blocked_overlay': (task.I_SOU_TEAM_PRESENT, task.I_CHECK_BLOCK,
-                                task.I_SOU_SWITCH_DIALOG, task.I_SOU_SWITCH_SURE),
-            'unknown': (),
-        }
-
-        def screenshot():
-            elapsed, scene = next(frames)
-            clock.now = 1000.0 + elapsed
-            clock.visible = scenes[scene]
-
-        task.screenshot = Mock(side_effect=screenshot)
-        task.appear = Mock(side_effect=lambda marker: any(marker is visible for visible in clock.visible))
-        task.click = Mock(side_effect=lambda marker: clock.clicks.append((clock.now, marker)))
-        selector = Mock(return_value=True)
-        return task, clock, selector
-
-    def apply_preset(self, task, clock, selector):
-        with patch('module.base.timer.time.time', side_effect=lambda: clock.now), \
-                patch('tasks.Component.SwitchSoul.switch_soul.sleep'), \
-                patch('tasks.Component.SwitchSoul.switch_soul.logger'):
-            task._apply_soul_preset(selector, 'group 1 team 4')
-
-    def count_clicks(self, task, clock, marker):
-        return sum(clicked is marker for _, clicked in clock.clicks)
-
-    def test_one_selection_and_confirmation_finish_without_reopening_dialog(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'dialog'), (0.2, 'dialog'),
-            (0.6, 'preset'), (1, 'preset'), (2.2, 'preset'),
-        ])
-        self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 1)
-
-    def test_delayed_dialog_is_waited_for_before_confirmation(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.5, 'preset'), (1.5, 'dialog'), (1.6, 'dialog'),
-            (2, 'preset'), (2.5, 'preset'), (3.6, 'preset'),
-        ])
-        self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 1)
-
-    def test_dialog_listing_shikigami_is_confirmed_before_completion(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'detail'), (0.2, 'detail'),
-            (0.6, 'preset'), (1, 'preset'), (2.2, 'preset'),
-        ])
-        self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 1)
-
-    def test_shikigami_dialog_retry_then_spirit_confirmation(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'detail'), (0.2, 'detail'), (2.4, 'detail'),
-            (2.8, 'preset'), (3, 'spirit'), (4.6, 'spirit'),
-            (5, 'preset'), (5.4, 'preset'), (6.6, 'preset'),
-        ])
-        self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 3)
-
-    def test_shikigami_title_without_button_does_not_click(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'detail_title_only'),
-            (0.2, 'detail_title_only'), (10.4, 'detail_title_only'),
-        ])
-        with self.assertRaisesRegex(GameStuckError, 'confirmation did not finish'):
-            self.apply_preset(task, clock, selector)
-        task.click.assert_not_called()
-
-    def test_failed_first_confirmation_is_retried_once(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'dialog'), (0.2, 'dialog'), (1, 'dialog'),
-            (2.4, 'dialog'), (2.8, 'preset'), (3.2, 'preset'), (4.4, 'preset'),
-        ])
-        self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 2)
-
-    def test_two_failed_confirmations_raise_without_a_third_click(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'dialog'), (0.2, 'dialog'), (2.4, 'dialog'),
-            (4, 'dialog'), (10.4, 'dialog'),
-        ])
-        with self.assertRaisesRegex(GameStuckError, 'confirmation did not finish'):
-            self.apply_preset(task, clock, selector)
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 2)
-        selector.assert_called_once()
-
-    def test_delayed_spirit_dialog_after_brief_normal_list_is_confirmed(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'dialog'), (0.2, 'dialog'),
-            (0.5, 'preset'), (1, 'preset'), (1.2, 'spirit'), (2.4, 'spirit'),
-            (2.8, 'preset'), (3.2, 'preset'), (4.4, 'preset'),
-        ])
-        self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 2)
-        self.assertEqual(clock.clicks[1][0], 1002.4)
-        self.assertEqual(clock.now, 1004.4)
-
-    def test_spirit_dialog_without_soul_dialog_is_confirmed(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'spirit'), (0.2, 'spirit'),
-            (0.6, 'preset'), (1, 'preset'), (2.2, 'preset'),
-        ])
-        self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 1)
-
-    def test_each_dialog_has_its_own_single_retry(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'dialog'), (0.2, 'dialog'), (2.4, 'dialog'),
-            (2.8, 'preset'), (3, 'spirit'), (4.6, 'spirit'), (6.8, 'spirit'),
-            (7.2, 'preset'), (7.6, 'preset'), (8.8, 'preset'),
-        ])
-        self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 4)
-
-    def test_stuck_spirit_dialog_raises_after_two_confirmation_clicks(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'spirit'), (0.2, 'spirit'),
-            (2.4, 'spirit'), (4.8, 'spirit'), (10.4, 'spirit'),
-        ])
-        with self.assertRaisesRegex(GameStuckError, 'confirmation did not finish'):
-            self.apply_preset(task, clock, selector)
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 2)
-        selector.assert_called_once()
-
-    def test_spirit_title_with_unmatched_button_does_not_click(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'spirit_title_only'),
-            (0.2, 'spirit_title_only'), (10.4, 'spirit_title_only'),
-        ])
-        with self.assertRaisesRegex(GameStuckError, 'confirmation did not finish'):
-            self.apply_preset(task, clock, selector)
-        task.click.assert_not_called()
-
-    def test_recognized_title_with_unmatched_button_does_not_report_success(self):
-        task, clock, selector = self.make_task([
-            (0, 'title_only'), (0.1, 'title_only'), (10.2, 'title_only'),
-        ])
-        with self.assertRaisesRegex(GameStuckError, 'confirmation did not finish'):
-            self.apply_preset(task, clock, selector)
-        task.click.assert_not_called()
-        selector.assert_not_called()
-
-    def test_direct_switch_without_dialog_finishes_after_one_selection(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.5, 'preset'), (2.1, 'preset'), (3.2, 'preset'),
-        ])
-        self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-        task.click.assert_not_called()
-
-    def test_missing_selection_bounds_attempts_and_raises(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (2.1, 'preset'), (4.2, 'preset'),
-            (6.3, 'preset'), (10.2, 'preset'),
-        ])
-        selector.return_value = False
-        with self.assertRaisesRegex(GameStuckError, 'selection could not be verified'):
-            self.apply_preset(task, clock, selector)
-        self.assertEqual(selector.call_count, 3)
-        task.click.assert_not_called()
-
-    def test_direct_switch_without_a_normal_preset_screen_does_not_finish(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (2.1, 'unknown'), (3.2, 'unknown'), (10.2, 'unknown'),
-        ])
-        with self.assertRaisesRegex(GameStuckError, 'selection could not be verified'):
-            self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-        task.click.assert_not_called()
-
-    def test_direct_switch_with_block_warning_does_not_report_success(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (3.2, 'blocked'), (10.2, 'blocked'),
-        ])
-        with self.assertRaisesRegex(GameStuckError, 'selection could not be verified'):
-            self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-
-    def test_confirmation_button_without_matching_title_is_not_treated_as_direct_switch(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'button_only'), (0.2, 'button_only'), (10.4, 'button_only'),
-        ])
-        with self.assertRaisesRegex(GameStuckError, 'confirmation did not finish'):
-            self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-        task.click.assert_not_called()
-
-    def test_disappeared_dialog_without_preset_list_does_not_report_success(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'dialog'), (0.2, 'dialog'),
-            (1, 'unknown'), (10.4, 'unknown'),
-        ])
-        with self.assertRaisesRegex(GameStuckError, 'confirmation did not finish'):
-            self.apply_preset(task, clock, selector)
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 1)
-
-    def test_visible_confirmation_button_prevents_early_completion(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'dialog'), (0.2, 'dialog'),
-            (1, 'button_only'), (10.4, 'button_only'),
-        ])
-        with self.assertRaisesRegex(GameStuckError, 'confirmation did not finish'):
-            self.apply_preset(task, clock, selector)
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 1)
-
-    def test_followup_block_warning_is_closed_before_completion(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'dialog'), (0.2, 'dialog'),
-            (1, 'blocked'), (2.5, 'blocked'),
-            (2.8, 'preset'), (3.2, 'preset'), (4.4, 'preset'),
-        ])
-        self.apply_preset(task, clock, selector)
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 1)
-        self.assertEqual(self.count_clicks(task, clock, task.I_CHECK_BLOCK), 1)
-
-    def test_stable_preset_list_at_deadline_is_accepted(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'dialog'), (0.2, 'dialog'),
-            (8.8, 'preset'), (9.3, 'preset'), (10.4, 'preset'),
-        ])
-        self.apply_preset(task, clock, selector)
-        selector.assert_called_once()
-
-    def test_block_warning_retries_are_bounded_without_background_confirmation(self):
-        task, clock, selector = self.make_task([
-            (0, 'preset'), (0.1, 'dialog'), (0.2, 'dialog'),
-            (2.5, 'blocked_overlay'), (4.8, 'blocked_overlay'),
-            (7, 'blocked_overlay'), (10.4, 'blocked_overlay'),
-        ])
-        with self.assertRaisesRegex(GameStuckError, 'confirmation did not finish'):
-            self.apply_preset(task, clock, selector)
-        self.assertEqual(self.count_clicks(task, clock, task.I_SOU_SWITCH_SURE), 1)
-        self.assertEqual(self.count_clicks(task, clock, task.I_CHECK_BLOCK), 2)
-
-
-class SoulConfirmationRouteTest(unittest.TestCase):
-    def make_task(self):
-        task = SwitchSoul.__new__(SwitchSoul)
         task.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
-        task.screenshot = Mock()
-        task.swipe = Mock()
-        task.click = Mock()
-        task._apply_soul_preset = Mock()
-        task.appear_then_click = Mock(return_value=True)
-        task.ocr_appear_click = Mock(return_value=True)
-        task.ocr_appear_click_by_rule = Mock(return_value=True)
         task.O_SS_GROUP_NAME = SimpleNamespace(
-            keyword='', detect_and_ocr=Mock(return_value=[SimpleNamespace(ocr_text='测试分组')]))
+            keyword='', detect_and_ocr=Mock(return_value=[SimpleNamespace(ocr_text='test_group')]))
         task.O_SS_TEAM_NAME = SimpleNamespace(
-            keyword='', detect_and_ocr=Mock(return_value=[SimpleNamespace(ocr_text='测试队伍')]))
-        return task
+            keyword='', detect_and_ocr=Mock(return_value=[SimpleNamespace(ocr_text='test_team')]))
+        task.screenshot = Mock(side_effect=lambda: setattr(state, 'scene', next(frames)))
+        task.swipe = Mock()
+        task.click = Mock(side_effect=lambda rule, *args, **kwargs: state.clicks.append(rule))
 
-    def test_numbered_preset_uses_guarded_confirmation(self):
-        task = self.make_task()
+        def appear(rule, **kwargs):
+            if rule is task.I_SOU_SWITCH_SURE:
+                return state.scene == 'confirm'
+            if rule is task.I_CHECK_BLOCK:
+                return state.scene == 'blocked'
+            if rule is task.I_SOU_SWITCH_DETAIL:
+                return state.scene == 'title_only'
+            if rule is task.I_SOU_SWITCH_4:
+                return state.scene in ('preset', 'title_only')
+            return False
+
+        def appear_then_click(rule, *args, **kwargs):
+            if not appear(rule):
+                return False
+            task.click(rule)
+            return True
+
+        task.appear = Mock(side_effect=appear)
+        task.appear_then_click = Mock(side_effect=appear_then_click)
+        task.ocr_appear_click = Mock(return_value=True)
+        task.ocr_appear_click_by_rule = Mock(
+            side_effect=lambda target, action, **kwargs: state.clicks.append(action) or True)
+        return task, state
+
+    def run_numbered(self, task):
         with patch('tasks.Component.SwitchSoul.switch_soul.sleep'), \
                 patch('tasks.Component.SwitchSoul.switch_soul.logger'):
             task.switch_soul_one(1, 4)
-        task._apply_soul_preset.assert_called_once()
-        select_team = task._apply_soul_preset.call_args.args[0]
-        self.assertTrue(select_team())
-        task.appear_then_click.assert_called_once_with(task.I_SOU_SWITCH_4)
 
-    def test_named_preset_uses_same_guarded_confirmation(self):
-        task = self.make_task()
+    def run_named(self, task):
         with patch('tasks.Component.SwitchSoul.switch_soul.sleep'), \
                 patch('tasks.Component.SwitchSoul.switch_soul.logger'):
-            task.switch_soul_by_name('测试分组', '测试队伍')
-        task._apply_soul_preset.assert_called_once()
-        select_team = task._apply_soul_preset.call_args.args[0]
-        self.assertTrue(select_team())
-        task.ocr_appear_click_by_rule.assert_called_once_with(task.O_SS_TEAM_NAME, task.I_SOU_CLICK_PRESENT)
+            task.switch_soul_by_name('test_group', 'test_team')
+
+    def test_direct_numbered_switch_finishes_without_a_confirmation_click(self):
+        task, state = self.make_task(['preset'] * 6)
+        self.run_numbered(task)
+        self.assertEqual(state.clicks, [task.C_SOU_GROUP_1, task.C_SOU_GROUP_1,
+                                      task.I_SOU_SWITCH_4, task.I_SOU_SWITCH_4, task.I_SOU_SWITCH_4])
+
+    def test_confirmation_control_is_clicked_without_reading_dialog_title(self):
+        task, state = self.make_task([
+            'preset', 'preset', 'preset', 'confirm', 'preset', 'preset', 'preset',
+        ])
+        self.run_numbered(task)
+        self.assertEqual(state.clicks.count(task.I_SOU_SWITCH_SURE), 1)
+        task.click.assert_any_call(task.I_SOU_SWITCH_SURE, 3)
+        self.assertFalse(any(call.args[0] is task.I_SOU_SWITCH_DETAIL
+                             for call in task.appear.call_args_list))
+
+    def test_block_control_is_closed_during_confirmation(self):
+        task, state = self.make_task([
+            'preset', 'preset', 'preset', 'confirm', 'blocked', 'preset', 'preset', 'preset',
+        ])
+        self.run_numbered(task)
+        self.assertEqual(state.clicks.count(task.I_CHECK_BLOCK), 1)
+        self.assertEqual(state.clicks.count(task.I_SOU_SWITCH_SURE), 2)
+
+    def test_late_confirmation_is_closed_by_original_fallback(self):
+        task, state = self.make_task(['preset'] * 5 + ['confirm', 'preset'])
+        self.run_numbered(task)
+        self.assertEqual(state.clicks.count(task.I_SOU_SWITCH_SURE), 1)
+
+    def test_title_marker_does_not_start_a_confirmation_wait(self):
+        task, state = self.make_task(['preset', 'preset'] + ['title_only'] * 4)
+        self.run_numbered(task)
+        self.assertEqual(state.clicks.count(task.I_SOU_SWITCH_4), 3)
+        self.assertNotIn(task.I_SOU_SWITCH_SURE, state.clicks)
+        self.assertTrue(all(call.args[0] is task.I_SOU_SWITCH_SURE
+                            for call in task.appear.call_args_list))
+
+    def test_named_switch_confirms_using_the_button_only(self):
+        task, state = self.make_task(['preset'] * 7 + [
+            'preset', 'confirm', 'preset', 'preset', 'preset', 'preset',
+        ])
+        self.run_named(task)
+        self.assertEqual(state.clicks.count(task.I_SOU_SWITCH_SURE), 1)
+        self.assertEqual(task.ocr_appear_click_by_rule.call_count, 4)
+        task.ocr_appear_click_by_rule.assert_called_with(
+            task.O_SS_TEAM_NAME, task.I_SOU_CLICK_PRESENT, interval=1.5)
+
+    def test_named_switch_also_finishes_without_confirmation(self):
+        task, state = self.make_task(['preset'] * 12)
+        self.run_named(task)
+        self.assertNotIn(task.I_SOU_SWITCH_SURE, state.clicks)
+        self.assertEqual(task.ocr_appear_click_by_rule.call_count, 4)
 
 
 class SoulConfirmationImageTest(unittest.TestCase):
@@ -354,6 +161,13 @@ class SoulConfirmationImageTest(unittest.TestCase):
         self.assertFalse(task.I_SOU_SWITCH_SURE.template_match(image))
         self.assertFalse(task.I_SOU_SPIRIT_REPLACE.template_match(image))
         self.assertFalse(task.I_SOU_SWITCH_DETAIL.template_match(image))
+
+
+    def test_theme_five_confirm_matches_current_modal(self):
+        image = self.load_scene('shikigami_confirmation')
+        rule = CostumeShikigamiAssets.I_SOU_SWITCH_SURE_5
+        self.assertTrue(rule.template_match(image))
+        self.assertEqual(rule.roi_front, [668, 401, 180, 61])
 
 
 if __name__ == '__main__':
