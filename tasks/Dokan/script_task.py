@@ -16,6 +16,7 @@ from future.backports.datetime import datetime
 
 from module.atom.animate import RuleAnimate
 from module.base.timer import Timer
+from module.device.method.mumu_mouse import MuMuWheelClient, MuMuWheelError
 from module.exception import TaskEnd
 from module.logger import logger
 from module.notify.task_notify import resolve_task_notifier
@@ -26,6 +27,7 @@ from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.Component.config_base import Time
 from tasks.Dokan.assets import DokanAssets
 from tasks.Dokan.config import Dokan, QQMessageConfig
+from tasks.Dokan.list_scroll import choose_wheel_count, scroll_dokan_list
 from tasks.Dokan.reward_recognition import count_blue_tickets_in_png
 from tasks.Dokan.qq_monitor import QQDokanState
 import tasks.Dokan.page as pages
@@ -532,16 +534,25 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                 return True
             return False
 
+        wheel = (MuMuWheelClient(self.device)
+                 if getattr(self.config.dokan.dokan_config, 'native_wheel_enable', False) else None)
         try:
             while num_fresh < MAX_WELFARE_DOKAN_REFRESH_COUNT:
-                for _ in range(3):
+                for screen_index in range(3):
+                    if wheel is not None and screen_index > 0:
+                        count = choose_wheel_count(screen_index)
+                        elapsed = scroll_dokan_list(wheel, count)
+                        logger.info(f'Dokan native wheel: screen={screen_index + 1}, '
+                                    f'backend={getattr(wheel, "backend", "mumu_native")}, '
+                                    f'notches={count}, duration={elapsed:.3f}s; settled for 1.5s')
                     if find_challengeable():
                         logger.info("find challengeable welfare dokan")
                         self.ui_click(self.I_CENTER_CHALLENGE, self.I_CHALLENGE_ENSURE, interval=1)
                         self.ui_click_until_disappear(self.I_CHALLENGE_ENSURE, interval=1)
                         self.config.dokan.attack_count_config.del_attack_count(1, self.config.save)
                         return True
-                    self.swipe(self.S_DOKAN_LIST_UP)
+                    if wheel is None:
+                        self.swipe(self.S_DOKAN_LIST_UP)
                 restore_roi()
                 logger.info("=========refresh dokan list=========")
                 self.ui_click(self.C_DOKAN_REFRESH, self.I_REFRESH_ENSURE, interval=1)
@@ -552,8 +563,13 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                     logger.info('Welfare guild minimum defender count reduced by half')
             logger.warning(f'No eligible Xin-emblem dojo after {num_fresh} refreshes')
             raise DokanRefreshLimitError
+        except MuMuWheelError as exc:
+            logger.warning(f'道馆滚轮筛选中断，结束本次筛选：{exc}')
+            raise DokanNotStartedError('native wheel selection failed') from exc
         finally:
             restore_roi()
+            if wheel is not None:
+                wheel.close()
 
     def ensure_dokan_created(self) -> bool:
         """灰色按钮表示已建立道馆；可点击时先完成建立，再开始筛选。"""

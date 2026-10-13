@@ -1876,6 +1876,7 @@
       "monday_to_thursday": true,
       "push_reward_images": true,
       "min_people_num": -1,
+      "native_wheel_enable": false,
       "find_dokan_refresh_count": 7
     },
     "notification_config": {

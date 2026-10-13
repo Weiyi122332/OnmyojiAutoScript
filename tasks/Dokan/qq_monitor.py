@@ -34,6 +34,20 @@ def is_query_time(settings, now):
     return current >= start or current < end
 
 
+def next_query_time(settings, now):
+    """Return the next permitted status check for an unconfirmed dojo."""
+    now = now.astimezone(CHINA_TZ)
+    if is_query_time(settings, now):
+        candidate = now + timedelta(seconds=settings.qq_poll_interval)
+        if is_query_time(settings, candidate):
+            return candidate
+    start = settings.qq_query_start_time
+    candidate = now.replace(hour=start.hour, minute=start.minute, second=start.second, microsecond=0)
+    if candidate <= now:
+        candidate += timedelta(days=1)
+    return candidate
+
+
 def fingerprint(settings):
     values = ['welfare-plugin-v1', settings.welfare_plugin_url.strip().rstrip('/'),
               hashlib.sha256(settings.welfare_plugin_token.encode()).hexdigest()]

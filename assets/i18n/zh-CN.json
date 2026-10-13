@@ -112,6 +112,8 @@
   "dokan_run_time_help": "若指定时间未开启则在1小时内按照调度器失败间隔时间不断重试",
   "min_people_num": "道馆最低防守人数",
   "min_people_num_help": "只选择带“鑫”字图标的道馆；刷新次数超过设定值后，最低防守人数减半。",
+  "native_wheel_enable": "MuMu 原生后台滚轮筛选",
+  "dokan_native_wheel_enable_help": "开启后依次检查当前屏、向下滚动9次后的列表、再向下随机滚动5–6次后的列表。相邻滚动间隔随机0.05–0.15秒并包含ADB发送耗时；第一段约0.75–1秒，第二段更短。滚完等待1.5秒再开始截图和稳定检查，每次刷新后重复。通过ADB操作MuMu内部的原生鼠标设备，需要已有ADB root权限。支持后台运行，默认关闭。",
   "find_dokan_refresh_count": "降低人数要求的刷新次数",
   "find_dokan_refresh_count_help": "超过此次数后最低防守人数减半；最多刷新20次，仍未找到则结束当日任务，并按道馆推送配置发送提醒。",
   "push_reward_images": "推送道馆结算截图",

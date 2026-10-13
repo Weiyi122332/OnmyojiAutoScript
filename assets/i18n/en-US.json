@@ -11,6 +11,8 @@
   "itachi_coin_shop": "Itachi Coin Purchase",
   "min_people_num": "Minimum dojo defenders",
   "min_people_num_help": "Only select dojos with the Xin emblem. Halve the minimum defender count once refreshes exceed the configured count.",
+  "native_wheel_enable": "MuMu native background wheel selection",
+  "dokan_native_wheel_enable_help": "Check the current screen, scroll down 9 notches and check again, then randomly scroll down 5 or 6 notches and check again. Randomized gaps of 0.05–0.15s include ADB delivery time. The first batch takes about 0.75–1s; the second is shorter. Wait 1.5s before capturing and checking stability. Repeat after each refresh. Controls MuMu's native Android mouse device through ADB and requires existing ADB root access. Supports background operation; disabled by default.",
   "find_dokan_refresh_count": "Refreshes before reducing the defender threshold",
   "find_dokan_refresh_count_help": "Halve the minimum defender count once refreshes exceed this value. Stop for the day after 20 refreshes if none qualify and send an alert using dojo notification settings.",
   "push_reward_images": "Send dojo reward screenshots",

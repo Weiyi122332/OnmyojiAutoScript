@@ -18,7 +18,7 @@ from module.server.config_manager import ConfigManager
 from script import Script
 from tasks.Dokan.config import Dokan, QQMessageConfig
 from tasks.Dokan.qq_monitor import (CHINA_TZ, DokanQQMonitor, QQDokanState,
-                                    fetch_welfare_status, is_query_time)
+                                    fetch_welfare_status, is_query_time, next_query_time)
 from tasks.Dokan.script_task import ScriptTask
 from module.exception import TaskEnd
 
@@ -83,6 +83,22 @@ class QQMonitorTests(unittest.TestCase):
         state.record(self.settings, self.status(now=before), before)
         self.assertEqual(state.flags(self.settings, before), (True, True))
         self.assertEqual(state.flags(self.settings, before+timedelta(seconds=1)), (False, False))
+
+    def test_waiting_entry_shows_next_query_window_or_poll(self):
+        morning = NOW.replace(hour=0, minute=12)
+        self.assertEqual(next_query_time(self.settings, morning), morning.replace(hour=20, minute=0))
+        self.assertEqual(next_query_time(self.settings, NOW), NOW+timedelta(seconds=60))
+
+    def test_next_query_skips_the_closed_window_after_last_poll(self):
+        end = NOW.replace(hour=21, minute=59, second=50)
+        self.assertEqual(next_query_time(self.settings, end),
+                         (NOW+timedelta(days=1)).replace(hour=20))
+
+    def test_next_query_supports_windows_across_midnight(self):
+        settings = self.settings.model_copy(update={'qq_query_start_time': clock_time(22),
+                                                    'qq_query_end_time': clock_time(2)})
+        end = NOW.replace(hour=1, minute=59, second=50)
+        self.assertEqual(next_query_time(settings, end), NOW.replace(hour=22))
 
     def test_false_status_does_not_write_state_or_trigger(self):
         monitor = DokanQQMonitor('p', self.path)
@@ -266,6 +282,34 @@ class QQSchedulerTests(unittest.TestCase):
         self.task.config.waiting_task = [self.dokan_task]
         result = self.task._select_dokan_qq_task(self.dokan_task)
         self.assertGreater(result.next_run, datetime.now())
+        self.assertEqual([item.command for item in self.task.config.waiting_task], ['Dokan'])
+
+    def test_unconfirmed_dojo_stays_visible_and_does_not_become_running(self):
+        self.task.dokan_qq_monitor.state.flags.return_value = (False, False)
+        config = self.task.config
+        original_next_run = self.dokan.scheduler.next_run
+        config.pending_task = [self.dokan_task]
+        config.waiting_task = []
+        config.scheduler_update_dt = datetime.now()
+        config.task = self.task._select_dokan_qq_task(self.dokan_task)
+        schedule = Config.get_schedule_data(config)
+        self.assertEqual(schedule['running'], {})
+        self.assertEqual(schedule['pending'], [])
+        self.assertEqual([item['name'] for item in schedule['waiting']], ['Dokan'])
+        self.assertEqual(self.dokan.scheduler.next_run, original_next_run)
+        self.task.dokan_qq_monitor.state.consume.assert_not_called()
+
+    def test_reload_does_not_hide_or_duplicate_waiting_dojo(self):
+        self.task.dokan_qq_monitor.state.flags.return_value = (False, False)
+        config = self.task.config
+        for _ in range(3):
+            config.pending_task = [self.dokan_task, self.other]
+            config.waiting_task = []
+            config.task = self.task._select_dokan_qq_task(self.dokan_task)
+            self.assertIs(config.task, self.other)
+            schedule = Config.get_schedule_data(config)
+            self.assertEqual([item['name'] for item in schedule['waiting']], ['Dokan'])
+            self.assertNotIn('Dokan', [item['name'] for item in schedule['pending']])
 
     def test_disabled_feature_and_regular_retries_keep_original_selection(self):
         self.dokan.qq_message_config.qq_message_enable = False

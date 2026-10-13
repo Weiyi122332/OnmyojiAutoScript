@@ -5,7 +5,7 @@
 # github    https://github.com/roarhill/oas
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from tasks.Component.SwitchSoul.switch_soul_config import SwitchSoulConfig
 from tasks.Component.config_base import ConfigBase, Time, dynamic_hide
@@ -59,8 +59,19 @@ class DokanConfig(BaseModel):
     push_reward_images: bool = Field(default=True, description='push_reward_images_help')
     # 道馆最小人数限制
     min_people_num: int = Field(default=-1, description='min_people_num_help')
+    # MuMu原生鼠标滚轮，默认继续使用原来的手指滑动。
+    native_wheel_enable: bool = Field(default=False, description='dokan_native_wheel_enable_help')
     # 超过此刷新次数后将最低防守人数减半，最多刷新20次
     find_dokan_refresh_count: int = Field(default=7, description='find_dokan_refresh_count_help')
+
+    @model_validator(mode='before')
+    @classmethod
+    def migrate_wheel_setting(cls, data):
+        if isinstance(data, dict) and 'scrcpy_wheel_enable' in data:
+            data = dict(data)
+            legacy = data.pop('scrcpy_wheel_enable')
+            data.setdefault('native_wheel_enable', legacy)
+        return data
 
 
 class QQMessageConfig(BaseModel):

@@ -75,6 +75,8 @@ class FluentApp():
 
 # 新增界面文字的中文兜底（module/config/i18n/zh_CN.qm 里还没有这些字符串）
 _FALLBACK_ZH = {
+    'Native Wheel Enable': 'MuMu 原生后台滚轮筛选',
+    'dokan_native_wheel_enable_help': '开启后检查当前屏，再向下滚动9次、随机5–6次并分别筛选。相邻间隔随机0.05–0.15秒并包含ADB发送耗时，第一段约0.75–1秒，第二段更短；滚完等待1.5秒开始截图和稳定检查。通过ADB操作MuMu内部的原生鼠标设备，需要已有ADB root权限。每次刷新后重复，支持后台运行，默认关闭。',
     'Activity Task Sequence': '活动执行顺序',
     'activity_task_sequence_help': '支持体力、百体、首领和伪神/爬塔。点“新增任务”添加活动，拖动调整顺序，点右侧×删除；按从上到下执行，次数为0时跳过。',
     'activity_ap_limit_help': '本期对应古迹演武：普通挑战每次消耗6体力和1张活动门票。',

@@ -41,7 +41,7 @@ from module.ocr.rpc import (
 from module.script import ScriptRuntimeController, ScriptRuntimeDecision
 from tasks.Restart.server_update import delay_pending_tasks_for_server_update, is_server_update_window
 from module.server.log_service import build_error_log_dir_name
-from tasks.Dokan.qq_monitor import DokanQQMonitor
+from tasks.Dokan.qq_monitor import DokanQQMonitor, next_query_time
 
 _log_switch_lock = threading.Lock()#线程锁
 
@@ -485,16 +485,19 @@ class Script:
             return task
         if allowed:
             return task
-        # Withhold the regular scheduled dojo until a matching group message arrives.
-        # This changes only the in-memory queue, without repeated config writes.
+        # Withhold execution until today's opening is confirmed, but retain a
+        # waiting entry so saving configuration never makes an enabled dojo vanish.
         self.config.pending_task = [item for item in self.config.pending_task if item.command != 'Dokan']
         self.config.waiting_task = [item for item in self.config.waiting_task if item.command != 'Dokan']
-        if self.config.pending_task:
-            return self.config.pending_task[0]
-        if self.config.waiting_task:
-            return self.config.waiting_task[0]
-        task.next_run = now + timedelta(days=1)
-        return task
+        eligible = (self.config.pending_task or self.config.waiting_task)
+        selected = eligible[0] if eligible else None
+        waiting = Function('dokan', dokan.model_dump())
+        waiting.next_run = next_query_time(settings, now).astimezone().replace(tzinfo=None)
+        self.config.waiting_task.append(waiting)
+        self.config.waiting_task.sort(key=lambda item: item.next_run)
+        logger.info(f'Dokan waits for today\'s welfare opening confirmation; '
+                    f'next plugin check at {waiting.next_run:%Y-%m-%d %H:%M:%S}')
+        return selected or waiting
 
     def _publish_dokan_schedule(self, running: bool) -> None:
         if not self.state_queue:
