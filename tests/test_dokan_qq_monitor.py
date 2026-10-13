@@ -15,7 +15,9 @@ from pydantic import ValidationError
 from module.config.config import Config
 from module.config.config_model import ConfigModel
 from module.server.config_manager import ConfigManager
+from module.script import ScriptRuntimeController, ScriptRuntimeDecision
 from script import Script
+from tasks.Script.config_optimization import Optimization
 from tasks.Dokan.config import Dokan, QQMessageConfig
 from tasks.Dokan.qq_monitor import (CHINA_TZ, DokanQQMonitor, QQDokanState,
                                     fetch_welfare_status, is_query_time, next_query_time)
@@ -249,7 +251,24 @@ class QQSchedulerTests(unittest.TestCase):
         self.dokan_task = SimpleNamespace(command='Dokan', next_run=datetime.now()+timedelta(hours=1))
         self.task.__dict__['config'] = SimpleNamespace(model=SimpleNamespace(dokan=self.dokan),
                                                      pending_task=[self.other], waiting_task=[self.dokan_task])
-        self.task.dokan_qq_monitor = SimpleNamespace(state=Mock(), ready=Mock())
+        self.task.dokan_qq_monitor = SimpleNamespace(state=Mock(), ready=Mock(), start=Mock())
+
+    def scheduler_config(self, task):
+        config = self.task.config
+        config.get_next = Mock(return_value=task)
+        config.start_watching = Mock()
+        config.should_reload = Mock(return_value=False)
+        config.script = SimpleNamespace(optimization=Optimization())
+        self.task.config_name = 'test'
+        self.task.state_queue = None
+        self.task._antiban_wake_time = Mock(return_value=None)
+        self.task._handle_continuous_task_rest = Mock(return_value=False)
+        self.task._reset_continuous_task_rest = Mock()
+        return config
+
+    @staticmethod
+    def forbid_device_access(task):
+        raise AssertionError('Waiting for welfare confirmation accessed the emulator')
 
     def test_match_prioritizes_dojo_only_at_next_selection(self):
         self.task.dokan_qq_monitor.state.flags.return_value = (True, True)
@@ -338,10 +357,148 @@ class QQSchedulerTests(unittest.TestCase):
             self.assertFalse(self.task.wait_until(datetime.now()+timedelta(hours=1)))
         sleep.assert_not_called()
 
+    def test_unconfirmed_idle_waits_without_emulator_actions_and_wakes_for_confirmation(self):
+        config = self.scheduler_config(self.dokan_task)
+        for strategy in ('goto_main', 'close_game', 'close_emulator_or_goto_main',
+                         'close_emulator_or_close_game'):
+            for offline in (False, True):
+                for other_waiting in (False, True):
+                    with self.subTest(strategy=strategy, offline=offline, other_waiting=other_waiting):
+                        self.task.__dict__['config'] = config
+                        self.other.next_run = datetime.now() + timedelta(minutes=10)
+                        config.get_next.return_value = self.other if other_waiting else self.dokan_task
+                        config.pending_task = []
+                        config.waiting_task = [self.other, self.dokan_task] if other_waiting else [self.dokan_task]
+                        config.script.optimization = Optimization(when_task_queue_empty=strategy)
+                        self.task._emulator_down = offline
+                        self.task.runtime = ScriptRuntimeController(self.task)
+                        monitor = self.task.dokan_qq_monitor
+                        monitor.state.flags.return_value = (False, False)
+                        monitor.ready.is_set.return_value = False
+
+                        def confirm_during_wait(seconds):
+                            monitor.state.flags.return_value = (True, True)
+                            monitor.ready.is_set.return_value = True
+
+                        with patch('module.config.config.Config', return_value=config), \
+                                patch.object(Script, 'device', property(self.forbid_device_access)), \
+                                patch('script.time.sleep', side_effect=confirm_during_wait) as sleep:
+                            self.assertEqual(self.task.get_next_task(), 'Dokan')
+                        sleep.assert_called_once_with(1)
+                        self.assertEqual(self.task._emulator_down, offline)
+                        monitor.state.consume.assert_not_called()
+
+    def test_unconfirmed_monitor_runs_other_tasks_when_due(self):
+        config = self.scheduler_config(self.other)
+        for already_due in (False, True):
+            with self.subTest(already_due=already_due):
+                self.task.__dict__['config'] = config
+                deadline = datetime.now() + timedelta(minutes=-1 if already_due else 10)
+                self.other.next_run = deadline
+                config.pending_task = [self.other] if already_due else []
+                config.waiting_task = [self.dokan_task] if already_due else [self.other, self.dokan_task]
+                self.task.dokan_qq_monitor.state.flags.return_value = (False, False)
+                self.task.runtime = SimpleNamespace(handle_wait_during_idle=Mock(
+                    side_effect=AssertionError('Unconfirmed monitor used the game idle policy')))
+
+                def reach_deadline(future):
+                    self.other.next_run = datetime.now() - timedelta(seconds=1)
+                    return True
+
+                with patch('module.config.config.Config', return_value=config), \
+                        patch.object(Script, 'device', property(self.forbid_device_access)), \
+                        patch.object(self.task, 'wait_until', side_effect=reach_deadline) as wait:
+                    self.assertEqual(self.task.get_next_task(), 'RyouToppa')
+                if already_due:
+                    wait.assert_not_called()
+                else:
+                    wait.assert_called_once_with(deadline)
+                self.task.runtime.handle_wait_during_idle.assert_not_called()
+
+    def test_disabled_or_confirmed_monitor_keeps_normal_idle_policy(self):
+        config = self.scheduler_config(self.other)
+        for enabled, task_enabled, allowed in ((False, True, False), (True, False, False),
+                                               (True, True, True)):
+            with self.subTest(enabled=enabled, task_enabled=task_enabled, allowed=allowed):
+                self.task.__dict__['config'] = config
+                self.dokan.qq_message_config.qq_message_enable = enabled
+                self.dokan.scheduler.enable = task_enabled
+                self.task.dokan_qq_monitor.state.flags.return_value = (allowed, False)
+                self.task._dokan_waiting_for_opening = True
+                self.other.next_run = datetime.now() + timedelta(minutes=10)
+                config.pending_task = []
+                config.waiting_task = [self.other]
+
+                def normal_idle(future):
+                    self.other.next_run = datetime.now() - timedelta(seconds=1)
+                    return ScriptRuntimeDecision.READY
+
+                self.task.runtime = SimpleNamespace(handle_wait_during_idle=Mock(side_effect=normal_idle))
+                with patch.object(self.task, 'wait_until') as wait:
+                    self.assertEqual(self.task.get_next_task(), 'RyouToppa')
+                wait.assert_not_called()
+                self.task.runtime.handle_wait_during_idle.assert_called_once()
+
+    def test_expired_confirmation_interrupts_idle_before_emulator_preheat(self):
+        config = self.scheduler_config(self.other)
+        self.task.dokan_qq_monitor.state.flags.return_value = (True, False)
+        self.task._select_dokan_qq_task(self.other)
+        self.task.dokan_qq_monitor.state.flags.return_value = (False, False)
+        self.task.dokan_qq_monitor.ready.is_set.return_value = False
+        self.task.runtime = ScriptRuntimeController(self.task)
+        with patch.object(Script, 'device', property(self.forbid_device_access)), \
+                patch('script.time.sleep') as sleep:
+            self.assertFalse(self.task.wait_until(datetime.now() + timedelta(hours=1)))
+        sleep.assert_not_called()
+
+    def test_startup_window_preference_is_applied_only_after_plugin_confirmation(self):
+        config = self.scheduler_config(self.dokan_task)
+        self.task.resource_precache_enable = False
+        self.task.is_first_task = False
+        self.task._error_restart_pending = False
+        for background, minimized in ((False, False), (False, True), (True, False)):
+            with self.subTest(background=background, minimized=minimized):
+                self.task.__dict__['config'] = config
+                config.pending_task = []
+                config.waiting_task = [self.dokan_task]
+                config.script.device = SimpleNamespace(run_background_only=background,
+                    emulator_window_minimize=minimized, handle='test emulator')
+                self.task._emulator_down = True
+                self.task.runtime = ScriptRuntimeController(self.task)
+                monitor = self.task.dokan_qq_monitor
+                monitor.state.flags.return_value = (False, False)
+                monitor.ready.is_set.return_value = False
+                events = []
+                platform = SimpleNamespace(show_window_by_name=Mock(side_effect=lambda _: events.append('show')),
+                    minimize_by_name=Mock(side_effect=lambda _: events.append('minimize')))
+
+                def confirm_during_wait(seconds):
+                    self.assertEqual(events, [])
+                    events.append('confirmed')
+                    monitor.state.flags.return_value = (True, True)
+                    monitor.ready.is_set.return_value = True
+
+                def prepare_task(task):
+                    events.append(f'prepare:{task}')
+                    raise SystemExit('stop before real game actions')
+
+                with patch('module.config.config.Config', return_value=config), \
+                        patch.object(Script, 'device', property(self.forbid_device_access)), \
+                        patch('script.IS_WINDOWS', True), \
+                        patch.dict('sys.modules', {'module.device.platform2.platform_windows': platform}), \
+                        patch('script.logger.set_file_logger'), \
+                        patch('script.time.sleep', side_effect=confirm_during_wait), \
+                        patch.object(self.task.runtime, 'prepare_task_execution', side_effect=prepare_task):
+                    with self.assertRaises(SystemExit):
+                        self.task.loop()
+                expected_window = [] if background else ['minimize' if minimized else 'show']
+                self.assertEqual(events, ['confirmed', *expected_window, 'prepare:Dokan'])
+
     def test_manual_dojo_without_permission_ends_before_game_navigation(self):
         task = ScriptTask.__new__(ScriptTask)
         task.config = SimpleNamespace(model=SimpleNamespace(dokan=self.dokan), config_name='p')
         task.before_run = Mock()
+        task._prepare_dokan_list_scroll = Mock()
         task.set_next_run = Mock()
         task.goto_page = Mock()
         with patch('tasks.Dokan.script_task.QQDokanState') as state:
@@ -349,6 +506,7 @@ class QQSchedulerTests(unittest.TestCase):
             with self.assertRaises(TaskEnd):
                 task.run()
         task.goto_page.assert_not_called()
+        task._prepare_dokan_list_scroll.assert_not_called()
         task.set_next_run.assert_called_once()
 
     def test_sleep_and_server_update_windows_are_not_interrupted_by_pending_message(self):

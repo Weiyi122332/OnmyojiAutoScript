@@ -1,7 +1,7 @@
 {
   "qq_message_config": "Welfare dojo plugin status",
   "qq_message_enable": "Trigger dojos from plugin status",
-  "qq_message_enable_help": "Query the welfare detection plugin's opening status for today during the query window. Stop querying after a match, including after restart; permission expires at Beijing midnight. Start when idle or after the current task ends. Weekday, daily attempt and rest settings apply. Configure group, member and keywords in the plugin.",
+  "qq_message_enable_help": "Query the welfare detection plugin's opening status for today during the query window. Until confirmed, idle waiting only checks status in the background without operating the game or starting the emulator; other due tasks run normally. Once confirmed, start the dojo when idle or after the current task ends. Stop querying after a match, including after restart; permission expires at Beijing midnight. Weekday, daily attempt and rest settings apply. Configure group, member and keywords in the plugin.",
   "qq_query_start_time": "Query start time",
   "qq_query_start_time_help": "Beijing time, default 20:00. Windows across midnight are supported; equal start/end times mean all day.",
   "qq_query_end_time": "Query end time",
@@ -12,7 +12,7 @@
   "min_people_num": "Minimum dojo defenders",
   "min_people_num_help": "Only select dojos with the Xin emblem. Halve the minimum defender count once refreshes exceed the configured count.",
   "native_wheel_enable": "MuMu native background wheel selection",
-  "dokan_native_wheel_enable_help": "Check the current screen, scroll down 9 notches and check again, then randomly scroll down 5 or 6 notches and check again. Randomized gaps of 0.05–0.15s include ADB delivery time. The first batch takes about 0.75–1s; the second is shorter. Wait 1.5s before capturing and checking stability. Repeat after each refresh. Controls MuMu's native Android mouse device through ADB and requires existing ADB root access. Supports background operation; disabled by default.",
+  "dokan_native_wheel_enable_help": "Check the current screen, scroll down 9 notches and check again, then randomly scroll down 5 or 6 notches and check again. Randomized gaps of 0.05–0.15s include ADB delivery time. The first batch takes about 0.75–1s; the second is shorter. Wait 1s before capturing and checking stability. Repeat after each refresh. Check prerequisites once before the dojo task starts; if the check fails, use the original touch swipes for this task. Reuse the result across scrolling, refreshes and both challenges. Native wheel input requires MuMu and existing ADB root access. Supports background operation; disabled by default.",
   "find_dokan_refresh_count": "Refreshes before reducing the defender threshold",
   "find_dokan_refresh_count_help": "Halve the minimum defender count once refreshes exceed this value. Stop for the day after 20 refreshes if none qualify and send an alert using dojo notification settings.",
   "push_reward_images": "Send dojo reward screenshots",

@@ -27,7 +27,7 @@ from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.Component.config_base import Time
 from tasks.Dokan.assets import DokanAssets
 from tasks.Dokan.config import Dokan, QQMessageConfig
-from tasks.Dokan.list_scroll import choose_wheel_count, scroll_dokan_list
+from tasks.Dokan.list_scroll import WHEEL_POINT, choose_wheel_count, scroll_dokan_list
 from tasks.Dokan.reward_recognition import count_blue_tickets_in_png
 from tasks.Dokan.qq_monitor import QQDokanState
 import tasks.Dokan.page as pages
@@ -290,48 +290,78 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             logger.warning("weekend, exit")
             self.next_run(True)
             raise TaskEnd
-        # 清空历史次数，首次进入筛选页面后读取游戏实际剩余次数。
-        self.conf.attack_count_config.init_attack_count(callback=self.config.save)
-        unknown_page_timer = Timer(10)
-        self.goto_page(pages.page_dokan_map)
-        refresh_limit_reached = False
+        self._dokan_scroll_checked = False
+        self._dokan_wheel_client = None
         try:
-            while True:
-                self.screenshot()
-                self._capture_dokan_reward_if_visible()
-                current_page = self.get_current_page()
-                match current_page:
-                    case None:
-                        self.device.click_record_clear()
-                        self.device.stuck_record_clear()
-                        time.sleep(0.5)
-                    case pages.page_dokan_map:
-                        self.run_on_dokan_map()
-                    case pages.page_dokan:
-                        self.run_on_dokan()
-                    case pages.page_battle_prepare | pages.page_battle:
-                        self.run_on_battle()
-                    case pages.page_battle_result:
-                        self.click(pages.random_click(ltrb=(False, False, True, False)), interval=1.5)
-                    case _:
-                        if not unknown_page_timer.started():
-                            unknown_page_timer.start()
-                        if unknown_page_timer.started() and unknown_page_timer.reached():  # 10秒都是非道馆界面, 则尝试回到道馆
-                            unknown_page_timer = Timer(10)
-                            self.goto_page(pages.page_dokan)
-        except DokanFinishedError:
-            is_dokan_activated = True
-        except DokanRefreshLimitError:
-            is_dokan_activated = False
-            refresh_limit_reached = True
-        except DokanNotStartedError:
-            is_dokan_activated = False
-        self.goto_page(pages.page_main)
-        self.next_run(skip_today=refresh_limit_reached, is_dokan_activated=is_dokan_activated)
-        self._push_current_run_reward_images()
-        if refresh_limit_reached:
-            self._push_dokan_refresh_limit_notification()
-        raise TaskEnd
+            self._prepare_dokan_list_scroll()
+            # 清空历史次数，首次进入筛选页面后读取游戏实际剩余次数。
+            self.conf.attack_count_config.init_attack_count(callback=self.config.save)
+            unknown_page_timer = Timer(10)
+            self.goto_page(pages.page_dokan_map)
+            refresh_limit_reached = False
+            try:
+                while True:
+                    self.screenshot()
+                    self._capture_dokan_reward_if_visible()
+                    current_page = self.get_current_page()
+                    match current_page:
+                        case None:
+                            self.device.click_record_clear()
+                            self.device.stuck_record_clear()
+                            time.sleep(0.5)
+                        case pages.page_dokan_map:
+                            self.run_on_dokan_map()
+                        case pages.page_dokan:
+                            self.run_on_dokan()
+                        case pages.page_battle_prepare | pages.page_battle:
+                            self.run_on_battle()
+                        case pages.page_battle_result:
+                            self.click(pages.random_click(ltrb=(False, False, True, False)), interval=1.5)
+                        case _:
+                            if not unknown_page_timer.started():
+                                unknown_page_timer.start()
+                            if unknown_page_timer.started() and unknown_page_timer.reached():  # 10秒都是非道馆界面, 则尝试回到道馆
+                                unknown_page_timer = Timer(10)
+                                self.goto_page(pages.page_dokan)
+            except DokanFinishedError:
+                is_dokan_activated = True
+            except DokanRefreshLimitError:
+                is_dokan_activated = False
+                refresh_limit_reached = True
+            except DokanNotStartedError:
+                is_dokan_activated = False
+            self.goto_page(pages.page_main)
+            self.next_run(skip_today=refresh_limit_reached, is_dokan_activated=is_dokan_activated)
+            self._push_current_run_reward_images()
+            if refresh_limit_reached:
+                self._push_dokan_refresh_limit_notification()
+            raise TaskEnd
+        finally:
+            if self._dokan_wheel_client is not None:
+                self._dokan_wheel_client.close()
+                self._dokan_wheel_client = None
+
+    def _prepare_dokan_list_scroll(self):
+        """Choose the scrolling method once for both challenges in this task."""
+        if getattr(self, '_dokan_scroll_checked', False):
+            return self._dokan_wheel_client
+        self._dokan_scroll_checked = True
+        self._dokan_wheel_client = None
+        dokan = getattr(self, 'conf', None)
+        if dokan is None:
+            dokan = self.config.dokan
+        if not getattr(dokan.dokan_config, 'native_wheel_enable', False):
+            return None
+        wheel = MuMuWheelClient(self.device)
+        try:
+            wheel.check_scroll(*WHEEL_POINT)
+        except MuMuWheelError as exc:
+            wheel.close()
+            logger.warning(f'道馆运行前滚轮检查未通过，本次任务使用原有滑动：{exc}')
+        else:
+            self._dokan_wheel_client = wheel
+            logger.info('道馆运行前滚轮检查通过，本次任务使用原生滚轮')
+        return self._dokan_wheel_client
 
     def run_on_dokan(self):
         """道馆页面逻辑处理"""
@@ -534,8 +564,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                 return True
             return False
 
-        wheel = (MuMuWheelClient(self.device)
-                 if getattr(self.config.dokan.dokan_config, 'native_wheel_enable', False) else None)
+        wheel = self._prepare_dokan_list_scroll()
         try:
             while num_fresh < MAX_WELFARE_DOKAN_REFRESH_COUNT:
                 for screen_index in range(3):
@@ -544,7 +573,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                         elapsed = scroll_dokan_list(wheel, count)
                         logger.info(f'Dokan native wheel: screen={screen_index + 1}, '
                                     f'backend={getattr(wheel, "backend", "mumu_native")}, '
-                                    f'notches={count}, duration={elapsed:.3f}s; settled for 1.5s')
+                                    f'notches={count}, duration={elapsed:.3f}s; settled for 1s')
                     if find_challengeable():
                         logger.info("find challengeable welfare dokan")
                         self.ui_click(self.I_CENTER_CHALLENGE, self.I_CHALLENGE_ENSURE, interval=1)
@@ -568,8 +597,6 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             raise DokanNotStartedError('native wheel selection failed') from exc
         finally:
             restore_roi()
-            if wheel is not None:
-                wheel.close()
 
     def ensure_dokan_created(self) -> bool:
         """灰色按钮表示已建立道馆；可点击时先完成建立，再开始筛选。"""

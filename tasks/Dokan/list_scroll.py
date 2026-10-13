@@ -8,7 +8,7 @@ WHEEL_COUNT_RANGES = ((9, 9), (5, 6))
 WHEEL_POINT = (1165, 400)  # Inside the right candidate list, above the refresh button.
 WHEEL_INTERVAL_RANGE = (0.05, 0.15)
 WHEEL_DURATION_RANGE = (0.75, 1.0)
-WHEEL_SETTLE_DELAY = 1.5
+WHEEL_SETTLE_DELAY = 1.0
 
 
 def choose_wheel_count(screen_index: int) -> int:

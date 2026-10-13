@@ -56,6 +56,7 @@ class Script:
         self.gui_update_task: Callable = None  # 回调函数, gui进程注册当每次config更新任务的时候更新gui的信息
         self.config_name = config_name
         self.dokan_qq_monitor = DokanQQMonitor(config_name)
+        self._dokan_waiting_for_opening = False
         # Skip first restart
         self.is_first_task = True
         # Failure count of tasks
@@ -327,8 +328,6 @@ class Script:
         future = future + timedelta(seconds=1)
         self.config.start_watching()
         while 1:
-            if datetime.now() > future:
-                return True
             # if self.stop_event is not None:
             #     if self.stop_event.is_set():
             #         logger.info("Update event detected")
@@ -338,12 +337,20 @@ class Script:
             monitor = getattr(self, 'dokan_qq_monitor', None)
             settings = self.config.model.dokan.qq_message_config
             if settings.qq_message_enable and self.config.model.dokan.scheduler.enable \
-                    and monitor is not None and monitor.ready.is_set():
+                    and monitor is not None and (monitor.ready.is_set()
+                        or getattr(self, '_dokan_waiting_for_opening', None) is False):
+                allowed, pending = monitor.state.flags(settings)
+                # Confirmation can expire at Beijing midnight during a long idle
+                # wait. Reselect before an old schedule can preheat the emulator.
+                if not allowed and getattr(self, '_dokan_waiting_for_opening', None) is False:
+                    return False
                 update_until = self.runtime.server_update_wait_until
                 waiting_for_update = update_until is not None and datetime.now() < update_until
                 if not waiting_for_update and self._antiban_wake_time(datetime.now()) is None \
-                        and monitor.state.flags(settings)[1]:
+                        and pending:
                     return False
+            if datetime.now() > future:
+                return True
             time.sleep(1 if settings.qq_message_enable else 5)
 
             if self.config.should_reload():
@@ -461,6 +468,7 @@ class Script:
 
     def _select_dokan_qq_task(self, task):
         """Only QQ-enabled dojos wait for permission or gain priority at task boundaries."""
+        self._dokan_waiting_for_opening = False
         monitor = getattr(self, 'dokan_qq_monitor', None)
         dokan = self.config.model.dokan
         settings = dokan.qq_message_config
@@ -485,6 +493,7 @@ class Script:
             return task
         if allowed:
             return task
+        self._dokan_waiting_for_opening = True
         # Withhold execution until today's opening is confirmed, but retain a
         # waiting entry so saving configuration never makes an enabled dojo vanish.
         self.config.pending_task = [item for item in self.config.pending_task if item.command != 'Dokan']
@@ -495,7 +504,7 @@ class Script:
         waiting.next_run = next_query_time(settings, now).astimezone().replace(tzinfo=None)
         self.config.waiting_task.append(waiting)
         self.config.waiting_task.sort(key=lambda item: item.next_run)
-        logger.info(f'Dokan waits for today\'s welfare opening confirmation; '
+        logger.info(f'Dokan waits for today\'s welfare opening confirmation without game actions; '
                     f'next plugin check at {waiting.next_run:%Y-%m-%d %H:%M:%S}')
         return selected or waiting
 
@@ -530,6 +539,13 @@ class Script:
                     continue
                 return task.command
             self._reset_continuous_task_rest(log_idle=True)
+            if self._dokan_waiting_for_opening:
+                # The plugin check is not a game task. Wait for confirmation,
+                # configuration changes or another task's deadline without
+                # initializing, navigating, closing or preheating the emulator.
+                self.wait_until(task.next_run)
+                del_cached_property(self, "config")
+                continue
             # 根据策略执行等待逻辑
             decision = self.runtime.handle_wait_during_idle(task.next_run)
             if decision == ScriptRuntimeDecision.RESCHEDULE:
@@ -640,16 +656,9 @@ class Script:
         self._active_date = date.today()
         self._rest_until = None
 
-        # Update GUI 防呆, 读取设置并立刻显示后台模拟器到前台
-        if not self.config.script.device.run_background_only and IS_WINDOWS:
-            from module.device.platform2.platform_windows import minimize_by_name, show_window_by_name
-            target_window_name = self.config.script.device.handle  # 在这里输入你的具体窗口名称
-            if self.config.script.device.emulator_window_minimize:
-                minimize_by_name(target_window_name)
-                logger.info(f'重新显示: {target_window_name}')
-            else:
-                show_window_by_name(target_window_name)
-                
+        # Apply the startup window preference only when a real task is selected.
+        emulator_window_pending = True
+
         while 1:
             if date.today() > start_day:
                 with _log_switch_lock:
@@ -666,6 +675,16 @@ class Script:
                     self.config.task_delay(task='Restart', success=True)
                     del_cached_property(self, 'config')
                     continue
+                if emulator_window_pending:
+                    emulator_window_pending = False
+                    if not self.config.script.device.run_background_only and IS_WINDOWS:
+                        from module.device.platform2.platform_windows import minimize_by_name, show_window_by_name
+                        target_window_name = self.config.script.device.handle
+                        if self.config.script.device.emulator_window_minimize:
+                            minimize_by_name(target_window_name)
+                            logger.info(f'重新显示: {target_window_name}')
+                        else:
+                            show_window_by_name(target_window_name)
                 decision = self.runtime.prepare_task_execution(task)
             except Exception as e:
                 self._handle_task_exception(e, task)
