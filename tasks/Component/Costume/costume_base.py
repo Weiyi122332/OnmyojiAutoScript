@@ -29,6 +29,8 @@ main_costume_model = {
     } for i in range(1, 18)
 }
 
+main_costume_model[MainType.COSTUME_MAIN_17]['I_ENTER_COURTYARD_AFFAIRS'] = 'I_ENTER_COURTYARD_AFFAIRS_17'
+
 MAIN_COSTUME_ASSET_KEYS = {
     key
     for model in main_costume_model.values()

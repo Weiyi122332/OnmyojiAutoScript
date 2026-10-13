@@ -108,8 +108,10 @@ def random_click(
     return [click for _ in range(random.randint(low, high))]
 
 
-def reward_random_click() -> RuleClick:
-    """奖励页默认按低密度任务策略使用左右区域。"""
+def reward_random_click(task=None) -> RuleClick:
+    """奖励页优先使用任务指定区域，默认使用左右区域。"""
+    if task is not None and hasattr(task, '_reward_blank_click'):
+        return task._reward_blank_click()
     return settlement_random_click()
 
 
@@ -124,7 +126,9 @@ def reward_details_visible(task) -> bool:
 def close_reward_details(task) -> bool:
     if not reward_details_visible(task):
         return False
-    task.click(random_click(ltrb=(True, False, True, False)), interval=0.8)
+    click = task._reward_blank_click() if hasattr(task, '_reward_blank_click') \
+        else random_click(ltrb=(True, False, True, False))
+    task.click(click, interval=0.8)
     return True
 
 
@@ -577,7 +581,7 @@ def handle_battle_reward_page(task) -> bool:
         return True
     if task.appear_then_click(GeneralBattleAssets.I_OVER_GHOST, interval=0.8):
         return True
-    return task.click(reward_random_click(), interval=0.8)
+    return task.click(reward_random_click(task), interval=0.8)
 
 page_reward.add_enter_success_hooks(handle_battle_reward_page)
 

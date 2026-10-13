@@ -43,5 +43,14 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "宠物屋"
+  },
+  {
+    "itemName": "enter_courtyard_affairs_17",
+    "imageName": "main17_enter_courtyard_affairs_17.png",
+    "roiFront": "478,451,25,30",
+    "roiBack": "398,391,185,150",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "庭院事务入口"
   }
 ]

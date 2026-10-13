@@ -4,6 +4,7 @@ from datetime import datetime
 
 from cached_property import cached_property
 
+from module.atom.click import RuleClick
 from module.atom.image import RuleImage
 from module.base.protect import random_sleep
 from module.exception import TaskEnd
@@ -82,7 +83,15 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
         return getattr(self.conf, f'{action_type}_battle_conf')
 
     def _battle_settlement_click(self):
+        if self.navigator.current_page == pages.page_reward:
+            return self._reward_blank_click()
         return settlement_random_click(self.C_SAFE_RANDOM_CLICK_AREA_ACT)
+
+    def _reward_blank_click(self):
+        """密集奖励页只点底部中间空白，避开奖励格子和右侧详情。"""
+        area = (500, 660, 360, 40)
+        return RuleClick(roi_front=area, roi_back=area, profile='High',
+                         functional=False, name='ACT_REWARD_BLANK_CLICK')
 
     def action_limit(self, action_type: str) -> int:
         return self.conf.general_config.limit_for(action_type)
