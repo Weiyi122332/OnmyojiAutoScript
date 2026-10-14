@@ -498,7 +498,7 @@ class QQSchedulerTests(unittest.TestCase):
         task = ScriptTask.__new__(ScriptTask)
         task.config = SimpleNamespace(model=SimpleNamespace(dokan=self.dokan), config_name='p')
         task.before_run = Mock()
-        task._prepare_dokan_list_scroll = Mock()
+        task._get_dokan_wheel_client = Mock()
         task.set_next_run = Mock()
         task.goto_page = Mock()
         with patch('tasks.Dokan.script_task.QQDokanState') as state:
@@ -506,7 +506,7 @@ class QQSchedulerTests(unittest.TestCase):
             with self.assertRaises(TaskEnd):
                 task.run()
         task.goto_page.assert_not_called()
-        task._prepare_dokan_list_scroll.assert_not_called()
+        task._get_dokan_wheel_client.assert_not_called()
         task.set_next_run.assert_called_once()
 
     def test_sleep_and_server_update_windows_are_not_interrupted_by_pending_message(self):

@@ -27,7 +27,7 @@ from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.Component.config_base import Time
 from tasks.Dokan.assets import DokanAssets
 from tasks.Dokan.config import Dokan, QQMessageConfig
-from tasks.Dokan.list_scroll import WHEEL_POINT, choose_wheel_count, scroll_dokan_list
+from tasks.Dokan.list_scroll import choose_wheel_count, scroll_dokan_list
 from tasks.Dokan.reward_recognition import count_blue_tickets_in_png
 from tasks.Dokan.qq_monitor import QQDokanState
 import tasks.Dokan.page as pages
@@ -290,10 +290,8 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             logger.warning("weekend, exit")
             self.next_run(True)
             raise TaskEnd
-        self._dokan_scroll_checked = False
         self._dokan_wheel_client = None
         try:
-            self._prepare_dokan_list_scroll()
             # 清空历史次数，首次进入筛选页面后读取游戏实际剩余次数。
             self.conf.attack_count_config.init_attack_count(callback=self.config.save)
             unknown_page_timer = Timer(10)
@@ -341,26 +339,15 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                 self._dokan_wheel_client.close()
                 self._dokan_wheel_client = None
 
-    def _prepare_dokan_list_scroll(self):
-        """Choose the scrolling method once for both challenges in this task."""
-        if getattr(self, '_dokan_scroll_checked', False):
-            return self._dokan_wheel_client
-        self._dokan_scroll_checked = True
-        self._dokan_wheel_client = None
+    def _get_dokan_wheel_client(self):
+        """Reuse the configured wheel client; connect when scrolling is needed."""
         dokan = getattr(self, 'conf', None)
         if dokan is None:
             dokan = self.config.dokan
         if not getattr(dokan.dokan_config, 'native_wheel_enable', False):
             return None
-        wheel = MuMuWheelClient(self.device)
-        try:
-            wheel.check_scroll(*WHEEL_POINT)
-        except MuMuWheelError as exc:
-            wheel.close()
-            logger.warning(f'道馆运行前滚轮检查未通过，本次任务使用原有滑动：{exc}')
-        else:
-            self._dokan_wheel_client = wheel
-            logger.info('道馆运行前滚轮检查通过，本次任务使用原生滚轮')
+        if getattr(self, '_dokan_wheel_client', None) is None:
+            self._dokan_wheel_client = MuMuWheelClient(self.device)
         return self._dokan_wheel_client
 
     def run_on_dokan(self):
@@ -564,7 +551,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                 return True
             return False
 
-        wheel = self._prepare_dokan_list_scroll()
+        wheel = self._get_dokan_wheel_client()
         try:
             while num_fresh < MAX_WELFARE_DOKAN_REFRESH_COUNT:
                 for screen_index in range(3):

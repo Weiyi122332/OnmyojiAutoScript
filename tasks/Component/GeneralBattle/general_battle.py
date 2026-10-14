@@ -875,7 +875,7 @@ class GeneralBattle(GeneralBuff, GeneralBattleAssets):
             self.screenshot()
         if not self.appear(self.I_EXIT) and not self.appear(self.I_EXIT_DIALOG):
             return False
-        timeout = Timer(10).start()
+        timeout = Timer(5).start()
         click_timer = Timer(2)
         exit_clicks = 0
         confirm_clicks = 0
@@ -891,19 +891,24 @@ class GeneralBattle(GeneralBuff, GeneralBattleAssets):
                 if GameUi.get_current_page(self) in (page_battle_result, page_reward):
                     logger.info('Exit battle success')
                     return True
-            if timeout.reached():
-                raise GameStuckError('Battle exit did not finish within 10s')
             if dialog_visible:
                 if confirm_visible and confirm_clicks < 2 and click_timer.reached():
                     self.click(self.I_EXIT_ENSURE)
                     confirm_clicks += 1
+                    click_timer.limit = 5
                     click_timer.reset()
+                    timeout.reset()
                     logger.info(f'Confirm battle exit ({confirm_clicks}/2)')
-            elif not confirm_visible and exit_clicks < 2 and click_timer.reached():
+            elif (not confirm_visible and exit_clicks < 2 and click_timer.reached()
+                  and (exit_clicks == 0 or timeout.reached())):
                 if self.appear(self.I_EXIT):
                     self.click(self.I_EXIT)
                     exit_clicks += 1
+                    click_timer.limit = 2
                     click_timer.reset()
+                    timeout.reset()
+            if timeout.reached():
+                raise GameStuckError('Battle exit did not finish within 5s after the last click')
             time.sleep(0.2)
 
     def green_mark(self, enable: bool = False, mark_mode: GreenMarkType = GreenMarkType.GREEN_MAIN,

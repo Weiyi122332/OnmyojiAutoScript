@@ -5,7 +5,7 @@ from random import Random
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from module.device.method.mumu_mouse import MuMuWheelClient, MuMuWheelError, MuMuWheelPreconditionError
+from module.device.method.mumu_mouse import MuMuWheelError
 from module.config.config_model import ConfigModel
 from module.exception import TaskEnd
 from tasks.Dokan.config import Dokan, DokanConfig
@@ -50,7 +50,7 @@ class DokanWheelTimingTest(unittest.TestCase):
     def test_connection_time_is_outside_batch_and_settling_is_after_last_notch(self):
         clock = Clock()
         events = []
-        client = SimpleNamespace(check_scroll=Mock(), connect=lambda: clock.sleep(3),
+        client = SimpleNamespace(connect=lambda: clock.sleep(3),
                                  prepare_scroll=lambda *point: clock.sleep(0.15),
                                  scroll=lambda *point: events.append((clock.now, point)))
         with patch('tasks.Dokan.list_scroll.time.monotonic', side_effect=lambda: clock.now), \
@@ -69,7 +69,7 @@ class DokanWheelTimingTest(unittest.TestCase):
             events.append(clock.now)
             clock.sleep(0.04)
 
-        client = SimpleNamespace(check_scroll=Mock(), connect=lambda: None,
+        client = SimpleNamespace(connect=lambda: None,
                                  prepare_scroll=lambda *point: None, scroll=send)
         with patch('tasks.Dokan.list_scroll.time.monotonic', side_effect=lambda: clock.now), \
                 patch('tasks.Dokan.list_scroll.time.sleep', side_effect=clock.sleep), \
@@ -85,7 +85,7 @@ class DokanWheelSelectionTest(unittest.TestCase):
     def setUp(self):
         self.clock = Clock()
         self.events, self.screens = [], []
-        self.client = SimpleNamespace(check_scroll=Mock(), connect=Mock(), prepare_scroll=Mock(), close=Mock(),
+        self.client = SimpleNamespace(connect=Mock(), prepare_scroll=Mock(), close=Mock(),
                                       scroll=Mock(side_effect=self.record_event))
         self.selection = FakeDokanSelection(people=170, has_xin=False)
         self.selection.config.dokan.dokan_config.native_wheel_enable = True
@@ -98,7 +98,9 @@ class DokanWheelSelectionTest(unittest.TestCase):
             ('tasks.Dokan.list_scroll.randint', {'side_effect': [5, 6] * 20}),
         ):
             patcher = patch(target, **kwargs)
-            patcher.start()
+            mocked = patcher.start()
+            if target == 'tasks.Dokan.script_task.MuMuWheelClient':
+                self.client_factory = mocked
             self.addCleanup(patcher.stop)
 
     def record_event(self, *point):
@@ -129,7 +131,7 @@ class DokanWheelSelectionTest(unittest.TestCase):
         self.selection.O_DOKAN_CENTER_PEOPLE_NUMBER.detect_text.assert_not_called()
         self.client.close.assert_not_called()
         self.assertEqual(self.client.prepare_scroll.call_count, 40)
-        self.client.check_scroll.assert_called_once_with(1165, 400)
+        self.client_factory.assert_called_once_with(self.selection.device)
         self.assertTrue(all(call.args == (1165, 400)
                             for call in self.client.prepare_scroll.call_args_list))
 
@@ -145,11 +147,10 @@ class DokanWheelSelectionTest(unittest.TestCase):
         self.selection.config.dokan.attack_count_config.del_attack_count.assert_called_once()
         self.client.close.assert_not_called()
 
-    def test_success_on_first_screen_checks_once_without_sending_mouse_input(self):
+    def test_success_on_first_screen_does_not_connect_or_send_mouse_input(self):
         self.selection.has_xin = True
         self.assertTrue(ScriptTask.find_dokan(self.selection))
         self.client.connect.assert_not_called()
-        self.client.check_scroll.assert_called_once_with(1165, 400)
         self.client.prepare_scroll.assert_not_called()
         self.client.scroll.assert_not_called()
         self.client.close.assert_not_called()
@@ -164,39 +165,38 @@ class DokanWheelSelectionTest(unittest.TestCase):
         self.selection.ui_click.assert_not_called()
         self.client.close.assert_not_called()
 
-    def test_mouse_positioning_failure_during_execution_stops_without_another_precheck(self):
+    def test_mouse_positioning_failure_stops_without_switching_to_touch(self):
         self.client.prepare_scroll.side_effect = MuMuWheelError('mouse positioning failed')
         with self.assertRaises(DokanNotStartedError):
             ScriptTask.find_dokan(self.selection)
         self.client.scroll.assert_not_called()
         self.assertEqual(self.selection._wait_for_dokan_list_ready.call_count, 1)
-        self.client.check_scroll.assert_called_once()
         self.selection.swipe.assert_not_called()
 
-    def test_precheck_failure_uses_original_swipes_for_all_refreshes(self):
-        self.client.check_scroll.side_effect = MuMuWheelPreconditionError('missing root')
-        with self.assertRaises(DokanRefreshLimitError):
+    def test_connection_failure_stops_without_switching_to_touch_or_refreshing(self):
+        self.client.connect.side_effect = MuMuWheelError('disconnected')
+        with self.assertRaises(DokanNotStartedError):
             ScriptTask.find_dokan(self.selection)
-        self.client.check_scroll.assert_called_once_with(1165, 400)
+        self.client.connect.assert_called_once()
         self.client.prepare_scroll.assert_not_called()
         self.client.scroll.assert_not_called()
-        self.assertEqual(self.selection.swipe.call_count, 20 * 3)
-        self.assertEqual(self.selection._wait_for_dokan_list_ready.call_count, 20 * 3)
-        self.assertEqual(self.selection.ui_click.call_count, 20)
-        self.client.close.assert_called_once()
+        self.selection.swipe.assert_not_called()
+        self.assertEqual(self.selection._wait_for_dokan_list_ready.call_count, 1)
+        self.selection.ui_click.assert_not_called()
         self.assertTrue(self.selection.config.dokan.dokan_config.native_wheel_enable)
 
-    def test_touch_fallback_still_checks_the_next_screen_before_challenging(self):
-        self.client.check_scroll.side_effect = MuMuWheelPreconditionError('service unavailable')
+    def test_disabled_wheel_uses_touch_and_checks_the_next_screen_before_challenging(self):
+        self.selection.config.dokan.dokan_config.native_wheel_enable = False
         self.selection.swipe.side_effect = lambda _: setattr(self.selection, 'has_xin', True)
         self.assertTrue(ScriptTask.find_dokan(self.selection))
         self.selection.swipe.assert_called_once_with(self.selection.S_DOKAN_LIST_UP)
         self.assertEqual(self.selection._wait_for_dokan_list_ready.call_count, 2)
+        self.client_factory.assert_not_called()
+        self.client.connect.assert_not_called()
         self.client.scroll.assert_not_called()
         self.selection.config.dokan.attack_count_config.del_attack_count.assert_called_once()
 
-    def test_two_challenges_share_the_startup_check(self):
-        self.client.check_scroll.side_effect = [None, MuMuWheelPreconditionError('must not recheck')]
+    def test_two_challenges_share_the_wheel_client(self):
         target = 9
 
         def screen():
@@ -212,18 +212,9 @@ class DokanWheelSelectionTest(unittest.TestCase):
         self.assertEqual(len(self.screens), 4)
         self.selection.swipe.assert_not_called()
         self.assertEqual(self.client.prepare_scroll.call_count, 2)
-        self.client.check_scroll.assert_called_once()
+        self.client_factory.assert_called_once_with(self.selection.device)
 
-    def test_failed_startup_check_is_reused_for_both_challenges(self):
-        self.client.check_scroll.side_effect = MuMuWheelPreconditionError('missing root')
-        self.selection.has_xin = True
-        self.assertTrue(ScriptTask.find_dokan(self.selection))
-        self.assertTrue(ScriptTask.find_dokan(self.selection))
-        self.client.check_scroll.assert_called_once()
-        self.client.scroll.assert_not_called()
-        self.client.close.assert_called_once()
-
-    def test_task_checks_before_navigation_and_checks_again_on_the_next_run(self):
+    def test_task_navigates_without_wheel_queries_and_releases_client_after_each_run(self):
         task = ScriptTask.__new__(ScriptTask)
         dokan = Dokan()
         dokan.dokan_config.native_wheel_enable = True
@@ -238,7 +229,6 @@ class DokanWheelSelectionTest(unittest.TestCase):
         task._push_current_run_reward_images = Mock()
         task._push_dokan_refresh_limit_notification = Mock()
         events = []
-        self.client.check_scroll.side_effect = lambda *point: events.append('check')
         task.goto_page = Mock(side_effect=lambda page: events.append(('navigate', page)))
         task.get_current_page = Mock()
         for run_index in range(2):
@@ -246,7 +236,7 @@ class DokanWheelSelectionTest(unittest.TestCase):
             selected = []
 
             def select_again():
-                selected.append(task._prepare_dokan_list_scroll())
+                selected.append(task._get_dokan_wheel_client())
                 if len(selected) == 2:
                     raise DokanFinishedError
 
@@ -254,21 +244,14 @@ class DokanWheelSelectionTest(unittest.TestCase):
             with self.assertRaises(TaskEnd):
                 task.run()
             self.assertEqual(selected, [self.client, self.client])
-            self.assertEqual(self.client.check_scroll.call_count, run_index + 1)
+            self.assertEqual(self.client_factory.call_count, run_index + 1)
             self.assertEqual(self.client.close.call_count, run_index + 1)
             self.assertIsNone(task._dokan_wheel_client)
-        self.assertEqual(events[:2], ['check', ('navigate', pages.page_dokan_map)])
-
-    def test_non_root_adb_uses_touch_without_querying_service_or_writing_wheel_input(self):
-        self.selection.device.adb = Mock()
-        self.selection.device.adb.shell.return_value = '2000'
-        native = MuMuWheelClient(self.selection.device)
-        with patch('tasks.Dokan.script_task.MuMuWheelClient', return_value=native):
-            with self.assertRaises(DokanRefreshLimitError):
-                ScriptTask.find_dokan(self.selection)
-        self.selection.device.adb.shell.assert_called_once_with(['id', '-u'], timeout=5)
-        self.assertEqual(self.selection.swipe.call_count, 20 * 3)
-        self.assertIsNone(native._input)
+        self.client.connect.assert_not_called()
+        self.client.prepare_scroll.assert_not_called()
+        self.client.scroll.assert_not_called()
+        self.assertEqual(events, [('navigate', page) for page in
+                                 (pages.page_dokan_map, pages.page_main) * 2])
 
     def test_unstable_second_screen_is_not_skipped(self):
         self.selection._wait_for_dokan_list_ready.side_effect = [True, False, False]

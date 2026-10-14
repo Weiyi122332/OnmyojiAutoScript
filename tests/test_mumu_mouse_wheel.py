@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from module.device.method.mumu_mouse import (
-    MuMuMouseInput, MuMuWheelClient, MuMuWheelError, MuMuWheelPreconditionError,
+    MuMuMouseInput, MuMuWheelClient, MuMuWheelError,
     find_mumu_mouse_device, mumu_mouse_position,
 )
 
@@ -26,12 +26,10 @@ add device 3: /dev/input/event3
 class MuMuNativeWheelTest(unittest.TestCase):
     def setUp(self):
         self.adb = Mock()
-        self.uid = '0'
         self.rotation = 1
         self.width, self.height = 1280, 720
-        self.service = 'running'
         self.devices = MUMU_DEVICES
-        self.writable = True
+        self.position_error = ''
         self.native_error = ''
         self.viewport_available = True
         self.adb.shell.side_effect = self.shell
@@ -39,14 +37,8 @@ class MuMuNativeWheelTest(unittest.TestCase):
         self.client = MuMuWheelClient(self.device)
 
     def shell(self, command, **kwargs):
-        if isinstance(command, str) and command.startswith('if [ -w '):
-            return 'writable' if self.writable else 'denied'
         if isinstance(command, str) and command.startswith('sendevent '):
             return self.native_error
-        if command == ['getprop', 'init.svc.nemuinput']:
-            return self.service
-        if command == ['id', '-u']:
-            return self.uid
         if command == ['getevent', '-pl']:
             return self.devices
         if command == ['dumpsys', 'input']:
@@ -56,19 +48,19 @@ class MuMuNativeWheelTest(unittest.TestCase):
                     f'orientation={self.rotation}, logicalFrame=[0, 0, {self.width}, {self.height}], '
                     'isActive=[1]')
         if command[0] == 'sendevent':
-            return ''
+            return self.position_error
         self.fail(f'Unexpected ADB command: {command}')
 
     def motion_commands(self):
         return [call.args[0] for call in self.adb.shell.call_args_list
                 if isinstance(call.args[0], list) and call.args[0][0] == 'sendevent']
 
-    def test_connect_discovers_native_input_once_without_server_or_socket(self):
+    def test_connect_discovers_native_input_once_without_root_or_service_queries(self):
         self.client.connect()
         self.client.connect()
         self.assertEqual(self.client.backend, 'mumu_native')
         self.assertEqual([call.args[0] for call in self.adb.shell.call_args_list],
-                         [['id', '-u'], ['getprop', 'init.svc.nemuinput'], ['getevent', '-pl']])
+                         [['getevent', '-pl']])
         self.device.adb_push.assert_not_called()
         self.adb.create_connection.assert_not_called()
 
@@ -122,59 +114,22 @@ class MuMuNativeWheelTest(unittest.TestCase):
             ['sendevent', '/dev/input/event12', '0', '0', '0'],
         ])
 
-    def test_unsupported_device_fails_before_writing_input(self):
-        self.service = ''
-        with self.assertRaisesRegex(MuMuWheelError, 'requires the MuMu input service'):
+    def test_missing_mouse_device_fails_before_writing_input(self):
+        self.devices = ''
+        with self.assertRaisesRegex(MuMuWheelError, 'could not be uniquely identified'):
             self.client.prepare_scroll(1165, 400)
         self.assertEqual([call.args[0] for call in self.adb.shell.call_args_list],
-                         [['id', '-u'], ['getprop', 'init.svc.nemuinput']])
+                         [['getevent', '-pl']])
         self.assertIsNone(self.client._input)
 
-    def test_missing_root_fails_before_positioning_or_wheel_input(self):
-        self.uid = '2000'
-        with self.assertRaisesRegex(MuMuWheelError, 'root access'):
-            self.client.prepare_scroll(1165, 400)
-        self.assertEqual(self.motion_commands(), [])
-        self.assertIsNone(self.client._input)
-        self.adb.shell.assert_called_once_with(['id', '-u'], timeout=5)
-
-    def test_precheck_reads_capabilities_without_sending_input(self):
-        self.client.check_scroll(1165, 400)
-        self.assertEqual(self.motion_commands(), [])
+    def test_positioning_permission_error_stops_at_actual_input_without_wheel_replay(self):
+        self.position_error = 'Permission denied'
+        with self.assertRaisesRegex(MuMuWheelError, 'MuMu mouse positioning failed: Permission denied'):
+            self.client.scroll(1165, 400)
+        self.assertEqual(len(self.motion_commands()), 1)
         self.assertFalse(any(isinstance(call.args[0], str) and call.args[0].startswith('sendevent ')
                              for call in self.adb.shell.call_args_list))
-        self.assertIsNotNone(self.client._input)
-        self.client.prepare_scroll(1165, 400)
-        self.assertEqual(len(self.motion_commands()), 3)
-
-    def test_precheck_rejects_missing_prerequisites_without_input(self):
-        for attribute, value in (('uid', '2000'), ('service', ''), ('devices', ''),
-                                 ('writable', False), ('viewport_available', False),
-                                 ('width', 720), ('rotation', 5)):
-            with self.subTest(attribute=attribute):
-                before = getattr(self, attribute)
-                setattr(self, attribute, value)
-                self.adb.shell.reset_mock()
-                with self.assertRaises(MuMuWheelPreconditionError):
-                    self.client.check_scroll(1165, 400)
-                self.assertEqual(self.motion_commands(), [])
-                self.assertIsNone(self.client._input)
-                setattr(self, attribute, before)
-
-    def test_new_task_precheck_reads_current_root_permissions(self):
-        self.client.check_scroll(1165, 400)
-        self.uid = '2000'
-        self.adb.shell.reset_mock()
-        with self.assertRaisesRegex(MuMuWheelPreconditionError, 'UID='):
-            self.client.check_scroll(1165, 400)
-        self.adb.shell.assert_called_once_with(['id', '-u'], timeout=5)
         self.assertIsNone(self.client._input)
-
-    def test_precheck_rejects_http_connection_without_adb_calls(self):
-        self.device.is_over_http = True
-        with self.assertRaises(MuMuWheelPreconditionError):
-            self.client.check_scroll(1165, 400)
-        self.adb.shell.assert_not_called()
 
     def test_http_device_fails_before_adb_commands(self):
         self.device.is_over_http = True

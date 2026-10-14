@@ -23,7 +23,7 @@ class BattleExitFlowTest(unittest.TestCase):
 
     def make_task(self, frames):
         task = ScriptTask.__new__(ScriptTask)
-        clock = SimpleNamespace(now=1000.0, scene=frames[0][1], clicks=[])
+        clock = SimpleNamespace(now=1000.0, scene=frames[0][1], clicks=[], click_times=[])
         frames = iter(frames)
         scenes = {
             'prepare': (task.I_EXIT,),
@@ -48,7 +48,11 @@ class BattleExitFlowTest(unittest.TestCase):
 
         task.screenshot = Mock(side_effect=screenshot)
         task.appear = Mock(side_effect=lambda marker: any(marker is visible for visible in scenes[clock.scene]))
-        task.click = Mock(side_effect=lambda marker: clock.clicks.append(marker))
+        def click(marker):
+            clock.clicks.append(marker)
+            clock.click_times.append(round(clock.now - 1000.0, 3))
+
+        task.click = Mock(side_effect=click)
         task.wait_until_appear = Mock(side_effect=AssertionError('unbounded wait'))
         task.ui_click_until_disappear = Mock(side_effect=AssertionError('unbounded confirmation clicks'))
         return task, clock
@@ -95,29 +99,74 @@ class BattleExitFlowTest(unittest.TestCase):
 
     def test_failed_exit_confirmation_retries_once(self):
         task, clock = self.make_task([
-            (0, 'exit_dialog'), (1, 'exit_dialog'), (2.2, 'exit_dialog'), (2.6, 'loss'),
+            (0, 'exit_dialog'), (1, 'exit_dialog'), (2.2, 'exit_dialog'),
+            (4.9, 'exit_dialog'), (5.2, 'exit_dialog'), (5.6, 'loss'),
         ])
         self.assertTrue(self.exit_battle(task, clock))
         self.assertEqual(clock.clicks, [task.I_EXIT_ENSURE, task.I_EXIT_ENSURE])
+        self.assertEqual(clock.click_times, [0, 5.2])
 
     def test_stuck_exit_dialog_times_out_without_returning_to_background_button(self):
         task, clock = self.make_task([
-            (0, 'exit_dialog'), (2.2, 'exit_dialog'), (5, 'exit_dialog'), (10.2, 'exit_dialog'),
+            (0, 'exit_dialog'), (2.2, 'exit_dialog'), (4.9, 'exit_dialog'),
+            (5.2, 'exit_dialog'), (8, 'exit_dialog'), (10.4, 'exit_dialog'),
         ])
         with self.assertRaisesRegex(GameStuckError, 'Battle exit did not finish'):
             self.exit_battle(task, clock)
         self.assertEqual(clock.clicks, [task.I_EXIT_ENSURE, task.I_EXIT_ENSURE])
+        self.assertEqual(clock.click_times, [0, 5.2])
+
+    def test_confirmation_waits_five_seconds_before_clicking_exit_again(self):
+        task, clock = self.make_task([
+            (0, 'prepare'), (2.2, 'exit_dialog'), (4.4, 'prepare'),
+            (7, 'prepare'), (7.4, 'prepare'), (7.8, 'exit_dialog'),
+            (9.6, 'exit_dialog'), (14.5, 'loss'),
+        ])
+        self.assertTrue(self.exit_battle(task, clock))
+        self.assertEqual(clock.clicks, [task.I_EXIT, task.I_EXIT_ENSURE,
+                                       task.I_EXIT, task.I_EXIT_ENSURE])
+        self.assertEqual(clock.click_times, [0, 2.2, 7.4, 9.6])
+
+    def test_slow_exit_returns_when_settlement_appears_before_retry(self):
+        task, clock = self.make_task([
+            (0, 'prepare'), (2.2, 'exit_dialog'), (5, 'prepare'),
+            (6.8, 'prepare'), (7, 'loss'),
+        ])
+        self.assertTrue(self.exit_battle(task, clock))
+        self.assertEqual(clock.clicks, [task.I_EXIT, task.I_EXIT_ENSURE])
+        self.assertEqual(clock.click_times, [0, 2.2])
+
+    def test_second_exit_gets_five_seconds_to_open_confirmation(self):
+        task, clock = self.make_task([
+            (0, 'prepare'), (2.2, 'exit_dialog'), (7.4, 'prepare'),
+            (10, 'exit_unknown'), (12.3, 'exit_unknown'), (12.6, 'exit_unknown'),
+        ])
+        with self.assertRaisesRegex(GameStuckError, '5s after the last click'):
+            self.exit_battle(task, clock)
+        self.assertEqual(clock.clicks, [task.I_EXIT, task.I_EXIT_ENSURE, task.I_EXIT])
+        self.assertEqual(clock.click_times, [0, 2.2, 7.4])
+
+    def test_second_confirmation_gets_its_own_five_second_timeout(self):
+        task, clock = self.make_task([
+            (0, 'prepare'), (2.2, 'exit_dialog'), (7.4, 'prepare'),
+            (9.6, 'exit_dialog'), (12, 'prepare'), (14.5, 'prepare'), (14.9, 'prepare'),
+        ])
+        with self.assertRaisesRegex(GameStuckError, '5s after the last click'):
+            self.exit_battle(task, clock)
+        self.assertEqual(clock.clicks, [task.I_EXIT, task.I_EXIT_ENSURE,
+                                       task.I_EXIT, task.I_EXIT_ENSURE])
+        self.assertEqual(clock.click_times, [0, 2.2, 7.4, 9.6])
 
     def test_unknown_confirmation_does_not_click_exit_behind_it(self):
         task, clock = self.make_task([
-            (0, 'exit_unknown'), (2.2, 'exit_unknown'), (10.2, 'exit_unknown'),
+            (0, 'exit_unknown'), (2.2, 'exit_unknown'), (5.2, 'exit_unknown'),
         ])
         with self.assertRaisesRegex(GameStuckError, 'Battle exit did not finish'):
             self.exit_battle(task, clock)
         task.click.assert_not_called()
 
     def test_exit_title_without_confirm_button_does_not_click_background(self):
-        task, clock = self.make_task([(0, 'exit_title_only'), (10.2, 'exit_title_only')])
+        task, clock = self.make_task([(0, 'exit_title_only'), (5.2, 'exit_title_only')])
         with self.assertRaises(GameStuckError):
             self.exit_battle(task, clock)
         task.click.assert_not_called()
@@ -129,11 +178,13 @@ class BattleExitFlowTest(unittest.TestCase):
 
     def test_unresponsive_exit_button_is_clicked_at_most_twice(self):
         task, clock = self.make_task([
-            (0, 'prepare'), (2.2, 'prepare'), (5, 'prepare'), (10.2, 'prepare'),
+            (0, 'prepare'), (2.2, 'prepare'), (4.9, 'prepare'),
+            (5.2, 'prepare'), (8, 'prepare'), (10.4, 'prepare'),
         ])
         with self.assertRaises(GameStuckError):
             self.exit_battle(task, clock)
         self.assertEqual(clock.clicks, [task.I_EXIT, task.I_EXIT])
+        self.assertEqual(clock.click_times, [0, 5.2])
 
     def test_non_battle_page_does_not_start_exit_flow(self):
         task, clock = self.make_task([(0, 'loss')])

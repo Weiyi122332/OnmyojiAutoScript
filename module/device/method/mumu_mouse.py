@@ -14,10 +14,6 @@ class MuMuWheelError(RuntimeError):
     pass
 
 
-class MuMuWheelPreconditionError(MuMuWheelError):
-    """The task can choose touch scrolling before native wheel input starts."""
-
-
 def find_mumu_mouse_device(devices: str) -> str:
     matches = []
     for block in re.split(r'(?=add device \d+:)', devices):
@@ -58,14 +54,6 @@ class MuMuMouseInput:
     def connect(self):
         if self._mouse_device is not None:
             return
-        uid = self.adb.shell(['id', '-u'], timeout=5).strip()
-        if uid != '0':
-            raise MuMuWheelError(f'MuMu mouse wheel input requires root access over ADB (UID={uid!r})')
-        # Phone brand/hardware can be spoofed; use MuMu's input service.
-        service = self.adb.shell(['getprop', 'init.svc.nemuinput'], timeout=5).strip()
-        if service != 'running':
-            raise MuMuWheelError(f'Native mouse wheel selection requires the MuMu input service '
-                                 f'(state={service!r})')
         self._mouse_device = find_mumu_mouse_device(self.adb.shell(['getevent', '-pl'], timeout=5))
 
     def _read_native_point(self, x: int, y: int, width: int, height: int) -> tuple[int, int]:
@@ -81,16 +69,6 @@ class MuMuMouseInput:
             raise MuMuWheelError(f'MuMu mouse display is {actual_width}x{actual_height}, '
                                  f'expected {width}x{height}')
         return mumu_mouse_position(x, y, width, height, rotation)
-
-    def check_scroll(self, x: int, y: int, width: int, height: int):
-        """Read prerequisites without positioning the mouse or sending input."""
-        self.connect()
-        self._read_native_point(x, y, width, height)
-        writable = self.adb.shell(
-            f'if [ -w {self._mouse_device} ]; then echo writable; else echo denied; fi',
-            timeout=5).strip()
-        if writable != 'writable':
-            raise MuMuWheelError(f'MuMu mouse input device is not writable: {self._mouse_device}')
 
     def prepare(self, x: int, y: int, width: int, height: int):
         self.connect()
@@ -148,16 +126,6 @@ class MuMuWheelClient:
         except Exception as exc:
             self.close()
             raise MuMuWheelError(f'Cannot position the MuMu mouse: {exc}') from exc
-
-    def check_scroll(self, x: int, y: int):
-        """Check permissions and native input capabilities before task execution."""
-        self.close()
-        try:
-            self.connect()
-            self._input.check_scroll(x, y, 1280, 720)
-        except Exception as exc:
-            self.close()
-            raise MuMuWheelPreconditionError(f'MuMu wheel precheck failed: {exc}') from exc
 
     def scroll(self, x: int, y: int, *, vertical: float = -1):
         self.connect()

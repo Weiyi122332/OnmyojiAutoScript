@@ -11,8 +11,8 @@ from tasks.Dokan.script_task import DokanNotStartedError, DokanRefreshLimitError
 
 
 class FakeDokanSelection:
-    def _prepare_dokan_list_scroll(self):
-        return ScriptTask._prepare_dokan_list_scroll(self)
+    def _get_dokan_wheel_client(self):
+        return ScriptTask._get_dokan_wheel_client(self)
 
     def __init__(self, people: int, has_xin: bool):
         self.found_dokan_cnt = 0
