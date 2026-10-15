@@ -54,7 +54,6 @@ MAX_WELFARE_DOKAN_REFRESH_COUNT = 20
 
 class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
     _reuse_image_match_results: bool = True  # 仅道馆启用同帧识别结果和相同规则副本的复用。
-    attack_priority_selected: bool = False
     switch_member_soul_done: bool = False
     dokan_owner_battle: bool = False  # 馆主战标识(会在多个可识别到馆主战的位置进行设置)
     found_dokan_cnt: int = 0  # 已经寻找道馆的次数
@@ -268,7 +267,6 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
     def before_run(self):
         self.dokan_owner_battle = False
         self.switch_member_soul_done = False
-        self.attack_priority_selected = False
         self.found_dokan_cnt = 0
         self.second_dokan_ready = False
         self._dokan_reward_captured_context = None
@@ -367,7 +365,6 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         self.device.stuck_record_clear()
         if self.appear(self.I_RYOU_DOKAN_GATHERING):  # 正在集结
             logger.debug(f"Dokan is gathering...")
-            self.switch_priority()  # 选择优先级
             self.switch_soul_in_dokan()  # 切换馆员御魂
             self.device.click_record_clear()
             return
@@ -441,14 +438,6 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                                     battle_key='dokan_member')
             return
         self.run_general_battle(battle_config, battle_key='dokan_member')
-
-    def switch_priority(self):
-        """选择优先级"""
-        if self.attack_priority_selected:
-            return
-        self.goto_page(pages.page_dokan_priority)
-        self.goto_page(pages.page_dokan)
-        self.attack_priority_selected = True
 
     def _wait_for_dokan_list_ready(self) -> bool:
         """列表连续两次稳定后使用当前帧筛选，避免滑动中读取旧位置。"""
@@ -782,7 +771,6 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         logger.info("道馆再战：等待结束，重新进入道馆")
         self.goto_page(pages.page_dokan_map)
         self.dokan_owner_battle = False
-        self.attack_priority_selected = False
         self.second_dokan_ready = True
 
     def switch_soul_in_dokan(self):

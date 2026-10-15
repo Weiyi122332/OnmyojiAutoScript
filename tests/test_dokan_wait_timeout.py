@@ -29,7 +29,6 @@ class DokanRetryWaitTest(unittest.TestCase):
         self.task.device.detect_record = set()
         self.task.device.app_is_running = Mock(return_value=True)
         self.task.dokan_owner_battle = True
-        self.task.attack_priority_selected = True
         self.task.switch_member_soul_done = True
         self.task.second_dokan_ready = False
         self.task.goto_page = Mock(side_effect=self.goto_page)
@@ -53,7 +52,6 @@ class DokanRetryWaitTest(unittest.TestCase):
         self.assertEqual(self.events, [pages.page_main, 63.0, pages.page_dokan_map])
         self.assertTrue(self.task.second_dokan_ready)
         self.assertFalse(self.task.dokan_owner_battle)
-        self.assertFalse(self.task.attack_priority_selected)
         self.assertTrue(self.task.switch_member_soul_done)
         self.assertEqual(self.task.device.detect_record, set())
         self.assertEqual(self.now, 1063.0)

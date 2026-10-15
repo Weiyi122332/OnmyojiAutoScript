@@ -64,7 +64,6 @@ class BackToBackDokanTest(unittest.TestCase):
             device=SimpleNamespace(stuck_record_clear=Mock(), stuck_record_add=Mock()),
             goto_page=Mock(),
             dokan_owner_battle=True,
-            attack_priority_selected=True,
             switch_member_soul_done=True,
             second_dokan_ready=False,
         )
@@ -76,7 +75,6 @@ class BackToBackDokanTest(unittest.TestCase):
         self.assertEqual(task.device.stuck_record_clear.call_count, 2)
         self.assertTrue(task.second_dokan_ready)
         self.assertFalse(task.dokan_owner_battle)
-        self.assertFalse(task.attack_priority_selected)
         self.assertTrue(task.switch_member_soul_done)
 
     def test_battle_again_requires_an_actual_remaining_attempt(self):

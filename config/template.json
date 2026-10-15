@@ -1872,7 +1872,6 @@
     },
     "dokan_config": {
       "dokan_run_time": "20:00:00",
-      "dokan_attack_priority": 0,
       "monday_to_thursday": true,
       "push_reward_images": true,
       "min_people_num": -1,

@@ -463,7 +463,6 @@ window_background >>> DroidCast_raw >  ADB_nc >> DroidCast > uiautomator2 ~= ADB
 	<message><source>Boss Battle Conf</source><translation>首领战斗配置</translation></message>
 	<message><source>Ap100 Battle Conf</source><translation>百体战斗配置</translation></message>
 	<message><source>Fakegod Battle Conf</source><translation>伪神/爬塔战斗配置</translation></message>
-	<message><source>dokan_attack_priority_help</source><translation>道馆攻击优先顺序</translation></message>
 	<message><source>anti_detect_click_fixed_random_area_help</source><translation>防封：使用固定的随机区域进行随机点击，若为False将自动识别当前画面中的最大纯色区域作为随机点击区域</translation></message>
 </context>
 <context>

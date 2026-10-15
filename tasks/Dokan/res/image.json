@@ -18,60 +18,6 @@
     "description": "道馆内式神录"
   },
   {
-    "itemName": "ryou_dokan_attack_priority",
-    "imageName": "res_ryou_dokan_priority.png",
-    "roiFront": "767,663,48,27",
-    "roiBack": "520,660,557,48",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "优先攻击选项"
-  },
-  {
-    "itemName": "ryou_dokan_attack_priority_0",
-    "imageName": "res_ryou_dokan_priority_0.png",
-    "roiFront": "98,170,94,43",
-    "roiBack": "98,170,94,43",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "优先攻击: 见习"
-  },
-  {
-    "itemName": "ryou_dokan_attack_priority_1",
-    "imageName": "res_ryou_dokan_priority_1.png",
-    "roiFront": "342,175,96,42",
-    "roiBack": "342,175,96,42",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "优先攻击: 初级"
-  },
-  {
-    "itemName": "ryou_dokan_attack_priority_2",
-    "imageName": "res_ryou_dokan_priority_2.png",
-    "roiFront": "585,175,89,35",
-    "roiBack": "585,175,89,35",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "优先攻击: 中级"
-  },
-  {
-    "itemName": "ryou_dokan_attack_priority_3",
-    "imageName": "res_ryou_dokan_priority_3.png",
-    "roiFront": "830,175,88,41",
-    "roiBack": "830,175,88,41",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "优先攻击: 高级"
-  },
-  {
-    "itemName": "ryou_dokan_attack_priority_4",
-    "imageName": "res_ryou_dokan_priority_4.png",
-    "roiFront": "1072,178,94,39",
-    "roiBack": "1072,178,94,39",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "优先攻击: 黑脸"
-  },
-  {
     "itemName": "ryou_dokan_finding_dokan",
     "imageName": "res_ryou_dokan_finding_dokan.png",
     "roiFront": "980,60,100,160",

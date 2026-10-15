@@ -29,18 +29,6 @@ class DokanAssets:
 	I_RYOU_DOKAN_CHECK = RuleImage(roi_front=(567,15,144,42), roi_back=(567,15,144,42), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_check.png")
 	# 道馆内式神录
 	I_RYOU_DOKAN_SHIKIGAMI = RuleImage(roi_front=(995,602,77,72), roi_back=(960,580,140,120), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_shikigami.png")
-	# 优先攻击选项
-	I_RYOU_DOKAN_ATTACK_PRIORITY = RuleImage(roi_front=(767,663,48,27), roi_back=(520,660,557,48), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_priority.png")
-	# 优先攻击: 见习
-	I_RYOU_DOKAN_ATTACK_PRIORITY_0 = RuleImage(roi_front=(98,170,94,43), roi_back=(98,170,94,43), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_priority_0.png")
-	# 优先攻击: 初级
-	I_RYOU_DOKAN_ATTACK_PRIORITY_1 = RuleImage(roi_front=(342,175,96,42), roi_back=(342,175,96,42), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_priority_1.png")
-	# 优先攻击: 中级
-	I_RYOU_DOKAN_ATTACK_PRIORITY_2 = RuleImage(roi_front=(585,175,89,35), roi_back=(585,175,89,35), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_priority_2.png")
-	# 优先攻击: 高级
-	I_RYOU_DOKAN_ATTACK_PRIORITY_3 = RuleImage(roi_front=(830,175,88,41), roi_back=(830,175,88,41), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_priority_3.png")
-	# 优先攻击: 黑脸
-	I_RYOU_DOKAN_ATTACK_PRIORITY_4 = RuleImage(roi_front=(1072,178,94,39), roi_back=(1072,178,94,39), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_priority_4.png")
 	# 正在查找道馆,还未选择
 	I_RYOU_DOKAN_FINDING_DOKAN = RuleImage(roi_front=(980,60,100,160), roi_back=(980,60,100,160), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_finding_dokan.png")
 	# 已选择道馆

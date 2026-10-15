@@ -38,19 +38,3 @@ page_dokan_map.connect(page_dokan, action=map_enter_dokan, key="page_dokan_map->
 page_dokan.connect(page_shikigami_records, DokanAssets.I_RYOU_DOKAN_SHIKIGAMI, key="page_dokan->page_shikigami_records", cost=4)
 # 庭院->寮->神社->道馆地图->道馆  导航器会误认为(庭院->式神录->道馆)进入道馆最快, 同理需要增加花费
 page_shikigami_records.connect(page_dokan, GlobalGameAssets.I_UI_BACK_YELLOW, key="page_shikigami_records->page_dokan", cost=4)
-
-
-def priority_enter_dokan(task) -> bool:
-    priority_list = [DokanAssets.I_RYOU_DOKAN_ATTACK_PRIORITY_0,
-                     DokanAssets.I_RYOU_DOKAN_ATTACK_PRIORITY_1,
-                     DokanAssets.I_RYOU_DOKAN_ATTACK_PRIORITY_2,
-                     DokanAssets.I_RYOU_DOKAN_ATTACK_PRIORITY_3,
-                     DokanAssets.I_RYOU_DOKAN_ATTACK_PRIORITY_4]
-    target_priority = priority_list[task.config.dokan.dokan_config.dokan_attack_priority]
-    return task.appear_then_click(target_priority, interval=1.2)
-
-
-# 道馆攻击优先级页面
-page_dokan_priority = Page(DokanAssets.I_RYOU_DOKAN_ATTACK_PRIORITY_0, priority=75)
-page_dokan.connect(page_dokan_priority, DokanAssets.I_RYOU_DOKAN_ATTACK_PRIORITY, key="page_dokan->page_dokan_priority")
-page_dokan_priority.connect(page_dokan, priority_enter_dokan, key="page_dokan_priority->page_dokan")

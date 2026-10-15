@@ -15,6 +15,7 @@ class WelfareDokanFlowTest(unittest.TestCase):
         task = Dokan.model_validate({
             'dokan_config': {
                 'only_welfare_guild': False, 'skip_owner_battle': False, 'try_start_dokan': False,
+                'dokan_attack_priority': 4,
                 'find_dokan_score': 4.6, 'min_bounty': 9999, 'random_delay': True,
                 'dokan_auto_cheering_while_cd': True, 'min_people_num': 140,
                 'find_dokan_refresh_count': 5, 'monday_to_thursday': False,
@@ -36,7 +37,7 @@ class WelfareDokanFlowTest(unittest.TestCase):
             'dokan_member_switch_soul', 'qq_message_config',
         })
         self.assertEqual({field['name'] for field in page['dokan_config']}, {
-            'dokan_run_time', 'dokan_attack_priority', 'monday_to_thursday',
+            'dokan_run_time', 'monday_to_thursday',
             'push_reward_images', 'min_people_num', 'find_dokan_refresh_count', 'native_wheel_enable',
         })
         self.assertEqual(task.dokan_config.min_people_num, 140)
@@ -46,6 +47,7 @@ class WelfareDokanFlowTest(unittest.TestCase):
         self.assertEqual(task.attack_count_config.attack_date, '2026-10-08')
         self.assertNotIn('daily_attack_count', task.attack_count_config.model_dump())
         self.assertNotIn('dokan_member_battle_conf', task.model_dump())
+        self.assertNotIn('dokan_attack_priority', task.dokan_config.model_dump())
 
     def test_owner_prepare_never_clicks_ready_for_either_owner_team(self):
         for marker in ('I_RYOU_DOKAN_BATTLE_MASTER_FIRST', 'I_RYOU_DOKAN_BATTLE_MASTER_SECOND'):
