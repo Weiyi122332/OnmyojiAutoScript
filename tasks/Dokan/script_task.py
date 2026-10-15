@@ -23,6 +23,7 @@ from module.notify.task_notify import resolve_task_notifier
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 from tasks.Component.GeneralBattle.general_battle import GeneralBattle, ExitMatcher, BattleContext, \
     BattleAction
+from tasks.Component.Login.service import LoginService
 from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.Component.config_base import Time
 from tasks.Dokan.assets import DokanAssets
@@ -45,8 +46,13 @@ class DokanNotStartedError(Exception):
 class DokanRefreshLimitError(Exception):
     pass
 
+class DokanPrepareOfflineWait(Exception):
+    """首次准备后交回道馆主循环，清理战斗上下文后再关闭游戏。"""
+
 DOKAN_REWARD_SCREENSHOT_DIR = Path('log/screenshots/dokan')
 DOKAN_REWARD_CAPTURE_DELAY = 1.0
+DOKAN_PREPARE_CLOSE_DELAY = 1.0
+DOKAN_OFFLINE_WAIT_SECONDS = 10 * 60
 DOKAN_NEXT_SELECTION_WAIT_RANGE = (60.0, 65.0)
 DOKAN_LIST_STABLE_INTERVAL = 0.3
 DOKAN_LIST_STABLE_TIMEOUT = 3.0
@@ -88,6 +94,35 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         if self.dokan_owner_battle:
             return BattleAction.QUICK_EXIT
         return super()._handle_prepare(context, config)
+
+    def _after_prepare_click(self, context: BattleContext, config: GeneralBattleConfig) -> None:
+        if self.conf is None or not self.conf.dokan_config.prepare_offline_wait_enable:
+            return
+        if getattr(self, '_dokan_prepare_offline_wait_done', False):
+            return
+        self._dokan_prepare_offline_wait_done = True
+        raise DokanPrepareOfflineWait
+
+    def _wait_and_reconnect_after_prepare(self) -> None:
+        """在战斗循环已清理后离线等待，再登录并回到道馆地图识别当前阶段。"""
+        logger.info('道馆首次准备：等待1秒后关闭游戏')
+        sleep(DOKAN_PREPARE_CLOSE_DELAY)
+        self.device.app_stop()
+        logger.info('道馆首次准备：游戏已关闭，等待10分钟')
+        self.device.stuck_record_clear()
+        self.device.stuck_record_add('PAUSE')
+        try:
+            sleep(DOKAN_OFFLINE_WAIT_SECONDS)
+        finally:
+            self.device.stuck_record_clear()
+        logger.info('道馆离线等待结束：启动游戏并重新登录')
+        self.device.app_start()
+        self.device.wait_app_start_ready()
+        LoginService(config=self.config, device=self.device).app_handle_login()
+        self.device.stuck_record_clear()
+        self.device.click_record_clear()
+        # 先进入地图，兼容离线期间道馆已经结束；仍开启时由主循环进入道馆。
+        self.goto_page(pages.page_dokan_map)
 
     def _handle_in_battle(self, context: BattleContext, config: GeneralBattleConfig) -> BattleAction:
         if self.appear(self.I_RYOU_DOKAN_BATTLE_MASTER_FIRST) or self.appear(self.I_RYOU_DOKAN_BATTLE_MASTER_SECOND):
@@ -269,6 +304,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         self.switch_member_soul_done = False
         self.found_dokan_cnt = 0
         self.second_dokan_ready = False
+        self._dokan_prepare_offline_wait_done = False
         self._dokan_reward_captured_context = None
         self._dokan_reward_captured_round = None
         self._dokan_reward_captured_outside_battle = False
@@ -300,25 +336,29 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
                     self.screenshot()
                     self._capture_dokan_reward_if_visible()
                     current_page = self.get_current_page()
-                    match current_page:
-                        case None:
-                            self.device.click_record_clear()
-                            self.device.stuck_record_clear()
-                            time.sleep(0.5)
-                        case pages.page_dokan_map:
-                            self.run_on_dokan_map()
-                        case pages.page_dokan:
-                            self.run_on_dokan()
-                        case pages.page_battle_prepare | pages.page_battle:
-                            self.run_on_battle()
-                        case pages.page_battle_result:
-                            self.click(pages.random_click(ltrb=(False, False, True, False)), interval=1.5)
-                        case _:
-                            if not unknown_page_timer.started():
-                                unknown_page_timer.start()
-                            if unknown_page_timer.started() and unknown_page_timer.reached():  # 10秒都是非道馆界面, 则尝试回到道馆
-                                unknown_page_timer = Timer(10)
-                                self.goto_page(pages.page_dokan)
+                    try:
+                        match current_page:
+                            case None:
+                                self.device.click_record_clear()
+                                self.device.stuck_record_clear()
+                                time.sleep(0.5)
+                            case pages.page_dokan_map:
+                                self.run_on_dokan_map()
+                            case pages.page_dokan:
+                                self.run_on_dokan()
+                            case pages.page_battle_prepare | pages.page_battle:
+                                self.run_on_battle()
+                            case pages.page_battle_result:
+                                self.click(pages.random_click(ltrb=(False, False, True, False)), interval=1.5)
+                            case _:
+                                if not unknown_page_timer.started():
+                                    unknown_page_timer.start()
+                                if unknown_page_timer.started() and unknown_page_timer.reached():  # 10秒都是非道馆界面, 则尝试回到道馆
+                                    unknown_page_timer = Timer(10)
+                                    self.goto_page(pages.page_dokan)
+                    except DokanPrepareOfflineWait:
+                        self._wait_and_reconnect_after_prepare()
+                        unknown_page_timer = Timer(10)
             except DokanFinishedError:
                 is_dokan_activated = True
             except DokanRefreshLimitError:
@@ -771,6 +811,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         logger.info("道馆再战：等待结束，重新进入道馆")
         self.goto_page(pages.page_dokan_map)
         self.dokan_owner_battle = False
+        self._dokan_prepare_offline_wait_done = False
         self.second_dokan_ready = True
 
     def switch_soul_in_dokan(self):

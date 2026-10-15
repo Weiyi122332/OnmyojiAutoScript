@@ -638,8 +638,12 @@ class GeneralBattle(GeneralBuff, GeneralBattleAssets):
         )
         if self._prepare_click_ready(context, config):
             # 「挑战/准备」按钮点一下有时不生效，用连点提高开战成功率
-            self.appear_then_click(challenge_click(self.I_PREPARE_HIGHLIGHT), interval=0.8)
+            if self.appear_then_click(challenge_click(self.I_PREPARE_HIGHLIGHT), interval=0.8):
+                self._after_prepare_click(context, config)
         return BattleAction.CONTINUE
+
+    def _after_prepare_click(self, context: BattleContext, config: GeneralBattleConfig) -> None:
+        """供任务在实际点击准备后追加操作；未点击时不会调用。"""
 
     def _handle_in_battle(self, context: BattleContext, config: GeneralBattleConfig) -> BattleAction:
         """处理战斗中页面逻辑。

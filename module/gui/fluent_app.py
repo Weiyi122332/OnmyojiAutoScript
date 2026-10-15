@@ -75,6 +75,8 @@ class FluentApp():
 
 # 新增界面文字的中文兜底（module/config/i18n/zh_CN.qm 里还没有这些字符串）
 _FALLBACK_ZH = {
+    'Prepare Offline Wait Enable': '准备后离线等待10分钟',
+    'dokan_prepare_offline_wait_enable_help': '默认关闭。每馆首次实际点击准备后等1秒关闭游戏，离线等待10分钟，再启动、登录并返回道馆。馆主阶段放弃，有剩余次数则再战，最后一次保留赏金；馆员战则继续。同一馆仅触发一次，两馆分别执行。',
     'Native Wheel Enable': 'MuMu 原生后台滚轮筛选',
     'dokan_native_wheel_enable_help': '开启后检查当前屏，再向下滚动9次、随机5–6次并分别筛选。相邻间隔随机0.05–0.15秒并包含ADB发送耗时，第一段约0.75–1秒，第二段更短；滚完等待1秒开始截图和稳定检查。启用后直接使用MuMu原生滚轮，首次翻页时连接，翻页、刷新和两次挑战复用连接；定位或输入异常时结束本次筛选。需要模拟器允许写入输入设备，通常需已有ADB root权限。每次刷新后重复，支持后台运行，默认关闭。',
     'Activity Task Sequence': '活动执行顺序',

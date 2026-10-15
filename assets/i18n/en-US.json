@@ -17,6 +17,8 @@
   "find_dokan_refresh_count_help": "Halve the minimum defender count once refreshes exceed this value. Stop for the day after 20 refreshes if none qualify and send an alert using dojo notification settings.",
   "push_reward_images": "Send dojo reward screenshots",
   "push_reward_images_help": "At the end of each dojo task run, send the date and all reward screenshots from that run, then delete them after successful delivery. When disabled, screenshots are saved but not sent or deleted. Enable dojo notifications and configure a go-cqhttp channel to send images.",
+  "prepare_offline_wait_enable": "Go offline for 10 minutes after preparing",
+  "dokan_prepare_offline_wait_enable_help": "Disabled by default. On the first actual Prepare click in each dojo, wait 1 second, close the game, wait 10 minutes, then launch, log in and reenter the dojo. Abandon the owner stage and challenge a second dojo if attempts remain, or keep the bounty on the last attempt. Continue member battles if the owner stage has not started. Trigger once per dojo, independently for both challenges.",
   "notification_config": "Notification settings",
   "task_notify_enable": "Enable notifications",
   "task_notify_enable_help": "Controls all notifications for this task.",

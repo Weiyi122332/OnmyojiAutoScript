@@ -38,7 +38,8 @@ class WelfareDokanFlowTest(unittest.TestCase):
         })
         self.assertEqual({field['name'] for field in page['dokan_config']}, {
             'dokan_run_time', 'monday_to_thursday',
-            'push_reward_images', 'min_people_num', 'find_dokan_refresh_count', 'native_wheel_enable',
+            'push_reward_images', 'prepare_offline_wait_enable', 'min_people_num',
+            'find_dokan_refresh_count', 'native_wheel_enable',
         })
         self.assertEqual(task.dokan_config.min_people_num, 140)
         self.assertEqual(task.dokan_config.find_dokan_refresh_count, 5)

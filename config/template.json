@@ -1874,6 +1874,7 @@
       "dokan_run_time": "20:00:00",
       "monday_to_thursday": true,
       "push_reward_images": true,
+      "prepare_offline_wait_enable": false,
       "min_people_num": -1,
       "native_wheel_enable": false,
       "find_dokan_refresh_count": 7

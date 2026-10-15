@@ -118,6 +118,8 @@
   "find_dokan_refresh_count_help": "超过此次数后最低防守人数减半；最多刷新20次，仍未找到则结束当日任务，并按道馆推送配置发送提醒。",
   "push_reward_images": "推送道馆结算截图",
   "push_reward_images_help": "开启后在每次道馆任务自动结束时推送日期和本次任务的全部结算截图，发送成功后删除截图。关闭后仍保存截图，但不推送或删除。需在道馆推送配置中启用推送，截图渠道须为 go-cqhttp。",
+  "prepare_offline_wait_enable": "准备后离线等待10分钟",
+  "dokan_prepare_offline_wait_enable_help": "默认关闭。开启后，每次道馆首次实际点击准备按钮，等待1秒关闭游戏，离线等待10分钟，再启动游戏、登录并重新进入道馆。馆主阶段放弃突破，有剩余机会则再战道馆，最后一次保留赏金；仍为馆员战则继续战斗。同一馆只触发一次，两次道馆分别执行。",
   "notification_config": "推送配置",
   "task_notify_enable": "启用推送",
   "task_notify_enable_help": "控制当前任务的全部推送。",

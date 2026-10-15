@@ -55,6 +55,8 @@ class DokanConfig(BaseModel):
     monday_to_thursday: bool = Field(default=True, description='monday_to_thursday_help')
     # 任务结束时推送本次运行的结算截图；关闭时仍保存截图
     push_reward_images: bool = Field(default=True, description='push_reward_images_help')
+    # 每馆首次点击准备后关闭游戏，10分钟后登录并继续道馆流程。
+    prepare_offline_wait_enable: bool = Field(default=False, description='dokan_prepare_offline_wait_enable_help')
     # 道馆最小人数限制
     min_people_num: int = Field(default=-1, description='min_people_num_help')
     # MuMu原生鼠标滚轮，默认继续使用原来的手指滑动。

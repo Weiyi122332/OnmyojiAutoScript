@@ -14,6 +14,7 @@
 - 默认情况下，只要识别到 `page_battle_prepare`，基类就会按现有节奏尝试点击准备按钮。
 - 当 `GeneralBattleConfig.lock_team_enable = True` 时，基类会改为“连续停留在准备页 3 秒后再点击准备”。
 - 这个 3 秒窗口只统计连续停留时长；中途离开 `page_battle_prepare` 后会重置，下一次重新进入准备页时重新计时。
+- 准备按钮实际点击成功后调用 `_after_prepare_click(context, config)`，默认无操作。任务可覆写它处理首次准备后的行为；没有识别到按钮或点击被间隔限制时不会触发。
 
 ## 定时巡检
 
