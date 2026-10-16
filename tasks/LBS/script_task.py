@@ -1,10 +1,9 @@
 # This Python file uses the following encoding: utf-8
 import random
-from datetime import time, timedelta
 from time import sleep
 
 from module.base.timer import Timer
-from module.exception import TaskEnd
+from module.exception import GamePageUnknownError, TaskEnd
 from module.logger import logger
 
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
@@ -37,9 +36,6 @@ class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, 
         return super()._handle_reward(context, config)
 
     def run(self):
-        limit = self.config.lbs.lbs_config.limit_time
-        limit = timedelta(hours=limit.hour, minutes=limit.minute, seconds=limit.second)
-        timeout = Timer(limit.total_seconds()).start()
         limit_count = self.config.lbs.lbs_config.limit_count
 
         if self.config.lbs.switch_soul.enable:
@@ -54,35 +50,51 @@ class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, 
         self.goto_page(page_lbs)
 
         mode = self.config.lbs.lbs_config.mode
+        if self._finish_remaining_enabled():
+            logger.info('LBS: finish remaining challenges, ignore configured count limit')
         if mode == LBSMode.TEAM:
-            self._run_team_match(timeout, limit_count)
+            self._run_team_match(limit_count)
         elif mode == LBSMode.DRIVE:
-            self._run_drive_mode(timeout, limit_count)
+            self._run_drive_mode(limit_count)
         else:
-            self._run_solo(timeout, limit_count)
+            self._run_solo(limit_count)
 
         self.goto_page(page_main)
         self.set_next_run(task='LBS', success=True)
         raise TaskEnd('LBS')
 
+    def _finish_remaining_enabled(self) -> bool:
+        return self.config.lbs.lbs_config.finish_remaining_enabled
+
     def _reach_exit(self, limit_count: int) -> bool:
-        """两种模式共用的循环退出判断：想打次数达到 或 活动剩余次数耗尽。"""
-        self.screenshot()
-        remain, used, total = self.O_LBS_COUNT.ocr(self.device.image)
-        if total > 0 and remain <= 0:
+        """单人/组队按游戏剩余次数停止，普通模式还检查手动次数上限。"""
+        finish_remaining = self._finish_remaining_enabled()
+        valid_count = False
+        for attempt in range(3 if finish_remaining else 1):
+            self.screenshot()
+            remain, _used, total = self.O_LBS_COUNT.ocr(self.device.image)
+            valid_count = total > 0 and 0 <= remain <= total
+            if valid_count:
+                break
+            if finish_remaining and attempt < 2:
+                sleep(0.5)
+
+        if not valid_count:
+            if finish_remaining:
+                raise GamePageUnknownError('Cannot read LBS remaining challenges after 3 attempts')
+            logger.warning('Challenge count ocr failed, continue by configured count limit')
+        elif remain == 0:
             logger.info(f'Challenge count exhausted: {remain}/{total}')
             return True
-        if total == 0:
-            logger.warning('Challenge count ocr failed, continue by time limit')
-        if self.current_count >= limit_count:
+        if not finish_remaining and self.current_count >= limit_count:
             logger.info(f'Reach limit count: {self.current_count}/{limit_count}')
             return True
         return False
 
-    def _run_solo(self, timeout: Timer, limit_count: int):
+    def _run_solo(self, limit_count: int):
         """单人模式：创建不公开房间直接挑战。"""
         fail_count = 0
-        while not timeout.reached():
+        while True:
             if self._reach_exit(limit_count):
                 break
             if not self.appear(self.I_GI_IN_ROOM):
@@ -103,11 +115,11 @@ class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, 
             self.click_fire()
             self.run_general_battle(config=self.config.lbs.general_battle_config)
 
-    def _run_team_match(self, timeout: Timer, limit_count: int):
+    def _run_team_match(self, limit_count: int):
         """组队模式：寻找队伍→自动匹配→等进房开战（年兽流程）。"""
         battle_config = self.config.lbs.general_battle_config
         match_fail = 0
-        while not timeout.reached():
+        while True:
             if self._reach_exit(limit_count):
                 break
             if self.appear(self.I_LBS_MATCH_CANCEL):
@@ -142,7 +154,7 @@ class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, 
         logger.warning('Auto match not started')
         return False
 
-    def _run_drive_mode(self, timeout: Timer, limit_count: int):
+    def _run_drive_mode(self, limit_count: int):
         """开车模式：自己不打，纯开公开房等人，有人进来随机延迟后退房，继续开。"""
         # LBS 是三人房（房主+2），手动指定 room_type，绕开过渡帧识别出 None 被缓存的问题
         self.room_type = RoomType.NORMAL_3
@@ -150,7 +162,7 @@ class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, 
         invite_config = InviteConfig(friend_list='drive')
         drives = 0
         fail_count = 0
-        while not timeout.reached():
+        while True:
             if drives >= limit_count:
                 logger.info(f'Reach drive limit: {drives}/{limit_count}')
                 break

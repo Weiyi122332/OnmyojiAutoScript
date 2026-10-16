@@ -12,8 +12,8 @@ class LBSAssets:
 
 
 	# Image Rule Assets
-	# 庭院右栏LBS活动入口（线下庆典仓鼠） 
-	I_LBS_ENTRY = RuleImage(roi_front=(1181,295,51,35), roi_back=(1167,131,80,431), threshold=0.75, method="Template matching", file="./tasks/LBS/res/lbs_entry.png")
+	# 庭院右侧活动下方的线下庆典入口（LBS）
+	I_LBS_ENTRY = RuleImage(roi_front=(1179,214,51,35), roi_back=(1167,131,80,431), threshold=0.75, method="Template matching", file="./tasks/LBS/res/lbs_entry.png")
 	# 活动界面组队挑战按钮（兼页面check） 
 	I_LBS_TEAM_CHALLENGE = RuleImage(roi_front=(1118,614,63,37), roi_back=(900,450,380,270), threshold=0.8, method="Template matching", file="./tasks/LBS/res/lbs_team_challenge.png")
 	# 战斗结算后奖励转换弹窗的确定按钮 

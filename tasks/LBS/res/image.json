@@ -2,12 +2,12 @@
   {
     "itemName": "lbs_entry",
     "imageName": "lbs_entry.png",
-    "roiFront": "1181,295,51,35",
+    "roiFront": "1179,214,51,35",
     "roiBack": "1167,131,80,431",
     "method": "Template matching",
     "threshold": 0.75,
     "profile": "Default",
-    "description": "庭院右栏LBS活动入口（线下庆典仓鼠）"
+    "description": "庭院右侧活动下方的线下庆典入口（LBS）"
   },
   {
     "itemName": "lbs_team_challenge",
