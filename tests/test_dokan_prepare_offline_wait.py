@@ -14,9 +14,19 @@ from tasks.Dokan.script_task import DokanFinishedError, DokanPrepareOfflineWait,
 
 class DokanPrepareOfflineWaitTest(unittest.TestCase):
     def setUp(self):
+        self.now = 1000.0
+        clock = patch('tasks.Dokan.script_task.time.monotonic', side_effect=lambda: self.now)
+        clock.start()
+        self.addCleanup(clock.stop)
+        sleeper = patch('tasks.Dokan.script_task.sleep', side_effect=self.advance)
+        self.sleeper = sleeper.start()
+        self.addCleanup(sleeper.stop)
         logger = patch('tasks.Dokan.script_task.logger')
         logger.start()
         self.addCleanup(logger.stop)
+
+    def advance(self, seconds):
+        self.now += seconds
 
     def make_task(self, enabled=True):
         task = ScriptTask.__new__(ScriptTask)
@@ -75,12 +85,12 @@ class DokanPrepareOfflineWaitTest(unittest.TestCase):
                 task.appear_then_click.assert_not_called()
                 self.assertFalse(getattr(task, '_dokan_prepare_offline_wait_done', False))
 
-    @patch('tasks.Dokan.script_task.sleep')
     @patch('tasks.Dokan.script_task.uniform', return_value=62)
-    def test_second_dojo_gets_its_own_first_prepare_wait(self, _uniform, _sleep):
+    def test_second_dojo_gets_its_own_first_prepare_wait(self, _uniform):
         task = self.make_task()
         with self.assertRaises(DokanPrepareOfflineWait):
             self.prepare(task)
+        first_click_at = task._dokan_prepare_clicked_at
         task.device = SimpleNamespace(stuck_record_clear=Mock(), stuck_record_add=Mock())
         task.goto_page = Mock()
         task.switch_member_soul_done = True
@@ -89,11 +99,14 @@ class DokanPrepareOfflineWaitTest(unittest.TestCase):
         self.assertTrue(task.switch_member_soul_done)
         with self.assertRaises(DokanPrepareOfflineWait):
             self.prepare(task)
+        self.assertGreater(task._dokan_prepare_clicked_at, first_click_at)
+        self.assertEqual(task._dokan_prepare_clicked_at, self.now)
         self.assertEqual(self.prepare(task), BattleAction.CONTINUE)
 
     def make_reconnect_task(self):
         task = self.make_task()
         task._dokan_prepare_offline_wait_done = True
+        task._dokan_prepare_clicked_at = self.now
         task.switch_member_soul_done = True
         task.second_dokan_ready = False
         events = []
@@ -104,18 +117,27 @@ class DokanPrepareOfflineWaitTest(unittest.TestCase):
             stuck_record_clear=Mock(), stuck_record_add=Mock(), click_record_clear=Mock(),
         )
         task.goto_page = Mock(side_effect=lambda page: events.append(page))
+        task.screenshot = Mock(side_effect=lambda: events.append('screenshot'))
+        task.click = Mock()
         return task, events
 
     @patch('tasks.Dokan.script_task.LoginService')
-    @patch('tasks.Dokan.script_task.sleep')
-    def test_close_wait_login_and_reentry_follow_the_requested_order(self, sleeper, login):
+    def test_close_wait_login_and_reentry_follow_the_requested_order(self, login):
         task, events = self.make_reconnect_task()
-        sleeper.side_effect = lambda seconds: events.append(('sleep', seconds))
+
+        def sleep_and_record(seconds):
+            events.append(('sleep', seconds))
+            self.advance(seconds)
+
+        self.sleeper.side_effect = sleep_and_record
         login.return_value.app_handle_login.side_effect = lambda: events.append('login')
         task._wait_and_reconnect_after_prepare()
         self.assertEqual(events, [
-            ('sleep', 1), 'stop', ('sleep', 600), 'start', 'ready', 'login', pages.page_dokan_map,
+            ('sleep', 0.75), 'screenshot', ('sleep', 0.25), 'stop', ('sleep', 600),
+            'start', 'ready', 'login', pages.page_dokan_map,
         ])
+        task.appear.assert_called_once_with(task.I_PREPARE_HIGHLIGHT)
+        task.click.assert_not_called()
         login.assert_called_once_with(config=task.config, device=task.device)
         self.assertTrue(task._dokan_prepare_offline_wait_done)
         self.assertTrue(task.switch_member_soul_done)
@@ -125,9 +147,88 @@ class DokanPrepareOfflineWaitTest(unittest.TestCase):
         task.device.click_record_clear.assert_called_once()
 
     @patch('tasks.Dokan.script_task.LoginService')
-    @patch('tasks.Dokan.script_task.sleep', side_effect=[None, RuntimeError('wait interrupted')])
-    def test_interrupted_wait_cleans_pause_without_starting_the_game(self, _sleep, login):
+    def test_visible_prepare_retries_on_fresh_frames_and_restarts_the_close_timer(self, _login):
         task, _events = self.make_reconnect_task()
+        first_click_at = task._dokan_prepare_clicked_at
+        screenshot_times, click_times, stop_times = [], [], []
+        capture_durations = iter([0.4, 0.4, 0.1])
+
+        def screenshot():
+            screenshot_times.append(self.now)
+            self.advance(next(capture_durations))
+            task.device.app_stop.assert_not_called()
+
+        def click(_rule):
+            task.device.app_stop.assert_not_called()
+            self.advance(0.05)
+            click_times.append(self.now)
+
+        task.screenshot.side_effect = screenshot
+        task.click.side_effect = click
+        task.appear.side_effect = [True, True, False]
+        task.device.app_stop.side_effect = lambda: stop_times.append(self.now)
+        task._wait_and_reconnect_after_prepare()
+        self.assertEqual(task.click.call_args_list, [call(task.I_PREPARE_HIGHLIGHT)] * 2)
+        self.assertEqual(len(screenshot_times), 3)
+        self.assertGreater(click_times[0] - first_click_at, 1.0)
+        self.assertGreater(click_times[1] - click_times[0], 1.0)
+        for checked_at, clicked_at in zip(screenshot_times, [first_click_at, *click_times]):
+            self.assertAlmostEqual(checked_at - clicked_at, 0.75)
+        self.assertAlmostEqual(stop_times[0] - click_times[-1], 1.0)
+        self.assertEqual(task._dokan_prepare_clicked_at, click_times[-1])
+
+    @patch('tasks.Dokan.script_task.LoginService')
+    def test_capture_recognition_and_handoff_time_are_included_in_the_one_second_total(self, _login):
+        for handoff_delay in (0.0, 0.2, 0.8):
+            with self.subTest(handoff_delay=handoff_delay):
+                task, _events = self.make_reconnect_task()
+                first_click_at = task._dokan_prepare_clicked_at
+                self.advance(handoff_delay)
+                stop_times = []
+                task.screenshot.side_effect = lambda: self.advance(0.1)
+
+                def recognize(_rule):
+                    self.advance(0.05)
+                    return False
+
+                task.appear.side_effect = recognize
+                task.device.app_stop.side_effect = lambda: stop_times.append(self.now)
+                task._wait_and_reconnect_after_prepare()
+                self.assertAlmostEqual(stop_times[0] - first_click_at, 1.0)
+                task.click.assert_not_called()
+
+    @patch('tasks.Dokan.script_task.LoginService')
+    def test_overdue_recheck_finishes_before_closing_without_adding_another_delay(self, _login):
+        task, _events = self.make_reconnect_task()
+        first_click_at = task._dokan_prepare_clicked_at
+        stop_times = []
+
+        def screenshot():
+            self.advance(0.4)
+            task.device.app_stop.assert_not_called()
+
+        def recognize(_rule):
+            self.advance(0.2)
+            task.device.app_stop.assert_not_called()
+            return False
+
+        task.screenshot.side_effect = screenshot
+        task.appear.side_effect = recognize
+        task.device.app_stop.side_effect = lambda: stop_times.append(self.now)
+        task._wait_and_reconnect_after_prepare()
+        self.assertAlmostEqual(stop_times[0] - first_click_at, 1.35)
+        self.assertEqual(self.sleeper.call_args_list, [call(0.75), call(600)])
+
+    @patch('tasks.Dokan.script_task.LoginService')
+    def test_interrupted_wait_cleans_pause_without_starting_the_game(self, login):
+        task, _events = self.make_reconnect_task()
+
+        def interrupted_sleep(seconds):
+            if seconds == 600:
+                raise RuntimeError('wait interrupted')
+            self.advance(seconds)
+
+        self.sleeper.side_effect = interrupted_sleep
         with self.assertRaisesRegex(RuntimeError, 'wait interrupted'):
             task._wait_and_reconnect_after_prepare()
         task.device.app_stop.assert_called_once()
@@ -137,8 +238,7 @@ class DokanPrepareOfflineWaitTest(unittest.TestCase):
         login.assert_not_called()
 
     @patch('tasks.Dokan.script_task.LoginService')
-    @patch('tasks.Dokan.script_task.sleep')
-    def test_login_failure_does_not_navigate_using_an_unready_game(self, _sleep, login):
+    def test_login_failure_does_not_navigate_using_an_unready_game(self, login):
         task, _events = self.make_reconnect_task()
         login.return_value.app_handle_login.side_effect = RuntimeError('login unavailable')
         with self.assertRaisesRegex(RuntimeError, 'login unavailable'):

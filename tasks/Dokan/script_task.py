@@ -51,6 +51,8 @@ class DokanPrepareOfflineWait(Exception):
 
 DOKAN_REWARD_SCREENSHOT_DIR = Path('log/screenshots/dokan')
 DOKAN_REWARD_CAPTURE_DELAY = 1.0
+# Both deadlines start at the latest Prepare click; closing also requires a completed recheck.
+DOKAN_PREPARE_RECHECK_DELAY = 0.75
 DOKAN_PREPARE_CLOSE_DELAY = 1.0
 DOKAN_OFFLINE_WAIT_SECONDS = 10 * 60
 DOKAN_NEXT_SELECTION_WAIT_RANGE = (60.0, 65.0)
@@ -100,13 +102,32 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             return
         if getattr(self, '_dokan_prepare_offline_wait_done', False):
             return
+        self._dokan_prepare_clicked_at = time.monotonic()
         self._dokan_prepare_offline_wait_done = True
         raise DokanPrepareOfflineWait
 
     def _wait_and_reconnect_after_prepare(self) -> None:
-        """在战斗循环已清理后离线等待，再登录并回到道馆地图识别当前阶段。"""
-        logger.info('道馆首次准备：等待1秒后关闭游戏')
-        sleep(DOKAN_PREPARE_CLOSE_DELAY)
+        """复核完成并确认准备消失后，才关闭游戏、离线等待并重新登录。"""
+        logger.info('道馆首次准备：点击后0.75秒复核准备按钮，仍显示时重新点击并计时')
+        prepare_clicked_at = self._dokan_prepare_clicked_at
+        while True:
+            delay = prepare_clicked_at + DOKAN_PREPARE_RECHECK_DELAY - time.monotonic()
+            if delay > 0:
+                sleep(delay)
+            # Screenshot and recognition must finish before the close deadline is considered.
+            self.screenshot()
+            if not self.appear(self.I_PREPARE_HIGHLIGHT):
+                break
+            logger.info('道馆首次准备：准备按钮仍在，再次点击并重新计时')
+            self.click(self.I_PREPARE_HIGHLIGHT)
+            prepare_clicked_at = time.monotonic()
+            self._dokan_prepare_clicked_at = prepare_clicked_at
+        logger.info('道馆首次准备：复核完成，准备按钮已消失，按本次点击后1秒的时间点关闭游戏')
+        delay = prepare_clicked_at + DOKAN_PREPARE_CLOSE_DELAY - time.monotonic()
+        if delay > 0:
+            sleep(delay)
+        else:
+            logger.info('道馆首次准备：复核已超过关闭时间点，确认准备消失后立即关闭游戏')
         self.device.app_stop()
         logger.info('道馆首次准备：游戏已关闭，等待10分钟')
         self.device.stuck_record_clear()
@@ -305,6 +326,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         self.found_dokan_cnt = 0
         self.second_dokan_ready = False
         self._dokan_prepare_offline_wait_done = False
+        self._dokan_prepare_clicked_at = None
         self._dokan_reward_captured_context = None
         self._dokan_reward_captured_round = None
         self._dokan_reward_captured_outside_battle = False
@@ -812,6 +834,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         self.goto_page(pages.page_dokan_map)
         self.dokan_owner_battle = False
         self._dokan_prepare_offline_wait_done = False
+        self._dokan_prepare_clicked_at = None
         self.second_dokan_ready = True
 
     def switch_soul_in_dokan(self):
