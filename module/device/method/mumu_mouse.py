@@ -1,6 +1,7 @@
 """Background MuMu mouse wheel input through the emulator's Android device.
 
-The Xiaomi Mouse driver takes absolute, unrotated coordinates in REL_X/REL_Y.
+MuMu 15's Xiaomi Mouse and MuMu 12's Xiaomi Input both take absolute,
+unrotated coordinates in REL_X/REL_Y.
 One wheel notch is REL_WHEEL +/-100. All input stays inside the ADB device.
 """
 
@@ -17,7 +18,8 @@ class MuMuWheelError(RuntimeError):
 def find_mumu_mouse_device(devices: str) -> str:
     matches = []
     for block in re.split(r'(?=add device \d+:)', devices):
-        if not re.search(r'name:\s*"Xiaomi Mouse"', block):
+        # MuMu 15 has a dedicated mouse; MuMu 12 combines mouse and touch input.
+        if not re.search(r'name:\s*"(?:Xiaomi Mouse|Xiaomi Input)"', block):
             continue
         if not all(re.search(r'\b' + axis + r'\b', block)
                    for axis in ('REL_X', 'REL_Y', 'REL_WHEEL')):

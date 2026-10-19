@@ -19,7 +19,8 @@ class FriendshipPoints(Special):
         if not con.enable:
             logger.info('Friendship points is not enable')
             return
-        self._enter_friendship()
+        if self._enter_friendship() is False:
+            return False
 
         # 购买
         if con.white_daruma:
@@ -103,8 +104,8 @@ class FriendshipPoints(Special):
         if not money_enough:
             logger.warning(f'Money is not enough {current_money}')
             # 判断够不够买2个
-            if current_money < buy_money * 2:
-                logger.warning('Money is not enough 2')
+            if current_money < buy_money:
+                logger.warning('Money is not enough')
                 return
             buy_number = current_money // buy_money
         # 购买
@@ -117,7 +118,8 @@ class FriendshipPoints(Special):
             buy_res_number = buy_number
         if buy_cycles_number:
             for i in range(buy_cycles_number):
-                self.buy_more(buy_button)
+                if self.buy_more(buy_button, buy_max) is False:
+                    return False
                 time.sleep(0.5)
         if buy_res_number:
             self.buy_more(buy_button, buy_res_number)

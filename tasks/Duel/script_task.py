@@ -150,8 +150,10 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
         if self.is_celeb:
             if not self.conf.duel_celeb_config.celeb_battle:
                 logger.info(
-                    'O_D_CELEB detected 名士, but celeb battle switch is disabled'
+                    'O_D_CELEB detected 名士; normal score target reached, celeb battle switch is disabled'
                 )
+                # 名士已超过普通斗技的最高目标 3000 分，与名士星数无关。
+                self._weekly_goal_reached = True
                 return False
             logger.info('O_D_CELEB detected 名士 and celeb battle switch is enabled')
             if (

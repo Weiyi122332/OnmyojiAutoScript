@@ -1,5 +1,14 @@
 [
   {
+    "itemName": "bl_souls",
+    "imageName": "bondlings_bl_souls.png",
+    "roiFront": "143,266,104,130",
+    "roiBack": "45,170,1120,280",
+    "method": "Template matching",
+    "threshold": 0.85,
+    "description": "随机御魂商品图，定位对应兑换按钮和剩余数量"
+  },
+  {
     "itemName": "bl_buy_souls",
     "imageName": "bondlings_bl_buy_souls.png",
     "roiFront": "197,476,90,38",

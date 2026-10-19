@@ -4,6 +4,7 @@
 import time
 
 from module.logger import logger
+from module.exception import GamePageUnknownError
 
 from tasks.Component.Buy.buy import Buy
 from tasks.WeeklyPurchase.mall.navbar import MallNavbar
@@ -28,40 +29,39 @@ class Scales(Buy, MallNavbar):
         # 海国御魂
         self._scales_sea(con.picture_book_scrap, con.picture_book_rule)
 
-    def _scales_buy_confirm(self, start_click, number: int = None):
-        while 1:
+    def _scales_buy_confirm(self, start_click, number: int = None, auto_select: bool | None = None):
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
             self.screenshot()
             if self.appear(self.I_BUY_PLUS):
                 break
             if self.appear(self.I_SCA_SELECT_1) and self.appear(self.I_SCA_SELECT_2):
-                return
+                return False
             if self.appear_then_click(start_click, interval=1):
                 continue
+        else:
+            logger.warning('Soul purchase dialog did not open')
+            return False
+        if auto_select is not None:
+            game_auto_select = not self.appear(self.I_SCA_SEA_AUTO_OFF)
+            if game_auto_select != auto_select:
+                logger.warning('海汐礼盒自动选择与脚本配置不一致，请先在游戏内完成御魂排序')
+                self._cancel_buy_dialog()
+                return False
         # 设置购买的数量
         if number is None:
             self.appear_then_click(self.I_BUY_PLUS, interval=0.4)
             time.sleep(0.5)
             self.appear_then_click(self.I_BUY_PLUS, interval=0.4)
-        else:
-            # 四次截图数字都一样，就可以退出了
-            number_record = []
-            while 1:
-                self.screenshot()
-                current = self.O_BUY_NUMBER.ocr(self.device.image)
-                if current >= number:
-                    break
-                number_record.append(current)
-                if len(number_record) >= 4:
-                    if number_record[0] == number_record[1] == number_record[2] == number_record[3]:
-                        break
-                    number_record.pop(0)
+        elif not self._set_buy_quantity(number):
+            self._cancel_buy_dialog()
+            return False
+        return True
 
-                if self.appear_then_click(self.I_BUY_ADD, interval=0.6):
-                    continue
-
-    def _scales_buy_more(self, start_click, number: int = None):
+    def _scales_buy_more(self, start_click, number: int = None, auto_select: bool | None = None):
         # 重写
-        self._scales_buy_confirm(start_click, number)
+        if not self._scales_buy_confirm(start_click, number, auto_select):
+            return False
 
         # 购买确认
         while 1:
@@ -83,7 +83,8 @@ class Scales(Buy, MallNavbar):
                 continue
 
     def _scales_buy_sea_more(self, start_click, number: int = None):
-        self._scales_buy_confirm(start_click, number)
+        if not self._scales_buy_confirm(start_click, number, auto_select=False):
+            return False
         while 1:
             self.screenshot()
             if self.appear(self.I_SCA_SELECT_1):
@@ -111,38 +112,7 @@ class Scales(Buy, MallNavbar):
                 continue
 
     def _scales_orochi_new(self, buy_number: int):
-        """
-        要求必须是在御魂礼盒界面
-        :param buy_number:
-        :return:
-        """
-        logger.hr('Scales orochi', 3)
-        if buy_number == 0:
-            logger.info('The purchase quantity of Scales orochi is 0')
-            return
-        self.screenshot()
-        # 检查是否出现了购买按钮
-        if not self.appear(self.I_SCA_OROCHI_SCALES):
-            logger.warning('Scales orochi is not appear')
-            return
-        while True:
-            self.screenshot()
-            # 检查剩余数量
-            remain_number = self.O_SCA_NUMBER_OROCHI.ocr(self.device.image)
-            if remain_number == 0:
-                logger.warning(f'朴素御魂可购买数量: {remain_number}')
-                return
-            # 检查钱是否够
-            cu, res, total = self.O_SCA_RES_OROCHI.ocr(self.device.image)
-            if cu + res != total:
-                logger.warning('OCR error')
-                continue
-            if cu < 50:
-                logger.warning(f'紫色蛇皮不足,数量:{cu}')
-                return
-            # 购买
-            self._scales_buy_more(self.I_SCA_OROCHI_SCALES)
-            time.sleep(0.5)
+        return self._scales_orochi(buy_number)
 
     def _scales_orochi(self, buy_number: int):
         """
@@ -172,19 +142,32 @@ class Scales(Buy, MallNavbar):
         if cu + res != total:
             logger.warning('OCR error')
             return
-        money_enough = cu >= 50*buy_number
-        if not money_enough:
+        buy_number = min(buy_number, cu // 50)
+        if buy_number <= 0:
             logger.warning('Scales orochi money is not enough')
-            # 判断够不够买2个
-            if cu < 100:
-                logger.warning('Scales orochi money can not buy two')
-                return
-        # 购买
-        if not money_enough:
-            self._scales_buy_more(self.I_SCA_OROCHI_SCALES)
-        else:
-            self._scales_buy_more(self.I_SCA_OROCHI_SCALES, buy_number)
+            return
+        self._scales_buy_more(self.I_SCA_OROCHI_SCALES, buy_number)
         time.sleep(0.5)
+
+    def _scales_select_demon(self, target_class):
+        """新版首领列表有五列，先进入列表，再滚动查找商品图。"""
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            self.screenshot()
+            if self.appear(self.I_SCA_DEMON_CLOSE):
+                break
+            self.appear_then_click(self.I_SCA_DEMON_SOULS, interval=1)
+        else:
+            raise GamePageUnknownError('首领御魂列表未打开')
+        for attempt in range(4):
+            self.screenshot()
+            if self.appear(target_class):
+                self.ui_click(target_class, self.I_SCA_DEMON_BUY)
+                return
+            if attempt < 3:
+                self.swipe(self.S_SCA_DEMON_LIST, interval=0.5)
+                time.sleep(0.5)
+        raise GamePageUnknownError(f'首领御魂商品未找到: {target_class.name}')
 
     def _scales_demon(self, buy_number: int, buy_class: DemonClass=DemonClass.ODOKURO, buy_position: int=1):
         """
@@ -254,16 +237,18 @@ class Scales(Buy, MallNavbar):
         target_class = match_class[buy_class]
         target_position = match_position[buy_position]
         target_number = match_number[buy_position]
-        self.ui_click(self.I_SCA_DEMON_SOULS, target_class)
-        self.ui_click(target_class, self.I_SCA_DEMON_BUY)
+        self._scales_select_demon(target_class)
         # self.ui_click(target_position, self.I_SCA_DEMON_BUY)
-        while 1:
+        position_deadline = time.monotonic() + 8
+        while time.monotonic() < position_deadline:
             self.screenshot()
             result = self.O_SCA_DEMON_POSTION.ocr(self.device.image)
             if target_number in result:
                 break
             if self.click(target_position, interval=0.7):
                 continue
+        else:
+            raise GamePageUnknownError('首领御魂部位未能确认')
         # 购买
         # 一次最多可以买20个所以要分开来
         if buy_number >= 20:
@@ -274,7 +259,8 @@ class Scales(Buy, MallNavbar):
             buy_res_number = buy_number
         if buy_cycles_number:
             for i in range(buy_cycles_number):
-                self._scales_buy_more(self.I_SCA_DEMON_BUY)
+                if self._scales_buy_more(self.I_SCA_DEMON_BUY, 20) is False:
+                    return False
                 time.sleep(0.5)
         if buy_res_number:
             self._scales_buy_more(self.I_SCA_DEMON_BUY, buy_res_number)
@@ -338,13 +324,15 @@ class Scales(Buy, MallNavbar):
         if buy_cycles_number:
             for i in range(buy_cycles_number):
                 if self.config.weekly_purchase.scales.enable_book_auto:
-                    self._scales_buy_more(self.I_SCA_PICTURE_BOOK)
+                    result = self._scales_buy_more(self.I_SCA_PICTURE_BOOK, 10, auto_select=True)
                 else:
-                    self._scales_buy_sea_more(self.I_SCA_PICTURE_BOOK)
+                    result = self._scales_buy_sea_more(self.I_SCA_PICTURE_BOOK, 10)
+                if result is False:
+                    return False
                 time.sleep(0.5)
-        if buy_res_number and buy_res_number >= 2:
+        if buy_res_number:
             if self.config.weekly_purchase.scales.enable_book_auto:
-                self._scales_buy_more(self.I_SCA_PICTURE_BOOK, buy_res_number)
+                self._scales_buy_more(self.I_SCA_PICTURE_BOOK, buy_res_number, auto_select=True)
             else:
                 self._scales_buy_sea_more(self.I_SCA_PICTURE_BOOK, buy_res_number)
             time.sleep(0.5)

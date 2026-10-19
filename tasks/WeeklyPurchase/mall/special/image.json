@@ -21,7 +21,7 @@
     "itemName": "sp_buy_low",
     "imageName": "special_sp_buy_low.png",
     "roiFront": "176,148,144,108",
-    "roiBack": "128,142,902,449",
+    "roiBack": "128,90,932,520",
     "method": "Template matching",
     "threshold": 0.8,
     "description": "购买低级盘"

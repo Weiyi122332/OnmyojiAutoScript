@@ -2,6 +2,7 @@
 # @author runhey
 # github https://github.com/runhey
 import time
+from copy import deepcopy
 
 from tasks.GameUi.page import random_click
 from typing import Union
@@ -16,6 +17,51 @@ from tasks.base_task import BaseTask
 from tasks.Component.Buy.assets import BuyAssets
 
 class Buy(BaseTask, BuyAssets):
+
+    def _read_buy_quantity(self) -> int | None:
+        """购买框随商品描述上下移动，数字区域跟随加号按钮定位。"""
+        if not self.appear(self.I_BUY_ADD):
+            return None
+        x, y, _, height = self.I_BUY_ADD.roi_front
+        number = deepcopy(self.O_BUY_NUMBER)
+        number.roi = [x - 95, y, 52, height]
+        current = number.ocr(self.device.image)
+        return current if isinstance(current, int) and current > 0 else None
+
+    def _set_buy_quantity(self, number: int) -> bool:
+        if number <= 0:
+            return False
+        failed_reads = 0
+        number_record = []
+        ocr_timer = Timer(0.4).start()
+        while True:
+            self.screenshot()
+            if not ocr_timer.reached():
+                continue
+            ocr_timer.reset()
+            current = self._read_buy_quantity()
+            if current is None:
+                failed_reads += 1
+                if failed_reads >= 3:
+                    logger.warning('Purchase quantity could not be read; cancel purchase')
+                    return False
+                continue
+            failed_reads = 0
+            if current == number:
+                return True
+            number_record.append(current)
+            if len(number_record) >= 4:
+                if len(set(number_record[-4:])) == 1:
+                    logger.warning(f'Purchase quantity stopped at {current}, expected {number}')
+                    return False
+                number_record.pop(0)
+            button = self.I_BUY_ADD if current < number else self.I_BUY_SUB
+            self.appear_then_click(button, interval=0.4)
+
+    def _cancel_buy_dialog(self):
+        # 各商店购买框均居中；右侧留白不覆盖商品或确认按钮。
+        self.click(RuleClick(roi_front=(1050,580,40,30), roi_back=(1050,580,40,30),
+                             name='BUY_CANCEL_DIALOG'))
 
     def buy_one(self, start_click: Union[RuleImage, RuleOcr, RuleClick],
                 check_image: RuleImage):
@@ -112,30 +158,9 @@ class Buy(BaseTask, BuyAssets):
             self.appear_then_click(self.I_BUY_PLUS, interval=0.4)
             time.sleep(0.5)
             self.appear_then_click(self.I_BUY_PLUS, interval=0.4)
-        else:
-            # 四次截图数字都一样，就可以退出了
-            number_record = []
-            ocr_timer = Timer(0.8)
-            ocr_timer.start()
-            while 1:
-                self.screenshot()
-
-                if self.appear_then_click(self.I_BUY_ADD, interval=0.8):
-                    continue
-
-                if not ocr_timer.reached():
-                    continue
-                ocr_timer.reset()
-                current = self.O_BUY_NUMBER.ocr(self.device.image)
-                if current >= number:
-                    break
-                if current == 0:
-                    logger.warning(f'OCR current number failed {current}')
-                number_record.append(current)
-                if len(number_record) >= 4:
-                    if number_record[0] == number_record[1] == number_record[2] == number_record[3]:
-                        break
-                    number_record.pop(0)
+        elif not self._set_buy_quantity(number):
+            self._cancel_buy_dialog()
+            return False
 
         buy_more_mx_click = 5
 

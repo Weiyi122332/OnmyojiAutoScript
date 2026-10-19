@@ -21,7 +21,8 @@ class Honor(Special):
         if not con.enable:
             logger.info('Honor is not enable')
             return
-        self._enter_honor()
+        if self._enter_honor() is False:
+            return False
         
         # 向下滑找到购买的物品
         mystery_bought, black_bought = False, False

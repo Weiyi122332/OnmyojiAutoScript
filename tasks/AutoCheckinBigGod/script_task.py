@@ -225,10 +225,14 @@ class ScriptTask(ManualClaimMixin):
             self._frida_root_mode = 'adb'
             return self._frida_root_mode
 
-        # 优先使用模拟器提供的 su，避免不必要地重启 adbd。
-        if 'uid=0(' in self._adb_shell(['su', '-c', 'id']):
-            self._frida_root_mode = 'su'
-            return self._frida_root_mode
+        # 保留原有 su 调用和等待时间；不支持或超时后再尝试 adb root。
+        # 两种 Root 方式按实际可用权限选择，不依赖模拟器版本号。
+        try:
+            if 'uid=0(' in self._adb_shell(['su', '-c', 'id']):
+                self._frida_root_mode = 'su'
+                return self._frida_root_mode
+        except (subprocess.TimeoutExpired, OSError) as e:
+            logger.warning(f'su权限检测未完成，继续尝试adb root: {type(e).__name__}')
 
         logger.info('su不可用，尝试通过adb root获取Root权限...')
         try:

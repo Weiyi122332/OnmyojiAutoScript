@@ -23,6 +23,20 @@ add device 3: /dev/input/event3
 '''
 
 
+MUMU12_DEVICES = '''add device 1: /dev/input/event5
+  name: "Xiaomi Joystick"
+  REL (0002): REL_X REL_Y
+add device 2: /dev/input/event4
+  name:     "Xiaomi Input"
+  KEY (0001): BTN_MOUSE BTN_TOUCH
+  REL (0002): REL_X REL_Y REL_HWHEEL REL_WHEEL
+  ABS (0003): ABS_MT_POSITION_X ABS_MT_POSITION_Y
+add device 3: /dev/input/event3
+  name: "Xiaomi mouse integration"
+  ABS (0003): ABS_X ABS_Y
+'''
+
+
 class MuMuNativeWheelTest(unittest.TestCase):
     def setUp(self):
         self.adb = Mock()
@@ -71,6 +85,24 @@ class MuMuNativeWheelTest(unittest.TestCase):
             ['sendevent', '/dev/input/event12', '2', '1', '1165'],
             ['sendevent', '/dev/input/event12', '0', '0', '0'],
         ])
+
+    def test_mumu12_combined_input_keeps_native_mouse_frames(self):
+        self.devices = MUMU12_DEVICES
+        self.client.prepare_scroll(1165, 400)
+        self.assertEqual(self.motion_commands(), [
+            ['sendevent', '/dev/input/event4', '2', '0', '319'],
+            ['sendevent', '/dev/input/event4', '2', '1', '1165'],
+            ['sendevent', '/dev/input/event4', '0', '0', '0'],
+        ])
+        self.adb.shell.reset_mock()
+        self.client.scroll(1165, 400)
+        self.client.scroll(1165, 400, vertical=1)
+        expected = ('sendevent /dev/input/event4 2 0 319 && '
+                    'sendevent /dev/input/event4 2 1 1165 && '
+                    'sendevent /dev/input/event4 2 8 {} && '
+                    'sendevent /dev/input/event4 0 0 0')
+        self.assertEqual([call.args[0] for call in self.adb.shell.call_args_list],
+                         [expected.format(-100), expected.format(100)])
 
     def test_each_notch_repositions_and_keeps_its_direction_in_one_frame(self):
         self.client.prepare_scroll(1165, 400)
@@ -152,9 +184,19 @@ class MuMuNativeWheelTest(unittest.TestCase):
 
     def test_ambiguous_or_unrelated_mouse_devices_are_rejected(self):
         for devices in (MUMU_DEVICES.replace('Xiaomi Mouse', 'USB Mouse'),
-                        MUMU_DEVICES + MUMU_DEVICES.replace('event12', 'event8')):
-            with self.assertRaises(MuMuWheelError):
+                        MUMU12_DEVICES.replace('Xiaomi Input', 'Xiaomi Input Extra'),
+                        MUMU_DEVICES + MUMU_DEVICES.replace('event12', 'event8'),
+                        MUMU12_DEVICES + MUMU12_DEVICES.replace('event4', 'event8'),
+                        MUMU_DEVICES + MUMU12_DEVICES):
+            with self.subTest(devices=devices), self.assertRaises(MuMuWheelError):
                 find_mumu_mouse_device(devices)
+
+    def test_both_device_names_require_all_mouse_relative_axes(self):
+        for devices in (MUMU_DEVICES, MUMU12_DEVICES):
+            for axis in ('REL_X', 'REL_Y', 'REL_WHEEL'):
+                with self.subTest(devices=devices, missing_axis=axis), \
+                        self.assertRaises(MuMuWheelError):
+                    find_mumu_mouse_device(devices.replace(axis, 'MISSING_AXIS'))
 
     def test_rotation_and_outside_points_are_validated(self):
         for rotation, expected in ((0, (1165, 400)), (1, (319, 1165)),

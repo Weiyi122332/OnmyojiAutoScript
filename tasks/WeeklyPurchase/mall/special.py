@@ -70,7 +70,7 @@ class Special(Buy, MallNavbar):
             buy_number = remain_number
         # 用金币买的没必要再检查金币
         # 购买
-        self.buy_more(self.I_SP_BUY_TOTEM)
+        self.buy_more(self.I_SP_BUY_TOTEM, buy_number)
         time.sleep(1)
 
     def _special_medium(self, buy_number: int = 10):
@@ -103,7 +103,8 @@ class Special(Buy, MallNavbar):
 
         if buy_cycles_number:
             for i in range(buy_cycles_number):
-                self.buy_more(self.I_SP_BUY_MEDIUM)
+                if self.buy_more(self.I_SP_BUY_MEDIUM, buy_max) is False:
+                    return False
                 time.sleep(0.5)
         if buy_res_number:
             self.buy_more(self.I_SP_BUY_MEDIUM, buy_res_number)
@@ -127,8 +128,8 @@ class Special(Buy, MallNavbar):
                 return
             buy_number = remain_number
         # 用金币买的没必要再检查金币
-        # 购买 , 低级级盘一次最多购买20个
-        buy_max = 20
+        # 当前百物式盘购买框一次最多购买50个。
+        buy_max = 50
         logger.info(f'Buy number is {buy_number}')
         if buy_number >= buy_max:
             buy_cycles_number = buy_number // buy_max
@@ -138,10 +139,10 @@ class Special(Buy, MallNavbar):
             buy_res_number = buy_number
         if buy_cycles_number:
             for i in range(buy_cycles_number):
-                ret = self.buy_more(self.I_SP_BUY_LOW)
+                ret = self.buy_more(self.I_SP_BUY_LOW, buy_max)
                 # 溢出了就不买了
                 if ret is not None and not ret:
-                    break
+                    return False
                 time.sleep(0.5)
         if buy_res_number:
             self.buy_more(self.I_SP_BUY_LOW, buy_res_number)
