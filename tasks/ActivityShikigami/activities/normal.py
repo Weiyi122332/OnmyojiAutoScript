@@ -4,6 +4,7 @@ from datetime import datetime
 import random
 import time
 
+from module.exception import GamePageUnknownError
 from module.logger import logger
 from tasks.ActivityShikigami.assets import ActivityShikigamiAssets
 from tasks.ActivityShikigami.base_act import ActivityResourceNotEnough
@@ -14,7 +15,7 @@ class NormalClimbAct:
     """执行体力、首领和百体挑战。"""
 
     CLIMB_OCR_REDIRECT_AFTER_CORRECTIONS = 5
-    CURRENT_CLIMB_NAMES = {'ap': '古迹演武', 'boss': '首领', 'ap100': '刹那试炼'}
+    CURRENT_CLIMB_NAMES = {'ap': '古迹演武', 'boss': '神晖垂世', 'ap100': '刹那试炼'}
 
     def setup_climb_pages(self, *, include_boss: bool = False):
         page_act = self.navigator.resolve_page(pages.page_act)
@@ -54,6 +55,8 @@ class NormalClimbAct:
 
     def _run_climb_type(self, action_type: str):
         logger.hr(f'Start climb type: {action_type}', 2)
+        if action_type == 'boss' and self.conf.general_config.boss_full_rewards:
+            logger.info('Boss: finish remaining bonus rewards; ignore configured battle count')
         self.current_action_type = action_type
         destination = getattr(pages, f'page_climb_{action_type}')
         self.goto_page(destination)
@@ -396,7 +399,17 @@ class NormalClimbAct:
                 self.device.image
             )
         elif action_type == 'boss':
-            _, raw_remain, _ = self.O_REMAIN_BOSS.ocr_digit_counter(self.device.image)
+            # 额外奖励不是挑战门票；未勾选刷满时，仅按配置场数运行。
+            if not self.conf.general_config.boss_full_rewards:
+                return True
+            raw_remain = self._read_boss_reward_remain()
+            if raw_remain == 0:
+                # 有效的满额计数优先于历史缓存，避免被 OCR 下降修正器改回正数。
+                self.climb_consumable_count['boss'] = 0
+                self.climb_pending_consumption['boss'] = 0
+                self.climb_ocr_correction_rounds['boss'] = 0
+                logger.info('Boss bonus rewards complete; stop boss challenges')
+                return False
         else:
             raw_remain = self.O_REMAIN_AP100.ocr_digit(self.device.image)
 
@@ -432,3 +445,15 @@ class NormalClimbAct:
             )
             return False
         return True
+
+    def _read_boss_reward_remain(self) -> int:
+        """读取已完成/总额外奖励次数，识别失败不能视为已经刷满。"""
+        for attempt in range(3):
+            used, remain, total = self.O_REMAIN_BOSS.ocr_digit_counter(self.device.image)
+            if total > 0 and 0 <= used <= total and remain == total - used:
+                logger.info(f'Boss bonus rewards: {used}/{total}, remaining={remain}')
+                return remain
+            if attempt < 2:
+                time.sleep(0.5)
+                self.screenshot()
+        raise GamePageUnknownError('Cannot read boss bonus reward count after 3 attempts')

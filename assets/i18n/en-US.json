@@ -1,4 +1,6 @@
 {
+  "boss_full_rewards": "Finish boss bonus rewards",
+  "activity_boss_full_rewards_help": "Ignore the configured boss battle count and challenge until all bonus rewards are claimed. Skip if already complete. When disabled, use the configured battle count. Both modes respect the activity time limit and stop when AP is insufficient.",
   "qq_message_config": "Welfare dojo plugin status",
   "qq_message_enable": "Trigger dojos from plugin status",
   "qq_message_enable_help": "Query the welfare detection plugin's opening status for today during the query window. Until confirmed, idle waiting only checks status in the background without operating the game or starting the emulator; other due tasks run normally. Once confirmed, start the dojo when idle or after the current task ends. Stop querying after a match, including after restart; permission expires at Beijing midnight. Weekday, daily attempt and rest settings apply. Configure group, member and keywords in the plugin.",

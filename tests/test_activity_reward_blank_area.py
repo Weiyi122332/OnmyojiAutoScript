@@ -62,6 +62,26 @@ class ActivityRewardBlankAreaTest(unittest.TestCase):
         task.click.assert_called_once()
         self.assert_blank_click(task.click.call_args.args[0])
 
+    def test_boss_damage_panel_only_closes_without_random_settlement_click(self):
+        task = self.make_task(page_battle_result)
+        task.current_action_type = 'boss'
+        task.appear.side_effect = lambda rule, **kwargs: rule is task.I_UI_BACK_RED
+        context = SimpleNamespace(reward_no_battle_ts=1.0, is_win=False, last_page=page_reward)
+        self.assertEqual(task._handle_result(context, GeneralBattleConfig()), BattleAction.CONTINUE)
+        task.appear_then_click.assert_called_once_with(task.I_UI_BACK_RED, interval=1.5)
+        task.click.assert_not_called()
+        self.assertTrue(context.is_win)
+        self.assertIsNone(context.reward_no_battle_ts)
+
+    def test_boss_close_button_cooldown_does_not_fall_through_to_random_click(self):
+        task = self.make_task(page_battle_result)
+        task.current_action_type = 'boss'
+        task.appear.side_effect = lambda rule, **kwargs: rule is task.I_UI_BACK_RED
+        task.appear_then_click.return_value = False
+        context = SimpleNamespace(reward_no_battle_ts=None, is_win=True, last_page=page_battle_result)
+        self.assertEqual(task._handle_result(context, GeneralBattleConfig()), BattleAction.CONTINUE)
+        task.click.assert_not_called()
+
     def test_reward_details_are_closed_from_the_same_blank_area(self):
         task = self.make_task(details=True)
         self.assertTrue(close_reward_details(task))

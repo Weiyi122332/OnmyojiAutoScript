@@ -96,6 +96,10 @@ class GeneralConfig(ConfigBase):
     )
     ap_limit: int = Field(default=0, title='Ap Limit', ge=0, description='activity_ap_limit_help')
     boss_limit: int = Field(default=0, title='Boss Limit', ge=0)
+    boss_full_rewards: bool = Field(
+        default=False,
+        description='activity_boss_full_rewards_help',
+    )
     ap100_limit: int = Field(default=0, title='Ap100 Limit', ge=0, description='activity_ap100_limit_help')
     fakegod_limit: int = Field(default=0, title='Fakegod Limit', ge=0, description='activity_fakegod_limit_help')
     limit_time: Time = Field(
@@ -141,7 +145,7 @@ class GeneralConfig(ConfigBase):
 
     @property
     def task_sequence_v(self) -> list[str]:
-        """按列表从上到下执行，删除或次数为零的活动不参与运行。"""
+        """按列表执行启用的活动；首领可由刷满额外奖励开关启用。"""
         return [
             name for name in normalize_activity_sequence(self.task_sequence)
             if self.activity_enabled(name)
@@ -149,12 +153,15 @@ class GeneralConfig(ConfigBase):
 
     @property
     def climb_sequence_v(self) -> list[str]:
-        """体力、首领和百体按原分支顺序执行，并跳过次数为零的项。"""
-        return [name for name in CLIMB_TYPES if self.limit_for(name) > 0]
+        """体力、首领和百体按原分支顺序执行启用项。"""
+        return [
+            name for name in CLIMB_TYPES
+            if self.limit_for(name) > 0 or (name == 'boss' and self.boss_full_rewards)
+        ]
 
     def activity_enabled(self, activity_name: str) -> bool:
         field = ACTIVITY_NAME_TO_FIELD[activity_name]
-        return self.limit_for(field) > 0
+        return self.limit_for(field) > 0 or (field == 'boss' and self.boss_full_rewards)
 
     def limit_for(self, action_type: str) -> int:
         return getattr(self, f'{action_type}_limit', 0)

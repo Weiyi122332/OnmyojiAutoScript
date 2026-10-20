@@ -922,6 +922,7 @@
       ],
       "ap_limit": 0,
       "boss_limit": 0,
+      "boss_full_rewards": false,
       "ap100_limit": 0,
       "fakegod_limit": 0,
       "limit_time": "01:30:00",

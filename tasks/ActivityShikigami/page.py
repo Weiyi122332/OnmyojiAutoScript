@@ -167,8 +167,8 @@ page_climb_ap100 = Page(ActivityShikigamiAssets.I_CLIMB_MODE_AP100, priority=75)
 page_climb_ap100.add_enter_failure_hooks(GlobalGameAssets.I_UI_BACK_RED)
 page_climb_ap100.connect(page_act, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_ap100->activity')
 
-# 首领保留原有模板，仅在执行首领分支时加入导航，避免干扰其他挑战页识别。
-page_climb_boss = Page(ActivityShikigamiAssets.I_AS_BOSS_FIRE, register=False)
+# 神晖垂世使用独立标题识别，仅在执行首领分支时加入导航。
+page_climb_boss = Page(ActivityShikigamiAssets.I_CLIMB_MODE_BOSS, priority=75, register=False)
 page_climb_boss.connect(page_act, GlobalGameAssets.I_UI_BACK_YELLOW, key='climb_boss->activity')
 
 # 磐长故地先选择地图据点，再进入门票挑战页面。

@@ -1,9 +1,13 @@
 # 式神活动
 
 保留四种活动：体力（古迹演武）、百体（刹那试炼）、首领、伪神/爬塔（磐长故地）。
-`script_task.py` 按配置列表从上到下执行，次数为 0 或从列表中删除的活动不运行。
+`script_task.py` 按配置列表从上到下执行，从列表中删除的活动不运行。
+次数为 0 时跳过，首领勾选刷满额外奖励时除外。
 体力和百体均支持活动主页入口、磐长故地地图左侧入口。
-首领保留原有入口模板、次数限制、御魂切换与战斗流程；该分支执行时才加入首领页面识别。
+首领对应神晖垂世，使用本期入口和独立标题识别；该分支执行时才加入首领页面识别。
+“首领刷满额外奖励”默认关闭，关闭时按首领战斗次数运行；开启后忽略手动次数，
+读取游戏内已完成/总奖励次数，`100/100` 表示刷满并停止。
+两种模式均保留活动总时限和体力不足退出。
 
 ## 配置核对
 
@@ -11,7 +15,8 @@
 | --- | --- | --- |
 | `scheduler` | `enable`、`next_run`、`priority`、`success_interval`、`failure_interval`、`float_time`、`cron` | 共用任务调度器读取 |
 | `general_config` | `task_sequence` | 活动列表、执行顺序和开关；可清空列表 |
-| `general_config` | `ap_limit`、`boss_limit`、`ap100_limit`、`fakegod_limit` | 各活动最多开始的战斗场数；0 表示不执行 |
+| `general_config` | `ap_limit`、`boss_limit`、`ap100_limit`、`fakegod_limit` | 各活动最多开始的战斗场数；0 表示不执行，首领刷满模式除外 |
+| `general_config` | `boss_full_rewards` | 首领按剩余额外奖励次数运行，覆盖 `boss_limit`；仍需在活动列表中保留首领 |
 | `general_config` | `limit_time` | 整项活动的时间上限；到时完成当前流程，再停止下一场 |
 | `general_config` | `active_souls_clean` | 全部活动结束后接续执行御魂清理 |
 | `general_config` | `random_sleep` | 下一场战斗开始前随机休眠；醒来重新检查时限 |

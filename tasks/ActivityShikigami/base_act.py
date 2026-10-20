@@ -67,7 +67,7 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
         if self.current_action_type == 'fakegod':
             return pages.any_of(self.I_FG_ACT_FIRE, self.I_FG_AS_CHECK_MAIN_2)
         if self.current_action_type == 'boss':
-            return self.I_AS_BOSS_FIRE
+            return self.I_CLIMB_MODE_BOSS
         if self.current_action_type == 'ap100':
             return self.I_AP100_FIRE
         if self.current_action_type == 'ap':
@@ -75,8 +75,14 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
         return None
 
     def _handle_result(self, context: BattleContext, config: GeneralBattleConfig) -> BattleAction:
-        if self.current_action_type == 'boss':
+        if self.current_action_type == 'boss' and self.appear(self.I_UI_BACK_RED):
+            context.reward_no_battle_ts = None
+            context.is_win = not self.appear(self.I_FALSE, threshold=0.8)
+            if context.last_page != pages.page_battle_result:
+                self.device.click_record_clear()
             self.appear_then_click(self.I_UI_BACK_RED, interval=1.5)
+            # 伤害面板等待关闭时只点关闭键，避免随机点到下方挑战阵容。
+            return BattleAction.CONTINUE
         return super()._handle_result(context, config)
 
     def battle_config(self, action_type: str) -> GeneralBattleConfig:
@@ -106,7 +112,10 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
     def prepare_next_action(self, action_type: str) -> bool:
         """下一次战斗/行动的软停止与随机休眠节点。"""
         limit = self.action_limit(action_type)
-        if limit <= 0 or self.action_count[action_type] >= limit:
+        full_boss_rewards = (
+            action_type == 'boss' and self.conf.general_config.boss_full_rewards
+        )
+        if not full_boss_rewards and (limit <= 0 or self.action_count[action_type] >= limit):
             logger.info(
                 f'Activity action {action_type} count limit reached: '
                 f'{self.action_count[action_type]}/{limit}'
@@ -125,9 +134,14 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
 
     def record_action(self, action_type: str):
         self.action_count[action_type] += 1
+        limit = (
+            '刷满额外奖励'
+            if action_type == 'boss' and self.conf.general_config.boss_full_rewards
+            else self.action_limit(action_type)
+        )
         logger.info(
             f'Activity action {action_type} count: '
-            f'{self.action_count[action_type]}/{self.action_limit(action_type)}'
+            f'{self.action_count[action_type]}/{limit}'
         )
 
     def switch_soul_for(

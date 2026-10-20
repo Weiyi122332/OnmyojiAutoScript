@@ -11,11 +11,11 @@
   {
     "itemName": "to_battle_boss",
     "imageName": "as_to_battle_boss.png",
-    "roiFront": "125,449,88,58",
-    "roiBack": "97,402,145,138",
+    "roiFront": "1058,294,108,34",
+    "roiBack": "1030,265,173,98",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": "进入首领战斗页面"
+    "description": "进入神晖垂世（首领）"
   },
   {
     "itemName": "battle_main_to_records",

@@ -356,7 +356,7 @@ class ActivityModesTest(unittest.TestCase):
     def test_boss_uses_its_own_resources_preset_and_battle_config(self):
         task = ScriptTask.__new__(ScriptTask)
         task.conf = ActivityShikigami.model_validate({
-            'general_config': {'task_sequence': ['首领'], 'boss_limit': 7},
+            'general_config': {'task_sequence': ['首领'], 'boss_limit': 7, 'boss_full_rewards': True},
             'switch_soul_config': {'enable_switch_boss': True, 'boss_group_team': '2,3'},
             'boss_battle_conf': {'green_enable': True, 'lock_team_enable': True},
         })
@@ -375,12 +375,12 @@ class ActivityModesTest(unittest.TestCase):
         task.penta_pass_active = False
         task.screenshot = Mock()
         task.O_REMAIN_BOSS = Mock()
-        task.O_REMAIN_BOSS.ocr_digit_counter.return_value = (0, 3, 10)
+        task.O_REMAIN_BOSS.ocr_digit_counter.return_value = (97, 3, 100)
         task.device = Mock()
         self.assertTrue(task._climb_resource_available('boss'))
         self.assertEqual(task.climb_consumable_count['boss'], 3)
         self.assertEqual(task._climb_fire_rule('boss'), Assets.I_AS_BOSS_FIRE)
-        self.assertEqual(task._exit_matcher(), Assets.I_AS_BOSS_FIRE)
+        self.assertEqual(task._exit_matcher(), Assets.I_CLIMB_MODE_BOSS)
         task.switch_soul_for = Mock()
         task._enter_climb_battle = Mock(return_value=True)
         task.run_general_battle = Mock()

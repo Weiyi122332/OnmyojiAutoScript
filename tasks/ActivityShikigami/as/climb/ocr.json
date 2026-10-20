@@ -10,12 +10,12 @@
   },
   {
     "itemName": "remain_boss",
-    "roiFront": "1169,668,70,30",
-    "roiBack": "1169,668,70,30",
+    "roiFront": "249,590,90,31",
+    "roiBack": "249,590,90,31",
     "mode": "DigitCounter",
     "method": "Default",
     "keyword": "",
-    "description": "boss剩余攻击次数"
+    "description": "首领额外奖励已完成/总次数"
   },
   {
     "itemName": "remain_ap100",

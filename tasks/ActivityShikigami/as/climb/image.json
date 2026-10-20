@@ -40,6 +40,16 @@
     "description": "体力爬塔标志"
   },
   {
+    "itemName": "climb_mode_boss",
+    "imageName": "as_climb_mode_boss.png",
+    "roiFront": "152,17,131,41",
+    "roiBack": "140,5,156,58",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "Default",
+    "description": "神晖垂世首领页面标志"
+  },
+  {
     "itemName": "climb_mode_switch",
     "imageName": "as_climb_mode_switch.png",
     "roiFront": "1233,547,29,26",

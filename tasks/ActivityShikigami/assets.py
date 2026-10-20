@@ -29,6 +29,8 @@ class ActivityShikigamiAssets:
 	I_CLIMB_MODE_PASS = RuleImage(roi_front=(1143,544,21,21), roi_back=(1118,510,119,186), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_climb_mode_pass.png")
 	# 体力爬塔标志 
 	I_CLIMB_MODE_AP = RuleImage(roi_front=(151,18,132,40), roi_back=(140,5,156,58), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_climb_mode_ap.png")
+	# 神晖垂世首领页面标志
+	I_CLIMB_MODE_BOSS = RuleImage(roi_front=(152,17,131,41), roi_back=(140,5,156,58), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_climb_mode_boss.png")
 	# 切换按键 
 	I_CLIMB_MODE_SWITCH = RuleImage(roi_front=(1233,547,29,26), roi_back=(1174,511,104,82), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_climb_mode_switch.png")
 	# 100体爬塔标志 
@@ -66,8 +68,8 @@ class ActivityShikigamiAssets:
 	# Ocr Rule Assets
 	# 活动门票的剩余检测 
 	O_REMAIN_PASS = RuleOcr(roi=(756,17,88,31), area=(756,17,88,31), mode="Digit", method="Default", keyword="", name="remain_pass")
-	# boss剩余攻击次数 
-	O_REMAIN_BOSS = RuleOcr(roi=(1169,668,70,30), area=(1169,668,70,30), mode="DigitCounter", method="Default", keyword="", name="remain_boss")
+	# 首领额外奖励已完成/总次数
+	O_REMAIN_BOSS = RuleOcr(roi=(249,590,90,31), area=(249,590,90,31), mode="DigitCounter", method="Default", keyword="", name="remain_boss")
 	# 100体活动门票检测 
 	O_REMAIN_AP100 = RuleOcr(roi=(1107,20,104,40), area=(1107,20,104,40), mode="Digit", method="Default", keyword="", name="remain_ap100")
 	# 五倍卷剩余数量 
@@ -79,8 +81,8 @@ class ActivityShikigamiAssets:
 	# Image Rule Assets
 	# 进入古迹演武（体力）
 	I_TO_BATTLE_MAIN = RuleImage(roi_front=(219,254,103,30), roi_back=(190,230,160,83), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_to_battle_main.png")
-	# 进入首领战斗页面 
-	I_TO_BATTLE_BOSS = RuleImage(roi_front=(125,449,88,58), roi_back=(97,402,145,138), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_to_battle_boss.png")
+	# 进入神晖垂世（首领）
+	I_TO_BATTLE_BOSS = RuleImage(roi_front=(1058,294,108,34), roi_back=(1030,265,173,98), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_to_battle_boss.png")
 	# 从爬塔主界面进入式神录 
 	I_BATTLE_MAIN_TO_RECORDS = RuleImage(roi_front=(1015,560,39,42), roi_back=(674,539,439,157), threshold=0.8, method="Template matching", file="./tasks/ActivityShikigami/as/climb/as_battle_main_to_records.png")
 	# 爬塔主界面标志 
