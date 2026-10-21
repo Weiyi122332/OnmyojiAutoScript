@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets
 """当期爬塔独有页面与执行逻辑。"""
 
 from datetime import datetime
@@ -6,9 +7,8 @@ import time
 
 from module.exception import GameStuckError
 from module.logger import logger
-from tasks.ActivityShikigami.assets import ActivityShikigamiAssets
 from tasks.ActivityShikigami.base_act import ActivityResourceNotEnough
-import tasks.ActivityShikigami.page as pages
+import tasks.GameUi.task_pages as pages
 
 
 class NormalClimbAct:
@@ -16,65 +16,27 @@ class NormalClimbAct:
 
     CLIMB_OCR_REDIRECT_AFTER_CORRECTIONS = 5
 
-    def setup_climb_pages(self):
-        page_act = self.navigator.resolve_page(pages.page_act)
-        page_climb_main = self.navigator.resolve_page(pages.page_climb_main)
-        page_pass = self.navigator.resolve_page(pages.page_climb_pass)
-        page_ap = self.navigator.resolve_page(pages.page_climb_ap)
-        page_ap100 = self.navigator.resolve_page(pages.page_climb_ap100)
-        page_boss = self.navigator.resolve_page(pages.page_climb_boss)
-
-        page_act.connect(
-            page_climb_main,
-            ActivityShikigamiAssets.I_TO_BATTLE_MAIN,
-            key='activity->climb_main',
-        )
-        page_climb_main.connect(
-            page_ap,
-            ActivityShikigamiAssets.I_TO_BATTLE_CLIMB,
-            key='climb_main->climb_ap',
-        )
-        page_ap.add_enter_failure_hooks(pages.conditional_action(
-            condition=ActivityShikigamiAssets.I_CLIMB_MODE_PASS,
-            action=ActivityShikigamiAssets.I_CLIMB_MODE_SWITCH,
-        ))
-        page_climb_main.connect(
-            page_pass,
-            ActivityShikigamiAssets.I_TO_BATTLE_CLIMB,
-            key='climb_main->climb_pass',
-        )
-        page_pass.add_enter_failure_hooks(pages.conditional_action(
-            condition=ActivityShikigamiAssets.I_CLIMB_MODE_AP,
-            action=ActivityShikigamiAssets.I_CLIMB_MODE_SWITCH,
-        ))
-        page_climb_main.connect(
-            page_ap100,
-            ActivityShikigamiAssets.I_TO_BATTLE_CLIMB,
-            key='climb_main->climb_ap100',
-        )
-        page_act.connect(
-            page_boss,
-            ActivityShikigamiAssets.I_TO_BATTLE_BOSS,
-            key='activity->climb_boss',
-        )
-        page_pass.connect(page_ap, ActivityShikigamiAssets.I_CLIMB_MODE_SWITCH, key='climb_pass->climb_ap')
-        page_ap.connect(page_pass, ActivityShikigamiAssets.I_CLIMB_MODE_SWITCH, key='climb_ap->climb_pass')
+    def run_boss(self):
+        logger.hr('Start activity: Boss', 1)
+        self._run_climb_type('boss')
 
     def run_climb(self):
         logger.hr('Start activity: Climb', 1)
-        self.setup_climb_pages()
         for action_type in self.conf.general_config.climb_sequence_v:
             if self.time_limit_reached():
                 return
-            self._run_climb_type(action_type)
+            if action_type in ('pass_easy', 'pass_hard'):
+                self._run_climb_type('pass', pass_mode=action_type[5:])
+            else:
+                self._run_climb_type(action_type)
 
-    def _run_climb_type(self, action_type: str):
+    def _run_climb_type(self, action_type: str, pass_mode: str = None):
         if action_type == 'pass':
-            # 进入共用爬塔界面，不要求切到门票模式，先统一读取门票。
-            self.goto_page(pages.page_climb_ap, accepted_pages=(pages.page_climb_pass,))
+            # 由通用页面 1 进入门票爬塔，统一读取两种难度共用的门票。
+            self.goto_page(pages.page_climb_pass)
             remain = self._read_shared_climb_tickets()
-            # 困难模式收益优先；任一模式次数为 0 时直接跳过。
-            for pass_mode in ('hard', 'easy'):
+            # 指定难度时只执行当前分支；兼容原有内部调用。
+            for pass_mode in ((pass_mode,) if pass_mode else ('hard', 'easy')):
                 pass_limit = self.conf.general_config.pass_limit_for(pass_mode)
                 if pass_limit <= 0:
                     logger.info(f'Skip pass mode {pass_mode}: limit is 0')
@@ -126,7 +88,7 @@ class NormalClimbAct:
                     )
                     return
             self.screenshot()
-            if self.appear_then_click(self.I_USELESS_MESSAGE_CLOSE, interval=1):
+            if pages.handle_activity_close(self):
                 continue
             if self.appear_then_click(
                 self.I_AUTOFIGHT,
@@ -151,7 +113,7 @@ class NormalClimbAct:
                     )
                     # 困难门票不足时关闭提示，仅结束困难分支，随后可执行简单模式。
                     self.screenshot()
-                    if self.appear_then_click(self.I_UI_BACK_RED, interval=0):
+                    if self.appear_then_click(GameUiAssets.I_ACTIVITY_GENERAL_CLOSE_RED, interval=0):
                         self.device.click_record_clear()
                     return
                 continue
@@ -223,9 +185,8 @@ class NormalClimbAct:
 
         soul_action_type = action_type
         if action_type == 'pass' and self.current_pass_mode == 'hard':
-            # 困难门票复用百体模式的御魂预设及切换状态。
-            soul_action_type = 'ap100'
-            logger.info('Pass hard mode uses ap100 soul preset')
+            soul_action_type = 'pass_hard'
+            logger.info('Pass hard mode uses its own soul preset')
         self.switch_soul_for(
             soul_action_type,
             self.I_BATTLE_MAIN_TO_RECORDS,
@@ -256,7 +217,12 @@ class NormalClimbAct:
         )
 
     def _climb_fire_rule(self, action_type: str):
-        return self.I_AS_BOSS_FIRE if action_type == 'boss' else self.I_ACT_FIRE
+        return {
+            'ap': self.I_ACT_FIRE_AP,
+            'ap100': self.I_ACT_FIRE_AP100,
+            'pass': self.I_AS_PASS_FIRE,
+            'boss': self.I_AS_BOSS_FIRE,
+        }[action_type]
 
     def _climb_penta_enabled(self, action_type: str) -> bool:
         """返回当前体力分支是否实际启用了五倍挑战。"""
@@ -318,40 +284,17 @@ class NormalClimbAct:
             if not desired_enabled:
                 logger.info('Climb penta pass exhausted; disable penta mode')
 
-        enabled_rule = self.I_FIGHT_PENTA_USE
-        disabled_rule = self.I_FIGHT_PENTA_DISUSE
-        target_rule = enabled_rule if desired_enabled else disabled_rule
-        click_rule = disabled_rule if desired_enabled else enabled_rule
-
-        for attempt in range(1, 4):
-            self.screenshot()
-            if self.appear(target_rule):
-                self.penta_pass_active = desired_enabled
-                logger.debug(
-                    'Climb penta mode synchronized: '
-                    f'enabled={desired_enabled}, remain={remain}'
-                )
-                return
-            if not self.appear(click_rule):
-                self.penta_pass_active = self.appear(enabled_rule)
-                logger.warning(
-                    'Cannot identify climb penta toggle state; '
-                    f'enabled={desired_enabled}, remain={remain}'
-                )
-                return
-            self.click(click_rule, interval=0)
-            time.sleep(0.5)
-            logger.debug(
-                'Toggle climb penta mode: '
-                f'enabled={desired_enabled}, attempt={attempt}/3'
-            )
-
-        logger.warning(
-            'Failed to synchronize climb penta mode after 3 attempts: '
+        self.ui_click_until_appear(
+            self.I_FIGHT_PENTA_DISUSE,
+            page_check=self.I_ACT_FIRE_AP,
+            expected_present=not desired_enabled,
+            interval=0.5,
+        )
+        self.penta_pass_active = desired_enabled
+        logger.debug(
+            'Climb penta mode synchronized: '
             f'enabled={desired_enabled}, remain={remain}'
         )
-        self.screenshot()
-        self.penta_pass_active = self.appear(enabled_rule)
 
     def _sync_pass_difficulty(self, mode: str) -> None:
         """点击并确认门票简单/困难分支，失败三次后报错。"""
@@ -480,7 +423,8 @@ class NormalClimbAct:
             if click_times >= max_times:
                 logger.warning(f'{action_type} cannot enter battle, click reach max times')
                 raise ActivityResourceNotEnough
-            if self.appear(self.I_UI_BACK_RED, interval=1):
+            if self.appear(GameUiAssets.I_ACTIVITY_GENERAL_CLOSE_RED, interval=1):
+                pages.handle_activity_close(self)
                 logger.warning(f'{action_type} cannot enter battle, resource dialog appeared')
                 raise ActivityResourceNotEnough
             if self.appear_then_click(self.I_UI_CONFIRM_SAMLL, interval=1) or \
@@ -493,16 +437,16 @@ class NormalClimbAct:
 
     def _sync_climb_team_lock(self, action_type: str):
         enable = self.battle_config(action_type).lock_team_enable
-        if action_type == 'boss':
-            lock_rule, unlock_rule = self.I_LOCK, self.I_UNLOCK
-        else:
-            lock_rule, unlock_rule = self.I_AP_LOCK, self.I_AP_UNLOCK
-        if enable:
-            logger.info(f'Lock {action_type} team')
-            self.ui_click(unlock_rule, stop=lock_rule, interval=1.5)
-        else:
-            logger.info(f'Unlock {action_type} team')
-            self.ui_click(lock_rule, stop=unlock_rule, interval=1.5)
+        unlock_rule = {
+            'ap': self.I_AP_UNLOCK,
+            'ap100': self.I_AP100_UNLOCK,
+            'pass': self.I_UNLOCK,
+            'boss': self.I_UNLOCK,
+        }[action_type]
+        self.ui_click_until_appear(unlock_rule,
+            page_check=self._climb_fire_rule(action_type),
+            expected_present=not (enable),
+            interval=1.5)
 
     def _climb_resource_available(self, action_type: str) -> bool:
         logger.hr(f'Check {action_type} resource')

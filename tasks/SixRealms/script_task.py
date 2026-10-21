@@ -47,7 +47,7 @@ class ScriptTask(GameUi, SwitchSoul):
                 case _:
                     raise ValueError(f'Invalid six_realms_type {_config.six_realms_gate.six_realms_type}')
             cnt += 1
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         self.set_next_run('SixRealms', success=True, finish=True)
         raise TaskEnd
 

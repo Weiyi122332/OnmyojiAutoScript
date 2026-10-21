@@ -1,0 +1,32 @@
+[
+  {
+    "itemName": "page_dokan_ryou_dokan_check",
+    "imageName": "page_check_dokan_ryou_dokan_check.png",
+    "roiFront": "567,15,144,42",
+    "roiBack": "567,15,144,42",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "是否已经成功进入道馆，上面中间的“道馆突破”文字"
+  },
+  {
+    "itemName": "page_dokan_ryou_dokan_finding_dokan",
+    "imageName": "page_check_dokan_ryou_dokan_finding_dokan.png",
+    "roiFront": "980,60,100,160",
+    "roiBack": "980,60,100,160",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "正在查找道馆,还未选择"
+  },
+  {
+    "itemName": "page_dokan_ryou_dokan_found_dokan",
+    "imageName": "page_check_dokan_ryou_dokan_found_dokan.png",
+    "roiFront": "440,580,360,140",
+    "roiBack": "440,580,360,140",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "已选择道馆"
+  }
+]

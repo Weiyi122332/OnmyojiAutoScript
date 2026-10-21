@@ -28,15 +28,5 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "解锁标志"
-  },
-  {
-    "itemName": "battle_team_lock",
-    "imageName": "ms_battle_team_lock.png",
-    "profile": "High",
-    "roiFront": "961,675,21,23",
-    "roiBack": "949,649,54,63",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "锁定标志"
   }
 ]

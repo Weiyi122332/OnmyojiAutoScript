@@ -18,7 +18,7 @@ from tasks.Component.GeneralBattle.general_battle import GeneralBattle, ExitMatc
 from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.default_pages import settlement_random_click
 from tasks.Utils.config_enum import ShikigamiClass
-import tasks.Exploration.page as pages
+import tasks.GameUi.task_pages as pages
 
 from module.logger import logger
 from module.exception import TaskEnd, GameStuckError

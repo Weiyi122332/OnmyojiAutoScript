@@ -3,7 +3,7 @@
 # github https://github.com/runhey
 from datetime import timedelta, datetime, time
 from pydantic import BaseModel, Field
-from tasks.Component.GeneralInvite.config_invite import InviteConfig
+from tasks.Component.GeneralInvite.config_invite import InviteBaseConfig as InviteConfig
 
 from tasks.Component.config_scheduler import Scheduler
 from tasks.Component.config_base import ConfigBase, Time

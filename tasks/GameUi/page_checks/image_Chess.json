@@ -1,0 +1,32 @@
+[
+  {
+    "itemName": "check_chess_battle",
+    "imageName": "page_check_chess_battle.png",
+    "roiFront": "270,19,37,32",
+    "roiBack": "264,12,47,44",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "百鬼棋局局内页面标志"
+  },
+  {
+    "itemName": "check_chess_rank",
+    "imageName": "page_check_chess_rank.png",
+    "roiFront": "14,75,79,38",
+    "roiBack": "14,75,79,38",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "百鬼棋局排名页"
+  },
+  {
+    "itemName": "check_chess",
+    "imageName": "page_check_chess.png",
+    "roiFront": "1159,592,66,70",
+    "roiBack": "1159,592,66,70",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
+  }
+]

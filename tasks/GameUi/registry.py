@@ -3,7 +3,6 @@ from __future__ import annotations
 """页面注册表。"""
 
 import importlib
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -68,24 +67,13 @@ class PageRegistry:
 
     @classmethod
     def load_all_pages(cls) -> None:
-        """扫描并导入 `tasks/*/page.py`
+        """加载全局页面、集中任务页面及保留原结构的六道之门页面
 
         该方法只会执行一次，用于构建静态页面注册表。
         """
 
         if cls._page_modules_loaded:
             return
-        base_dir = Path(__file__).resolve().parent.parent
-        for task_dir in base_dir.iterdir():
-            if not task_dir.is_dir():
-                continue
-            for module_name in ("page"):
-                module_file = task_dir / f"{module_name}.py"
-                if not module_file.exists():
-                    continue
-                import_name = f"tasks.{task_dir.name}.{module_name}"
-                if import_name in cls._loaded_modules:
-                    continue
-                importlib.import_module(import_name)
-                cls._loaded_modules.add(import_name)
+        importlib.import_module("tasks.GameUi.task_pages")
+        cls._loaded_modules.update({"tasks.GameUi.default_pages", "tasks.GameUi.task_pages", "tasks.SixRealms.page"})
         cls._page_modules_loaded = True

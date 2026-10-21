@@ -94,7 +94,7 @@ class MoonSea(BaseMoonSea):
     def run_on_ms_main(self):
         """月之海主界面 执行策略选岛屿"""
         if self.appear(self.I_BOSS_FIRE_PREPARE) and \
-                self.enter_battle(self.I_BOSS_FIRE, boss_unlock=self.I_BOSS_TEAM_UNLOCK, boss_lock=self.I_BOSS_TEAM_LOCK):
+                self.enter_battle(self.I_BOSS_FIRE, boss_unlock=self.I_BOSS_TEAM_UNLOCK):
             logger.info('Start boss battle')
             self.run_general_battle(battle_key='boss', exit_matcher=pages.page_moon_sea)
             raise TaskEnd

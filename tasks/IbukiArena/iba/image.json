@@ -9,15 +9,6 @@
     "description": "庭院右侧活动栏进入伊吹之擂"
   },
   {
-    "itemName": "check_ibuki",
-    "imageName": "iba_check_ibuki.png",
-    "roiFront": "88,24,136,44",
-    "roiBack": "60,10,190,70",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "伊吹之擂主界面标题"
-  },
-  {
     "itemName": "goto_arena",
     "imageName": "iba_goto_arena.png",
     "roiFront": "42,662,116,32",
@@ -25,15 +16,6 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "狭间幻境入口"
-  },
-  {
-    "itemName": "check_arena",
-    "imageName": "iba_check_arena.png",
-    "roiFront": "143,25,148,40",
-    "roiBack": "120,10,200,70",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "狭间幻境标题"
   },
   {
     "itemName": "challenge",
@@ -61,14 +43,5 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "未锁定状态"
-  },
-  {
-    "itemName": "ibuki_lock",
-    "imageName": "iba_ibuki_lock.png",
-    "roiFront": "760,634,22,27",
-    "roiBack": "733,617,117,61",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "锁定状态"
   }
 ]

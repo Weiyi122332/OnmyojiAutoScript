@@ -11,7 +11,7 @@ from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.GameUi.game_ui import GameUi
 from tasks.GuguArtStudio.assets import GuguArtStudioAssets
 from tasks.GuguArtStudio.config import GuguArtStudio
-import tasks.GuguArtStudio.page as pages
+import tasks.GameUi.task_pages as pages
 
 
 class ScriptTask(GeneralBattle, GameUi, SwitchSoul, GuguArtStudioAssets):
@@ -59,15 +59,14 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, GuguArtStudioAssets):
                     if unknown_page_timer.reached():
                         self.goto_page(pages.page_gugu_fire)
                         unknown_page_timer = Timer(unknown_page_seconds)
-        self.goto_page(pages.page_main)
+        self.finish_task_navigation()
         self.set_next_run(task='GuguArtStudio', success=True, finish=True)
         raise TaskEnd
 
     def switch_lock(self):
-        if self.conf.general_battle_config.lock_team_enable:
-            self.ui_click(self.I_GAS_UNLOCK, self.I_GAS_LOCK)
-            return
-        self.ui_click(self.I_GAS_LOCK, self.I_GAS_UNLOCK)
+        self.ui_click_until_appear(self.I_GAS_UNLOCK,
+            page_check=self.I_GAS_CAN_FIRE,
+            expected_present=not (self.conf.general_battle_config.lock_team_enable))
 
     def switch_soul(self):
         """切换御魂"""

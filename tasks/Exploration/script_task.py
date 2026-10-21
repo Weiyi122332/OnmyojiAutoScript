@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from module.logger import logger
 from tasks.Exploration.base import BaseExploration
 from tasks.Exploration.config import AutoRotate, UserStatus, ExplorationLevel
-import tasks.Exploration.page as pages
+import tasks.GameUi.task_pages as pages
 from tasks.GameUi.page_definition import Page
 from typing import Callable
 
@@ -54,6 +54,7 @@ class ScriptTask(BaseExploration):
         self.post_process()
 
     def exec_exp_page(self):
+        self.prepare_battle_cooperation('Exploration')
         pages.page_battle_team_exit = self.navigator.resolve_page(pages.page_battle_team_exit)
         pages.page_battle_team_exit.connect(pages.page_exp_entrance, self.I_UI_CONFIRM, key="page_battle_team_exit->page_exp_entrance")
         while True:

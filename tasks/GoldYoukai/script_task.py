@@ -80,8 +80,8 @@ class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, 
         self.gold_exit(con)
 
     def gold_exit(self, con):
-        self.goto_page(page_main)
         if con.buff_gold_50_click or con.buff_gold_100_click:
+            self.goto_page(page_main)
             self.open_buff()
             if con.buff_gold_50_click:
                 self.gold_50(False)
@@ -89,6 +89,7 @@ class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, 
                 self.gold_100(False)
             self.close_buff()
 
+        self.finish_task_navigation()
         self.set_next_run(task='GoldYoukai', success=True, finish=False)
         raise TaskEnd('GoldYoukai')
 

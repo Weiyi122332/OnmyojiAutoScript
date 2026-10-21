@@ -114,7 +114,12 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
             if self.appear(marker):
                 sleep(0.2)
                 self.screenshot()
-                if not self.appear(self.I_FROG_MALL) and self.appear(marker):
+                # 排除遮挡页和仍可下注的画面，避免背景结束标志导致提前结束。
+                if (self.appear(self.I_FROG_MALL) or self.appear(self.I_FROG_LOG_CHECK)
+                        or self.appear(self.I_GOLD_30_CHECK)
+                        or (self.appear(self.I_BET_LEFT) and self.appear(self.I_BET_RIGHT))):
+                    return None
+                if self.appear(marker):
                     return marker
                 return None
         return None
@@ -158,7 +163,7 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
                     if self._try_next_competition_fallback(idle_timer):
                         continue
                     # 下一局可能直接进入休息中，而不再显示左右投注入口。
-                    if self.appear(self.I_FROG_BOSS_REST):
+                    if self.confirmed_finish_marker() is not None:
                         break
                     if self.appear(self.I_BET_LEFT) and self.appear(self.I_BET_RIGHT):
                         break
@@ -279,9 +284,7 @@ class ScriptTask(RightActivity, FrogBossAssets, GeneralBattleAssets):
                 gold_selected = False
                 submit_attempts = 0
                 continue
-            if self.appear(self.I_BETTED):
-                return
-            if self.appear(self.I_FROG_BOSS_REST):
+            if self.confirmed_finish_marker() is not None:
                 return
             # 商店关闭后可能已回到左右下注入口，由主循环重新进入下注流程。
             if self.appear(self.I_BET_LEFT) and self.appear(self.I_BET_RIGHT):

@@ -305,9 +305,9 @@ class ScriptRuntimeController:
 
     def _prepare_idle_keep_game_running(self) -> ScriptRuntimeDecision:
         """
-        将空闲状态调整为“模拟器开启、游戏运行”。
+        短暂空闲时保持游戏运行，并导航到庭院。
         """
-        return self._ensure_game_running(require_main=False, allow_server_update_skip=True)
+        return self._prepare_idle_goto_main()
 
     def prepare_task_execution(self, task: str) -> ScriptRuntimeDecision:
         """

@@ -56,6 +56,9 @@ def detect_image_detail(file: str, target: RuleImage) -> dict:
     if target.is_template_match:
         source = target.corp(img)
         mat = target.image
+        if getattr(target, 'grayscale', False):
+            source = cv2.cvtColor(source, cv2.COLOR_RGB2GRAY)
+            mat = cv2.cvtColor(mat, cv2.COLOR_RGB2GRAY)
         if source.shape[0] < mat.shape[0] or source.shape[1] < mat.shape[1]:
             return {
                 "matched": False,

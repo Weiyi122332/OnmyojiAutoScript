@@ -361,7 +361,9 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
 
     def challenge(self, goto_btn, num):
         self.ui_click(goto_btn, self.I_WQC_FIRE)
-        self.ui_click(self.I_WQC_UNLOCK, self.I_WQC_LOCK)
+        self.ui_click_until_appear(self.I_WQC_UNLOCK,
+            page_check=self.I_WQC_FIRE,
+            expected_present=False)
         self.ui_click_until_disappear(self.I_WQC_FIRE)
         # 锁定阵容进入战斗
         wq_config = GeneralBattleConfig(lock_team_enable=True)

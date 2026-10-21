@@ -1,0 +1,42 @@
+[
+  {
+    "itemName": "page_martialarts_check_battle_ap",
+    "imageName": "page_check_martialarts_check_battle_ap.png",
+    "roiFront": "150,16,134,41",
+    "roiBack": "144,10,146,55",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
+  },
+  {
+    "itemName": "page_martialarts_check_battle_boss",
+    "imageName": "page_check_martialarts_check_battle_boss.png",
+    "roiFront": "152,13,134,41",
+    "roiBack": "147,8,144,51",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
+  },
+  {
+    "itemName": "page_martialarts_check_battle_boss_main",
+    "imageName": "page_check_martialarts_check_battle_boss_main.png",
+    "roiFront": "555,63,164,47",
+    "roiBack": "550,58,174,57",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
+  },
+  {
+    "itemName": "page_martialarts_check_main_mar",
+    "imageName": "page_check_martialarts_check_main_mar.png",
+    "roiFront": "152,15,134,41",
+    "roiBack": "144,10,146,55",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
+  }
+]

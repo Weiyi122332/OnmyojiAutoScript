@@ -16,7 +16,7 @@ from module.logger import logger
 from module.base.timer import Timer
 from module.atom.ocr import RuleOcr
 from tasks.CollectiveMissions.config import MC
-from tasks.CollectiveMissions.page import page_collective_missions
+from tasks.GameUi.task_pages import page_collective_missions
 
 from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.page import page_main, page_guild
@@ -33,12 +33,12 @@ class ScriptTask(GameUi, CollectiveMissionsAssets):
         logger.info('Start to detect missions')
         self.get_task_reward()
         if self.is_finish():
-            self.goto_page(page_main)
+            self.finish_task_navigation()
             self.set_next_run(task='CollectiveMissions', success=True)
             raise TaskEnd
         self.select_and_update_cur_mission(self.config.collective_missions.missions_config.missions_select)
         if self.current_mission is None:
-            self.goto_page(page_main)
+            self.finish_task_navigation()
             self.set_next_run(task='CollectiveMissions', success=False)
             raise TaskEnd
         match self.current_mission:
@@ -48,7 +48,7 @@ class ScriptTask(GameUi, CollectiveMissionsAssets):
                 self._donate()  # 捐材料
             case MC.SO1 | MC.SO2:
                 self._soul()  # 捐御魂
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         self.set_next_run(task='CollectiveMissions', success=True)
         raise TaskEnd
 

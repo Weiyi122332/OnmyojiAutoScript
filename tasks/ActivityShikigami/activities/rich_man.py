@@ -6,7 +6,7 @@ import time
 from module.exception import GameStuckError
 from module.logger import logger
 from tasks.ActivityShikigami.base_act import ActivityResourceNotEnough
-import tasks.ActivityShikigami.page as pages
+import tasks.GameUi.task_pages as pages
 
 
 RICHMAN_ENTRY_SETTLE_SECONDS = 1.0
@@ -368,21 +368,9 @@ class RichManAct:
     def _sync_rich_man_team_lock(self, switch_loadout: bool) -> bool:
         conf = self.battle_config('rich_man')
         should_lock = conf.lock_team_enable and not (conf.preset_enable and switch_loadout)
-        self.screenshot()
-        if should_lock:
-            if self.appear(self.I_RM_MAIN_LOCK):
-                return False
-            if self.appear(self.I_RM_MAIN_UNLOCK):
-                self.ui_click(self.I_RM_MAIN_UNLOCK, stop=self.I_RM_MAIN_LOCK, interval=1)
-                return True
-        else:
-            if self.appear(self.I_RM_MAIN_UNLOCK):
-                return False
-            if self.appear(self.I_RM_MAIN_LOCK):
-                self.ui_click(self.I_RM_MAIN_LOCK, stop=self.I_RM_MAIN_UNLOCK, interval=1)
-                return True
-        logger.warning('RichMan main team lock status not detected')
-        return False
+        return self.ui_click_until_appear(self.I_RM_MAIN_UNLOCK,
+                   page_check=self.I_RM_THROW,
+                   expected_present=not (should_lock))
 
     def _wait_for_stable_throw_before_next_round(self):
         """连续确认投掷键稳定出现，并随机停顿后才允许下一轮投掷。"""

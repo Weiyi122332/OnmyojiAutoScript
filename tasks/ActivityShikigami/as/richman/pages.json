@@ -8,25 +8,5 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "进入主要的战斗界面"
-  },
-  {
-    "itemName": "check_rm_main",
-    "imageName": "rm_check_rm_main.png",
-    "profile": "High",
-    "roiFront": "148,13,174,47",
-    "roiBack": "121,0,227,72",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": ""
-  },
-  {
-    "itemName": "check_rm_richman",
-    "imageName": "rm_check_rm_richman.png",
-    "profile": "High",
-    "roiFront": "148,13,140,47",
-    "roiBack": "121,0,227,72",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": ""
   }
 ]

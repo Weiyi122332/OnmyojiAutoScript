@@ -4,7 +4,7 @@
 import random
 import time
 from cached_property import cached_property
-from tasks.ActivityShikigami.page import page_act
+from tasks.GameUi.task_pages import page_act
 
 from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.page import page_realm_raid, page_main

@@ -117,7 +117,6 @@ class BondlingFairylandAssets:
 
 	# Image Rule Assets
 	# 启用自动结契 
-	I_C_AUTO_TRUE = RuleImage(profile="High", roi_front=(765,200,50,24), roi_back=(749,187,79,51), threshold=0.8, method="Template matching", file="./tasks/BondlingFairyland/capture/capture_c_auto_true.png")
 	# 关闭自动结契 
 	I_C_AUTO_FALSE = RuleImage(profile="High", roi_front=(766,200,43,25), roi_back=(745,189,88,44), threshold=0.8, method="Template matching", file="./tasks/BondlingFairyland/capture/capture_c_auto_false.png")
 	# 启用低级盘子 
@@ -145,7 +144,6 @@ class BondlingFairylandAssets:
 	# 启用连续使用盘子 
 	I_C_CONTINUOUS_ENABLE = RuleImage(profile="High", roi_front=(508,468,32,34), roi_back=(500,461,47,48), threshold=0.8, method="Template matching", file="./tasks/BondlingFairyland/capture/capture_c_continuous_enable.png")
 	# 启用结契极简模式 
-	I_C_MINIMAL_MODE_ENABLE = RuleImage(profile="High", roi_front=(764,155,48,24), roi_back=(757,149,63,39), threshold=0.8, method="Template matching", file="./tasks/BondlingFairyland/capture/capture_c_minimal_mode_enable.png")
 	# 禁用结契极简模式 
 	I_C_MINIMAL_MODE_DISABLE = RuleImage(profile="High", roi_front=(764,156,46,23), roi_back=(758,148,62,39), threshold=0.8, method="Template matching", file="./tasks/BondlingFairyland/capture/capture_c_minimal_mode_disable.png")
 

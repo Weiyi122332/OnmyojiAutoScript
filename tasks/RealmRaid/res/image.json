@@ -142,12 +142,12 @@
   {
     "itemName": "fresh_ensure",
     "imageName": "res_fresh_ensure.png",
-    "profile": "High",
-    "roiFront": "672,403,173,59",
-    "roiBack": "672,403,173,59",
+    "roiFront": "664,408,180,64",
+    "roiBack": "664,408,180,64",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": "刷新确认/再战确认"
+    "description": "刷新确认/再战确认",
+    "profile": "High"
   },
   {
     "itemName": "unlock_2",

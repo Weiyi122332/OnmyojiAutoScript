@@ -1,15 +1,5 @@
 [
   {
-    "itemName": "check_chess_battle",
-    "imageName": "page_check_chess_battle.png",
-    "profile": "High",
-    "roiFront": "270,19,37,32",
-    "roiBack": "264,12,47,44",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "百鬼棋局局内页面标志"
-  },
-  {
     "itemName": "chess_exit",
     "imageName": "page_chess_exit.png",
     "profile": "High",
@@ -18,26 +8,6 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "百鬼棋局主动退出"
-  },
-  {
-    "itemName": "chess_exit_confirm",
-    "imageName": "page_chess_exit_confirm.png",
-    "profile": "High",
-    "roiFront": "716,409,88,45",
-    "roiBack": "716,409,88,45",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "百鬼棋局确认退出"
-  },
-  {
-    "itemName": "chess_exit_cancel",
-    "imageName": "page_chess_exit_cancel.png",
-    "profile": "High",
-    "roiFront": "478,409,88,45",
-    "roiBack": "478,409,88,45",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "百鬼棋局退出确认弹窗"
   },
   {
     "itemName": "chess_exit_to_lobby",
@@ -68,16 +38,6 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "百鬼棋局分享页"
-  },
-  {
-    "itemName": "check_chess_rank",
-    "imageName": "page_check_chess_rank.png",
-    "profile": "High",
-    "roiFront": "14,75,79,38",
-    "roiBack": "14,75,79,38",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "百鬼棋局排名页"
   },
   {
     "itemName": "chess_rank_goto_lobby",

@@ -30,16 +30,6 @@
     "description": "阴阳寮卡通人界面,左侧已开启的活动 列表"
   },
   {
-    "itemName": "ryou_dokan_check",
-    "imageName": "res_ryou_dokan_check.png",
-    "profile": "High",
-    "roiFront": "567,15,144,42",
-    "roiBack": "567,15,144,42",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "是否已经成功进入道馆，上面中间的“道馆突破”文字"
-  },
-  {
     "itemName": "ryou_dokan_shikigami",
     "imageName": "res_ryou_dokan_shikigami.png",
     "profile": "High",
@@ -108,26 +98,6 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "优先攻击: 黑脸"
-  },
-  {
-    "itemName": "ryou_dokan_finding_dokan",
-    "imageName": "res_ryou_dokan_finding_dokan.png",
-    "profile": "High",
-    "roiFront": "980,60,100,160",
-    "roiBack": "980,60,100,160",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "正在查找道馆,还未选择"
-  },
-  {
-    "itemName": "ryou_dokan_found_dokan",
-    "imageName": "res_ryou_dokan_found_dokan.png",
-    "profile": "High",
-    "roiFront": "440,580,360,140",
-    "roiBack": "440,580,360,140",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "已选择道馆"
   },
   {
     "itemName": "ryou_dokan_gathering",
@@ -522,12 +492,12 @@
   {
     "itemName": "challenge_ensure",
     "imageName": "res_ryou_dokan_challenge_ensure.png",
-    "profile": "High",
-    "roiFront": "0,0,1280,720",
-    "roiBack": "0,0,1280,720",
+    "roiFront": "664,408,180,64",
+    "roiBack": "664,408,180,64",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": "查找道馆时,确认挑战按钮"
+    "description": "查找道馆时,确认挑战按钮",
+    "profile": "High"
   },
   {
     "itemName": "refresh_ensure",

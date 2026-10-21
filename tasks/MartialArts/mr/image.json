@@ -150,16 +150,6 @@
     "description": ""
   },
   {
-    "itemName": "mr_main_awards",
-    "imageName": "mr_mr_main_awards.png",
-    "profile": "High",
-    "roiFront": "480,232,321,42",
-    "roiBack": "397,150,477,137",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": ""
-  },
-  {
     "itemName": "mr_main_sighin_close",
     "imageName": "mr_mr_main_sighin_close.png",
     "profile": "High",

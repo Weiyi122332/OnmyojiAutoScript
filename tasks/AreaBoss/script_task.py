@@ -69,7 +69,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, AreaBossAssets):
         elif con.boss_number - boss_fought == 1:
             self.boss_fight(self.I_BATTLE_1)
         # 退出
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         self.set_next_run(task='AreaBoss', success=True, finish=False)
 
         # 以抛出异常的形式结束
@@ -81,7 +81,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, AreaBossAssets):
         time_not_passed: bool = time(0, 0, 0) <= now <= time(6, 0, 0)
         if time_not_passed:
             logger.error("It's not time to challenge boss")
-            self.goto_page(page_main)
+            self.finish_task_navigation()
             self.set_next_run(task='AreaBoss', server=False, target=datetime.now().replace(hour=10))
             raise TaskEnd
 

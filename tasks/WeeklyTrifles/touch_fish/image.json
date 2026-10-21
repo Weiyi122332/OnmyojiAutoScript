@@ -30,16 +30,6 @@
     "description": "全部保存本周次数"
   },
   {
-    "itemName": "check_touch_fish",
-    "imageName": "touch_fish_check_touch_fish.png",
-    "profile": "High",
-    "roiFront": "1082,20,27,27",
-    "roiBack": "1082,20,27,27",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "摸鱼行动页面标志"
-  },
-  {
     "itemName": "wt_tf_goto_main",
     "imageName": "touch_fish_wt_tf_goto_main.png",
     "profile": "High",

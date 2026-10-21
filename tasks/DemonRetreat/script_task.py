@@ -43,7 +43,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DemonRetreatAssets, AbyssSha
             logger.warning("Failed to enter demon retreat")
             if self.appear_then_click(self.I_DEMON_BACK_CHECK, interval=1):
                 pass
-            self.goto_page(page_main)
+            self.finish_task_navigation()
             self.set_next_run(task='DemonRetreat', server=False, target=self.get_next_dt(datetime.now()))
             raise TaskEnd
 
@@ -67,7 +67,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DemonRetreatAssets, AbyssSha
                 if self.appear_then_click(self.I_DEMON_BACK_CHECK, interval=1):
                     break
 
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         # 设置下次运行时间
         self.set_next_run(task='DemonRetreat', server=False, target=self.get_next_dt(datetime.now(), success))
         raise TaskEnd

@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
@@ -57,7 +58,6 @@ class MartialArtsAssets:
 	#  
 	I_MR_BOSS_QUICK_LOADOUT_FIGHT = RuleImage(profile="High", roi_front=(809,518,119,42), roi_back=(804,513,129,52), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_mr_boss_quick_loadout_fight.png")
 	#  
-	I_MR_MAIN_AWARDS = RuleImage(profile="High", roi_front=(480,232,321,42), roi_back=(397,150,477,137), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_mr_main_awards.png")
 	#  
 	I_MR_MAIN_SIGHIN_CLOSE = RuleImage(profile="High", roi_front=(1082,122,30,35), roi_back=(1077,117,40,45), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_mr_main_sighin_close.png")
 	#  
@@ -85,16 +85,16 @@ class MartialArtsAssets:
 	# 武道大会活动主页标志（待裁模板） 
 	I_MAIN_GOTO_MAR = RuleImage(profile="High", roi_front=(1190,380,37,39), roi_back=(1162,193,87,328), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_main_goto_mar.png")
 	#  
-	I_CHECK_MAIN_MAR = RuleImage(profile="High", roi_front=(152,15,134,41), roi_back=(144,10,146,55), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_check_main_mar.png")
+	I_CHECK_MAIN_MAR = _PageAssets.I_PAGE_MARTIALARTS_CHECK_MAIN_MAR
 	#  
 	I_TO_BATTLE_AP = RuleImage(profile="High", roi_front=(184,212,26,131), roi_back=(179,207,36,141), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_to_battle_ap.png")
 	#  
 	I_TO_BATTLE_BOSS = RuleImage(profile="High", roi_front=(1118,258,26,131), roi_back=(1113,253,36,141), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_to_battle_boss.png")
 	#  
-	I_CHECK_BATTLE_AP = RuleImage(profile="High", roi_front=(150,16,134,41), roi_back=(144,10,146,55), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_check_battle_ap.png")
+	I_CHECK_BATTLE_AP = _PageAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_AP
 	#  
-	I_CHECK_BATTLE_BOSS = RuleImage(profile="High", roi_front=(152,13,134,41), roi_back=(147,8,144,51), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_check_battle_boss.png")
+	I_CHECK_BATTLE_BOSS = _PageAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_BOSS
 	#  
-	I_CHECK_BATTLE_BOSS_MAIN = RuleImage(profile="High", roi_front=(555,63,164,47), roi_back=(550,58,174,57), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_check_battle_boss_main.png")
+	I_CHECK_BATTLE_BOSS_MAIN = _PageAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_BOSS_MAIN
 
 

@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets
 """式神活动探索：关键字入口、宝箱、系统式神战斗及遭遇战。"""
 
 import time
@@ -8,7 +9,7 @@ from module.logger import logger
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 from tasks.Component.GeneralBattle.general_battle import BattleAction
 from tasks.GameUi.default_pages import settlement_random_click
-import tasks.ActivityShikigami.page as pages
+import tasks.GameUi.task_pages as pages
 
 
 class ExplorationAct:
@@ -49,10 +50,10 @@ class ExplorationAct:
         return super()._handle_missing_battle_page(context, config, exit_matcher)
 
     def _clear_exp_rewards(self):
-        if self.appear(self.I_EVENT_REWARD_CLOSE):
+        if self.appear(GameUiAssets.I_ACTIVITY_GENERAL_CLOSE_RED):
             # 部分宝箱及战斗结算会额外弹出带关闭按钮的奖励页。
-            self.click(self.I_EVENT_REWARD_CLOSE, interval=0.8)
-            if not self._wait_exp(lambda: not self.appear(self.I_EVENT_REWARD_CLOSE), timeout=5):
+            self.click(GameUiAssets.I_ACTIVITY_GENERAL_CLOSE_RED, interval=0.8)
+            if not self._wait_exp(lambda: not self.appear(GameUiAssets.I_ACTIVITY_GENERAL_CLOSE_RED), timeout=5):
                 raise GameStuckError('Exploration reward close button did not disappear')
             return True
         for marker, click in (
@@ -138,15 +139,10 @@ class ExplorationAct:
                 raise GameStuckError('Encounter did not return from shikigami records')
             self._exp_soul_switched = True
         cfg = self.conf.exp_encounter_battle_conf
-        target = self.I_EVENT_FIGHT_LOCK if cfg.lock_team_enable else self.I_EVENT_FIGHT_UNLOCK
-        button = self.I_EVENT_FIGHT_UNLOCK if cfg.lock_team_enable else self.I_EVENT_FIGHT_LOCK
-        for _ in range(4):
-            self.screenshot()
-            if self.appear(target):
-                return
-            self.appear_then_click(button, interval=0.8)
-            time.sleep(0.3)
-        raise GameStuckError('Cannot confirm encounter team lock')
+        self.ui_click_until_appear(self.I_EVENT_FIGHT_UNLOCK,
+            page_check=self.I_EVENT_FIGHT,
+            expected_present=not (cfg.lock_team_enable),
+            interval=0.8)
 
     def _run_exp_event(self, mode):
         deadline = time.monotonic() + 20
@@ -180,11 +176,11 @@ class ExplorationAct:
                 )
                 return True
             if self.appear(self.I_EVENT_STORY):
-                if not self._wait_exp(lambda: self.appear(self.I_STORY_SKIP_ENSURE),
+                if not self._wait_exp(lambda: self.appear(GameUiAssets.I_ACTIVITY_SKIP_ENSURE),
                                       click=self.I_EVENT_STORY):
                     raise GameStuckError('Story skip confirmation did not appear')
                 if not self._wait_exp(lambda: self.appear(self.I_UI_REWARD),
-                                      click=self.I_STORY_SKIP_ENSURE):
+                                      click=GameUiAssets.I_ACTIVITY_SKIP_ENSURE):
                     raise GameStuckError('Story reward did not appear')
                 self._clear_exp_rewards()
                 return True
@@ -209,7 +205,7 @@ class ExplorationAct:
 
     def run_exploration(self):
         self._exp_soul_switched = False
-        self.goto_page(pages.page_activity_exploration)
+        self.goto_page(pages.PAGE_ACT_GENERAL_1)
         for mode, rule in (('main', self.I_EXP_MAIN), ('encounter', self.I_EXP_ENCOUNTER),
                            ('branch', self.I_EXP_BRANCH)):
             self.current_action_type = f'exp_{mode}'
@@ -238,4 +234,4 @@ class ExplorationAct:
                 and not self._exp_normal_fight_appear()
                 and not self.appear(self.I_EVENT_REWARD)
                 and not self.appear(self.I_EVENT_STORY)
-                and not self.appear(self.I_STORY_SKIP_ENSURE))
+                and not self.appear(GameUiAssets.I_ACTIVITY_SKIP_ENSURE))

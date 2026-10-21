@@ -102,8 +102,8 @@
   {
     "itemName": "exit_ensure",
     "imageName": "gb_exit_ensure.png",
-    "roiFront": "674,388,135,63",
-    "roiBack": "674,388,135,63",
+    "roiFront": "699,414,107,46",
+    "roiBack": "662,364,250,121",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "High",

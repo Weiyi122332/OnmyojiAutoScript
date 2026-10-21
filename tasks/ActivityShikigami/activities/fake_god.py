@@ -3,37 +3,16 @@
 import random
 import time
 
+from module.exception import ScriptError
 from module.logger import logger
 from tasks.ActivityShikigami.base_act import ActivityResourceNotEnough
 from tasks.ActivityShikigami.assets import ActivityShikigamiAssets
-import tasks.ActivityShikigami.page as pages
-from tasks.GlobalGame.assets import GlobalGameAssets
+import tasks.GameUi.task_pages as pages
 
 
 class FakeGodAct:
     def setup_fakegod_pages(self):
-        page_act = self.navigator.resolve_page(pages.page_act)
-        page_action = self.navigator.resolve_page(pages.page_fakegod_action)
-
-        page_second = self.navigator.add_page(pages.Page(
-            ActivityShikigamiAssets.I_FG_AS_CHECK_MAIN_2,
-            category='activity_shikigami',
-        ))
-        page_second.add_enter_success_hooks(GlobalGameAssets.I_UI_BACK_RED)
-        page_act.connect(page_second, ActivityShikigamiAssets.I_FG_TO_BATTLE_MAIN, key='activity->fakegod_second')
-        page_second.connect(page_act, GlobalGameAssets.I_UI_BACK_CIRCLE, key='fakegod_second->activity')
-
-        page_dark = self.navigator.add_page(pages.Page(
-            ActivityShikigamiAssets.I_FG_AS_CLOSE_EYE,
-            category='activity_shikigami',
-            priority=75,
-        ))
-        page_dark.add_enter_failure_hooks(GlobalGameAssets.I_UI_BACK_RED)
-        page_dark.add_enter_success_hooks(ActivityShikigamiAssets.I_FG_AS_LOCATE)
-        page_dark.connect(page_act, GlobalGameAssets.I_UI_BACK_CIRCLE, key='fakegod_dark->activity')
-        page_second.connect(page_dark, ActivityShikigamiAssets.I_FG_AS_OPEN_EYE, key='fakegod_second->dark')
-        page_action.connect(page_dark, GlobalGameAssets.I_UI_BACK_YELLOW, key='fakegod_action->dark')
-        page_dark.connect(page_action, ActivityShikigamiAssets.I_FG_AS_TO_PASS, key='fakegod_dark->action')
+        raise ScriptError('Fakegod navigation resources have been retired; update them before enabling this activity')
 
     def run_fakegod(self):
         logger.hr('Start activity: Fakegod', 1)
@@ -102,7 +81,7 @@ class FakeGodAct:
                 return True
             if click_times >= max_times:
                 return False if fallback else self._raise_fakegod_resource_error()
-            if self.appear(self.I_UI_BACK_RED, interval=1):
+            if self.appear(GameUiAssets.I_ACTIVITY_GENERAL_CLOSE_RED, interval=1):
                 return False if fallback else self._raise_fakegod_resource_error()
             if self.appear_then_click(self.I_UI_CONFIRM_SAMLL, interval=1) or \
                     self.appear_then_click(self.I_UI_CONFIRM, interval=1):
@@ -125,13 +104,13 @@ class FakeGodAct:
                 return True
             if self.appear(self.I_UI_CONFIRM_SAMLL) or self.appear(self.I_UI_CONFIRM):
                 return False
-            if self.appear(self.I_UI_BACK_RED):
+            if self.appear(GameUiAssets.I_ACTIVITY_GENERAL_CLOSE_RED):
                 return False
             time.sleep(0.2)
         return False
 
     def _sync_fakegod_team_lock(self):
-        if self.battle_config('fakegod').lock_team_enable:
-            self.ui_click(self.I_FG_UNLOCK, stop=self.I_FG_LOCK, interval=1.5)
-        else:
-            self.ui_click(self.I_FG_LOCK, stop=self.I_FG_UNLOCK, interval=1.5)
+        self.ui_click_until_appear(self.I_FG_UNLOCK,
+            page_check=self.I_FG_ACT_FIRE,
+            expected_present=not (self.battle_config('fakegod').lock_team_enable),
+            interval=1.5)

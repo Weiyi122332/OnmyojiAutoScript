@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
@@ -29,7 +30,7 @@ class WeeklyPurchaseAssets:
 	# 功勋礼包 
 	I_GUILD_HONOR_GIFT = RuleImage(profile="High", roi_front=(569,212,74,73), roi_back=(315,164,584,370), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/guild/guild_guild_honor_gift.png")
 	# 寮商店标志 
-	I_RM_CHECK_GUILD_STORE = RuleImage(profile="High", roi_front=(519,66,193,38), roi_back=(483,34,257,100), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/guild/guild_rm_check_guild_store.png")
+	I_RM_CHECK_GUILD_STORE = _PageAssets.I_PAGE_WEEKLYPURCHASE_RM_CHECK_GUILD_STORE
 
 
 	# Ocr Rule Assets
@@ -59,7 +60,7 @@ class WeeklyPurchaseAssets:
 	#  
 	I_ITACHI_SHOP_ENTRY = RuleImage(profile="High", roi_front=(47,635,45,40), roi_back=(42,630,55,50), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/itachi_shop/itachi_shop_itachi_shop_entry.png")
 	#  
-	I_ITACHI_SHOP_CHECK = RuleImage(profile="High", roi_front=(121,37,78,39), roi_back=(116,33,88,49), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/itachi_shop/itachi_shop_itachi_shop_check.png")
+	I_ITACHI_SHOP_CHECK = _PageAssets.I_PAGE_WEEKLYPURCHASE_ITACHI_SHOP_CHECK
 
 
 	# Ocr Rule Assets

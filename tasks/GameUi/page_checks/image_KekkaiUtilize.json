@@ -1,0 +1,12 @@
+[
+  {
+    "itemName": "page_kekkaiutilize_check_guild_card",
+    "imageName": "page_check_kekkaiutilize_check_guild_card.png",
+    "roiFront": "66,93,49,85",
+    "roiBack": "29,61,150,210",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "寮结界卡界面"
+  }
+]

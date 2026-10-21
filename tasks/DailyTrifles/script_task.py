@@ -10,7 +10,7 @@ from module.atom.image import RuleImage
 from module.ocr.common import BoxedResult
 
 from tasks.Component.config_base import Time
-from tasks.DailyTrifles.page import page_store_gift_room, page_friends_luck, page_guild_wish
+from tasks.GameUi.task_pages import page_store_gift_room, page_friends_luck, page_guild_wish
 
 from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.page import page_main, page_summon, page_guild, page_mall, page_mall_recommend, page_friends, page_courtyard_affairs
@@ -186,7 +186,7 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
         if self.config.daily_trifles.guild_donate.auto_get_rewards:
             self.guild_donate_get_reward()
         self.config.daily_trifles.done_record.guild_donate_finish = all_done
-        self.goto_page(page_main)
+        self.finish_task_navigation()
 
     def guild_donate_get_reward(self):
         """领取捐赠碎片的奖励"""
@@ -353,7 +353,7 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
                 logger.warning('There is no any luck msg')
                 break
 
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         self.config.daily_trifles.done_record.luck_msg_dt = datetime.now()
 
     def run_store(self):
@@ -365,7 +365,7 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
             self.run_store_sign()
         if self.config.daily_trifles.trifles_config.buy_sushi_count > 0:
             self.run_buy_sushi()
-        self.goto_page(page_main)
+        self.finish_task_navigation()
 
     def run_store_sign(self):
         logger.hr('store sign', 2)
@@ -468,7 +468,7 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
             if self.appear_then_click(self.I_ENTER_DAILY, interval=1):
                 continue
         self.appear_then_click(self.I_ONE_COMPLETE, interval=1)
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         self.config.daily_trifles.done_record.courtyard_affairs_dt = datetime.now()
 
     def run_pickup_email(self):
@@ -489,7 +489,7 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
                 continue
             if self.appear_then_click(self.I_READ_ALL_MAIL, interval=3):
                 continue
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         self.config.daily_trifles.done_record.pickup_email_dt = datetime.now()
 
     def plan_next_dt(self):

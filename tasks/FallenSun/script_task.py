@@ -47,8 +47,10 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
         self.limit_count: int = limit_count
         self.limit_time: timedelta = timedelta(hours=limit_time.hour, minutes=limit_time.minute, seconds=limit_time.second)
 
-        self.goto_page(page_main)
         config: FallenSun = self.config.fallen_sun
+        if config.fallen_sun_config.user_status == UserStatus.MEMBER:
+            # 队员在庭院等待邀请；其他模式直接导航到挑战入口。
+            self.goto_page(page_main)
 
         success = True
         match config.fallen_sun_config.user_status:
@@ -86,28 +88,14 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
             return True
 
     def check_lock(self, lock: bool = True) -> bool:
-        """
-        检查是否锁定阵容, 要求在八岐大蛇界面
-        :param lock:
-        :return:
-        """
-        logger.info('Check lock: %s', lock)
-        if lock:
-            while 1:
-                self.screenshot()
-                if self.appear(self.I_FALLEN_SUN_LOCK):
-                    return True
-                if self.appear_then_click(self.I_FALLEN_SUN_UNLOCK, interval=1):
-                    continue
-        else:
-            while 1:
-                self.screenshot()
-                if self.appear(self.I_FALLEN_SUN_UNLOCK):
-                    return True
-                if self.appear_then_click(self.I_FALLEN_SUN_LOCK, interval=1):
-                    continue
+        """在 FallenSun 挑战页面，以未锁定态确认阵容开关。"""
+        self.ui_click_until_appear(self.I_FALLEN_SUN_UNLOCK,
+            page_check=self.I_FORM_TEAM,
+            expected_present=not (lock))
+        return True
 
     def run_leader(self):
+        self.prepare_battle_cooperation('FallenSun')
         logger.info('Start run leader')
         self.goto_page(page_soul_zones)
         self.fallen_sun_enter()
@@ -201,13 +189,14 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
         if self.exit_team():
             pass
 
-        self.goto_page(page_main)
+        self.finish_task_navigation()
 
         if not success:
             return False
         return True
 
     def run_member(self):
+        self.prepare_battle_cooperation('FallenSun')
         logger.info('Start run member')
         # self.goto_page(page_soul_zones)
         # self.fallen_sun_enter()
@@ -262,7 +251,7 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
                 pass
 
 
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         return True
 
     def run_alone(self):
@@ -310,7 +299,7 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
                     break
 
         # 回去
-        self.goto_page(page_main)
+        self.finish_task_navigation()
 
     def run_wild(self):
         logger.error('Wild mode is not implemented')

@@ -1,15 +1,5 @@
 [
   {
-    "itemName": "wqc_lock",
-    "imageName": "chanllenge_wqc_lock.png",
-    "profile": "High",
-    "roiFront": "1086,510,21,26",
-    "roiBack": "1073,500,44,48",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "description"
-  },
-  {
     "itemName": "wqc_unlock",
     "imageName": "chanllenge_wqc_unlock.png",
     "profile": "High",

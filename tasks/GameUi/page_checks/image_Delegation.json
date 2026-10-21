@@ -1,0 +1,12 @@
+[
+  {
+    "itemName": "check_delegation",
+    "imageName": "page_check_delegation.png",
+    "roiFront": "839,132,49,45",
+    "roiBack": "839,132,49,45",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "委派页面标志"
+  }
+]

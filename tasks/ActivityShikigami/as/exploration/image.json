@@ -60,16 +60,6 @@
     "description": "式神助战"
   },
   {
-    "itemName": "event_fight_lock",
-    "imageName": "exploration_event_fight_lock.png",
-    "profile": "High",
-    "roiFront": "795,600,33,30",
-    "roiBack": "790,595,43,40",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "遭遇战锁定"
-  },
-  {
     "itemName": "event_fight_unlock",
     "imageName": "exploration_event_fight_unlock.png",
     "profile": "High",
@@ -78,16 +68,6 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "遭遇战解锁"
-  },
-  {
-    "itemName": "encounter_to_records",
-    "imageName": "exploration_encounter_to_records.png",
-    "profile": "High",
-    "roiFront": "929,506,42,42",
-    "roiBack": "910,488,74,80",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "遭遇战式神录入口"
   },
   {
     "itemName": "exp_main",
@@ -130,16 +110,6 @@
     "description": "剧情跳过兼剧情事件"
   },
   {
-    "itemName": "story_skip_ensure",
-    "imageName": "exploration_story_skip_ensure.png",
-    "profile": "High",
-    "roiFront": "716,445,117,34",
-    "roiBack": "674,426,203,68",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "确认跳过剧情"
-  },
-  {
     "itemName": "event_fight_boss",
     "imageName": "exploration_event_fight_boss.png",
     "profile": "High",
@@ -158,5 +128,15 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "探索奖励关闭按钮"
+  },
+  {
+    "itemName": "encounter_to_records",
+    "imageName": "exploration_encounter_to_records.png",
+    "profile": "High",
+    "roiFront": "929,506,42,42",
+    "roiBack": "910,488,74,80",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "遭遇战式神录入口"
   }
 ]

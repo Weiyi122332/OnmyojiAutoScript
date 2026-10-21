@@ -1,0 +1,72 @@
+[
+  {
+    "itemName": "page_check_activity",
+    "imageName": "page_check_activity.png",
+    "roiFront": "151,18,140,41",
+    "roiBack": "141,0,192,69",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "当前活动主界面标志"
+  },
+  {
+    "itemName": "page_check_battle_pass",
+    "imageName": "page_check_battle_pass.png",
+    "roiFront": "151,18,134,40",
+    "roiBack": "141,0,157,67",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "门票爬塔主界面标志"
+  },
+  {
+    "itemName": "page_check_act_general_2",
+    "imageName": "page_check_act_general_2.png",
+    "roiFront": "151,18,134,40",
+    "roiBack": "141,0,157,67",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "活动通用子页面2标志"
+  },
+  {
+    "itemName": "page_check_act_general_1",
+    "imageName": "page_check_act_general_1.png",
+    "roiFront": "592,0,136,41",
+    "roiBack": "554,0,213,59",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "活动通用子页面1标志"
+  },
+  {
+    "itemName": "page_check_battle_ap",
+    "imageName": "page_check_battle_ap.png",
+    "roiFront": "151,18,141,41",
+    "roiBack": "141,0,192,69",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "活动体力挑战标志"
+  },
+  {
+    "itemName": "page_check_richman",
+    "imageName": "page_check_richman.png",
+    "roiFront": "148,13,140,47",
+    "roiBack": "121,0,227,72",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "活动大富翁主页面"
+  },
+  {
+    "itemName": "page_check_battle_boss",
+    "imageName": "page_check_battle_boss.png",
+    "roiFront": "151,18,129,46",
+    "roiBack": "141,0,151,85",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "首领界面标志"
+  }
+]

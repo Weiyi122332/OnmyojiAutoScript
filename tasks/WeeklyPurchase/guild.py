@@ -15,7 +15,7 @@ from tasks.GameUi.game_ui import GameUi
 from tasks.Component.Buy.buy import Buy
 from tasks.WeeklyPurchase.assets import WeeklyPurchaseAssets
 from tasks.WeeklyPurchase.config import GuildStore
-from tasks.WeeklyPurchase.page import page_guild_store
+from tasks.GameUi.task_pages import page_guild_store
 
 
 class Guild(Buy, GameUi, WeeklyPurchaseAssets):

@@ -252,13 +252,22 @@ class Config(ConfigState, ConfigManual, ConfigWatcher, ConfigMenu):
         if self.task is not None and self.task.next_run < scheduler_update_dt:
             running = {"name": self.task.command, "next_run": str(self.task.next_run)}
 
+        # 协同唤醒可以选择非队首任务；不能再假定 pending[0] 就是运行项。
+        # 这里只整理显示快照，不修改实际队列和调度优先级。
+        seen = {running['name']} if running else set()
         pending = []
-        for p in self.pending_task[1:]:
+        for p in self.pending_task:
+            if p.command in seen:
+                continue
+            seen.add(p.command)
             item = {"name": p.command, "next_run": str(p.next_run)}
             pending.append(item)
 
         waiting = []
         for w in self.waiting_task:
+            if w.command in seen:
+                continue
+            seen.add(w.command)
             item = {"name": w.command, "next_run": str(w.next_run)}
             waiting.append(item)
 

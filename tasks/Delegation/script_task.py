@@ -1,12 +1,11 @@
 # This Python file uses the following encoding: utf-8
 # @author runhey
 # github https://github.com/runhey
-from time import sleep
+from time import sleep, monotonic
 from datetime import time, datetime, timedelta
 
 from module.logger import logger
 from module.exception import GameStuckError, TaskEnd
-from module.base.timer import Timer
 
 from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.page import page_main, page_delegation
@@ -89,57 +88,87 @@ class ScriptTask(GameUi, DelegationAssets):
         # ui_click(self.C_D_5, self.I_D_SELECT_5)
         # self.ui_click_until_disappear(self.I_D_START)
 
+    def _advance_delegation_reward(self) -> bool:
+        """只在对应控件可见时推进领奖，点击后由下一帧确认状态。"""
+        for rule in (self.I_REWARDS_DONE, self.I_REWARDS_GET,
+                     self.I_REWARDS_FALSE, self.I_CHAT_1, self.I_CHAT_2):
+            if self.appear(rule):
+                self.click(rule, interval=1)
+                return True
+        if self.appear(self.I_REWARDS_CHAT):
+            # 文字与对话标志同时命中才点击对话文字，避免误点列表背景。
+            chat_text = self.O_D_DONE_CHAT.ocr(self.device.image).strip()
+            self.click(self.O_D_DONE_CHAT if chat_text else self.I_REWARDS_CHAT,
+                       interval=0.8)
+            return True
+        return False
+
     def check_reward(self):
-        check_timer = Timer(3)
-        check_timer.start()
-        while 1:
+        idle_since = monotonic()
+        deadline = idle_since + 60
+        while monotonic() < deadline:
             self.screenshot()
-            if self.appear_then_click(self.I_REWARDS_GET, interval=1):
-                check_timer.reset()
+            if self._advance_delegation_reward():
+                idle_since = monotonic()
                 continue
-            if self.appear_then_click(self.I_REWARDS_CHAT, interval=1):
-                check_timer.reset()
-                continue
-            if self.appear_then_click(self.I_CHAT_1, interval=1):
-                check_timer.reset()
-                continue
-            if self.appear_then_click(self.I_CHAT_2, interval=1):
-                check_timer.reset()
-                continue
-            if self.appear_then_click(self.I_REWARDS_DONE, interval=1):
-                check_timer.reset()
-                continue
-            if self.appear_then_click(self.I_REWARDS_FALSE, interval=1):
-                check_timer.reset()
-                continue
-
-
-            if not self.appear(self.I_REWARDS_MIN):
-                continue
-            if check_timer.reached():
-                break
-            if self.ocr_appear_click(self.O_D_DONE, interval=1):
-                self.wait_delegation_done_reward()
-                check_timer.reset()
-                continue
+            if self.appear(self.I_REWARDS_MIN):
+                # 先检查完成任务，不能因为停留三秒就跳过尚未领取的奖励。
+                if self.ocr_appear(self.O_D_DONE):
+                    self.wait_delegation_done_reward()
+                    idle_since = monotonic()
+                    continue
+                if monotonic() - idle_since >= 3:
+                    return
+            else:
+                idle_since = monotonic()
+            sleep(0.2)
+        raise GameStuckError('Delegation: reward processing did not return to an idle task list')
 
     def wait_delegation_done_reward(self):
-        """领取已完成委派后推进对话，直到奖励确认按钮出现。"""
-        wait_timer = Timer(5)
-        wait_timer.start()
-        while True:
+        """确认完成入口已打开；仍在列表时有限重试，再推进对话至领奖。"""
+        attempts = 0
+        retry_at = 0.0
+        deadline = monotonic() + 25
+        reward_seen = False
+        list_frames = 0
+        while monotonic() < deadline:
             self.screenshot()
+            # 按实际页面分流，不把“完成点击已发出”当作“已进入奖励页”。
             if self.appear(self.I_REWARDS_DONE):
+                logger.info('Delegation reward confirmation appeared')
                 return
-            if wait_timer.reached():
-                raise GameStuckError(
-                    'Delegation reward dialog timed out before rewards done appeared'
-                )
-
-            chat_text = self.O_D_DONE_CHAT.ocr(self.device.image).strip()
-            if chat_text and self.appear(self.I_REWARDS_CHAT):
-                self.click(self.O_D_DONE_CHAT, interval=0.8)
+            if self._advance_delegation_reward():
+                reward_seen = True
+                list_frames = 0
                 continue
+            if self.appear(self.I_REWARDS_MIN):
+                if reward_seen:
+                    list_frames += 1
+                    if list_frames >= 2:
+                        logger.info('Delegation reward flow returned to task list')
+                        return
+                elif self.ocr_appear(self.O_D_DONE):
+                    list_frames = 0
+                    if monotonic() >= retry_at:
+                        if attempts >= 3:
+                            raise GameStuckError(
+                                'Delegation: completed task is still on list after 3 entry clicks; '
+                                'reward dialog never opened'
+                            )
+                        # OCR 更新到当前帧的完成标签后再点击，避免沿用旧坐标。
+                        if self.ocr_appear_click(self.O_D_DONE, interval=1):
+                            attempts += 1
+                            retry_at = monotonic() + 5
+                            logger.info(f'Delegation open completed-task reward: attempt={attempts}/3; awaiting page confirmation')
+                else:
+                    list_frames = 0
+            else:
+                list_frames = 0
+            sleep(0.2)
+        raise GameStuckError(
+            'Delegation: reward flow timed out; '
+            f'entry_clicks={attempts}, reward_page_seen={reward_seen}'
+        )
 
 
 if __name__ == '__main__':

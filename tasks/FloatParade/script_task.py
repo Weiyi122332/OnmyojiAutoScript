@@ -4,7 +4,7 @@
 import time
 from time import sleep
 
-from tasks.FloatParade.page import page_fp_main, page_fp_task, page_fp_placement
+from tasks.GameUi.task_pages import page_fp_main, page_fp_task, page_fp_placement
 from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.page import page_main
 from tasks.TalismanPass.assets import TalismanPassAssets
@@ -31,7 +31,7 @@ class ScriptTask(GameUi, FloatParadeAssets, TalismanPassAssets):
         self.collect_placement_reward()
         # 收取花车等级奖励
         # self.get_flower(con.level_reward1, con.level_reward2) # 第一种
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         self.set_next_run(task='FloatParade', success=True, finish=True)
         raise TaskEnd('FloatParade')
 

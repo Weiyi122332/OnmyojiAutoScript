@@ -103,8 +103,8 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, SougenbiAssets):
                         exit_matcher=any_of(self.I_S_FIRE, self.I_S_CHECK_SOUGENBI),
                     )
                     break
-        self.goto_page(page_main)
         if s_con.buff_enable:
+            self.goto_page(page_main)
             self.open_buff()
             if s_con.buff_gold_50_click:
                 self.gold_50(False)
@@ -115,6 +115,8 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, SougenbiAssets):
             if s_con.buff_exp_100_click:
                 self.exp_100(False)
             self.close_buff()
+        else:
+            self.finish_task_navigation()
 
         self.set_next_run("Sougenbi", success=True, finish=True)
         raise TaskEnd

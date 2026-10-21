@@ -1,0 +1,12 @@
+[
+  {
+    "itemName": "page_weeklytrifles_check_touch_fish",
+    "imageName": "page_check_weeklytrifles_check_touch_fish.png",
+    "roiFront": "1082,20,27,27",
+    "roiBack": "1082,20,27,27",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "摸鱼行动页面标志"
+  }
+]

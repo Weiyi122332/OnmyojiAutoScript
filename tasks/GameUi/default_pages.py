@@ -30,6 +30,7 @@ from tasks.Component.Login.service import LoginService
 from tasks.DailyTrifles.assets import DailyTriflesAssets
 from tasks.GlobalGame.assets import GlobalGameAssets
 from tasks.GameUi.assets import GameUiAssets
+from tasks.GameUi.activity_handlers import handle_activity_close
 from tasks.GameUi.matcher import all_of, any_of, not_
 from tasks.GameUi.page_definition import Page
 from tasks.KekkaiUtilize.assets import KekkaiUtilizeAssets
@@ -161,13 +162,13 @@ def handle_activity_overlay(task) -> bool:
             time.sleep(0.2)
             continue
 
-        if task.appear_then_click(GameUiAssets.I_ACTIVITY_SIGNIN_CLOSE, interval=0):
-            logger.info('Close activity sign-in overlay')
+        if handle_activity_close(task):
+            logger.info('Closed activity red overlay')
             task.device.click_record_clear()
             time.sleep(0.2)
             continue
 
-        if task.appear(GameUiAssets.I_CHECK_ACTIVITY):
+        if task.appear(GameUiAssets.I_PAGE_CHECK_ACTIVITY):
             logger.info('Activity main page ready')
             return True
 
@@ -202,9 +203,8 @@ page_lineup_helper = Page(
 # 公共活动主页。各活动任务只负责从这里继续导航到各自玩法页面。
 page_activity = Page(
     any_of(
-        GameUiAssets.I_CHECK_ACTIVITY,
+        GameUiAssets.I_PAGE_CHECK_ACTIVITY,
         GlobalGameAssets.I_UI_REWARD,
-        GameUiAssets.I_ACTIVITY_SIGNIN_CLOSE,
     ),
     category="global",
 )
@@ -212,7 +212,7 @@ page_activity.add_enter_success_hooks(handle_activity_overlay)
 page_activity.add_enter_failure_hooks(
     find_activity_entry,
     conditional_action(GlobalGameAssets.I_UI_REWARD, reward_random_click),
-    GlobalGameAssets.I_UI_BACK_RED,
+    handle_activity_close,
     GameUiAssets.I_ACTIVITY_SKIP,
 )
 page_activity.connect(page_main, GlobalGameAssets.I_UI_BACK_YELLOW, key="page_activity->page_main")
@@ -260,7 +260,7 @@ page_courtyard_affairs = Page(DailyTriflesAssets.I_CHECK_COURTYARD_AFFAIRS, cate
 page_main.connect(page_courtyard_affairs, DailyTriflesAssets.I_ENTER_COURTYARD_AFFAIRS, key="page_main->page_courtyard_affairs")
 page_courtyard_affairs.connect(page_main, GlobalGameAssets.I_UI_BACK_YELLOW, key="page_courtyard_affairs->page_main")
 page_courtyard_affairs.add_leave_failure_hooks(GlobalGameAssets.I_UI_CANCEL_SAMLL, GlobalGameAssets.I_UI_BACK_RED,
-                                               ActivityShikigamiAssets.I_SKIP_BUTTON, GlobalGameAssets.I_UI_BACK_YELLOW)
+                                               GameUiAssets.I_ACTIVITY_SKIP, GlobalGameAssets.I_UI_BACK_YELLOW)
 
 page_mall = Page(GameUiAssets.I_CHECK_MALL, category="global")
 page_mall.add_enter_failure_hooks(conditional_action(condition=GameUiAssets.I_CHECK_MAIN,
@@ -353,7 +353,7 @@ page_chess.connect(
 # 棋局内页面属于全局异常恢复节点。任意任务启动时若停留在遗留棋局，
 # 导航器会先调用统一退出流程返回棋局大厅，再继续规划原目标页面。
 page_chess_battle = Page(
-    GameUiAssets.I_CHECK_CHESS_BATTLE,
+    any_of(GameUiAssets.I_CHECK_CHESS_BATTLE, ChessAssets.I_SELECT_SIXREALMS),
     category="global",
     priority=95,
 )
@@ -368,7 +368,7 @@ page_chess_result = Page(
     any_of(
         GameUiAssets.I_CHESS_EXIT_TO_LOBBY,
         GameUiAssets.I_CHESS_EXIT_TO_LOBBY_2,
-        ChessAssets.I_REWARD_CHESS,
+        GlobalGameAssets.I_UI_REWARD,
         ChessAssets.I_SHARE,
         GameUiAssets.I_CHECK_CHESS_RANK,
         GameUiAssets.I_CHESS_RANK_GOTO_LOBBY,

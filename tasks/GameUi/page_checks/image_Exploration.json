@@ -1,0 +1,42 @@
+[
+  {
+    "itemName": "check_exploration",
+    "imageName": "page_check_exploration.png",
+    "roiFront": "1152,148,21,22",
+    "roiBack": "1152,148,21,22",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "探索界面标识"
+  },
+  {
+    "itemName": "page_exploration_check_main_title",
+    "imageName": "page_check_exploration_check_main_title.png",
+    "roiFront": "1150,457,32,32",
+    "roiBack": "1069,222,113,336",
+    "method": "Template matching",
+    "threshold": 0.85,
+    "profile": "High",
+    "description": "主线tab中的 “章”"
+  },
+  {
+    "itemName": "page_exploration_check_play_title",
+    "imageName": "page_check_exploration_check_play_title.png",
+    "roiFront": "1073,214,40,32",
+    "roiBack": "1065,210,190,316",
+    "method": "Template matching",
+    "threshold": 0.85,
+    "profile": "High",
+    "description": "玩法tab中“御魂”"
+  },
+  {
+    "itemName": "page_exploration_e_check_exit",
+    "imageName": "page_check_exploration_e_check_exit.png",
+    "roiFront": "528,299,216,50",
+    "roiBack": "344,258,597,209",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "退出探索标志"
+  }
+]

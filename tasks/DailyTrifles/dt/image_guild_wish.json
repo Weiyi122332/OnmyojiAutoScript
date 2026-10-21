@@ -1,15 +1,5 @@
 [
   {
-    "itemName": "dt_check_guild_wish",
-    "imageName": "dt_dt_check_guild_wish.png",
-    "profile": "High",
-    "roiFront": "13,569,76,139",
-    "roiBack": "0,511,124,209",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "寮祈愿页面标志"
-  },
-  {
     "itemName": "dt_gw_donate",
     "imageName": "dt_dt_gw_donate.png",
     "profile": "High",

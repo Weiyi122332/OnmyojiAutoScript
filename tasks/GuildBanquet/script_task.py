@@ -11,7 +11,7 @@ from module.logger import logger
 from tasks.GameUi.game_ui import GameUi
 from tasks.GuildBanquet.assets import GuildBanquetAssets
 from tasks.GuildBanquet.config import Weekday
-import tasks.GuildBanquet.page as pages
+import tasks.GameUi.task_pages as pages
 
 
 class ScriptTask(GameUi, GuildBanquetAssets):
@@ -25,7 +25,7 @@ class ScriptTask(GameUi, GuildBanquetAssets):
         self.screenshot()
         if not self.appear(self.I_BANQUET_FLAG):
             self.set_next_run(task='GuildBanquet', server=False, target=self.get_next_dt(datetime.now()))
-            self.goto_page(pages.page_main)
+            self.finish_task_navigation()
             raise TaskEnd
         logger.info("Start guild banquet!")
         self.device.stuck_record_clear()
@@ -53,7 +53,7 @@ class ScriptTask(GameUi, GuildBanquetAssets):
             self.device.stuck_record_clear()
             time.sleep(wait_interval_seconds)
         self.set_next_run(task='GuildBanquet', server=False, target=self.get_next_dt(datetime.now(), True))
-        self.goto_page(pages.page_main)
+        self.finish_task_navigation()
         raise TaskEnd
 
     def switch_shikigami(self):

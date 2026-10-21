@@ -2,41 +2,41 @@
   {
     "itemName": "main_goto_activity",
     "imageName": "page_main_goto_activity.png",
-    "profile": "High",
     "roiFront": "1188,304,35,28",
     "roiBack": "1164,134,83,393",
     "method": "Template matching",
     "threshold": 0.7,
+    "profile": "High",
     "description": "庭院进入当前活动"
   },
   {
     "itemName": "activity_skip",
     "imageName": "page_activity_skip.png",
-    "profile": "High",
     "roiFront": "1159,37,51,22",
     "roiBack": "1141,27,86,43",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "活动剧情跳过按钮"
   },
   {
-    "itemName": "check_activity",
-    "imageName": "page_check_activity.png",
-    "profile": "High",
-    "roiFront": "151,18,164,40",
-    "roiBack": "141,0,192,69",
+    "itemName": "activity_general_close_red",
+    "imageName": "page_activity_general_close_red.png",
+    "roiFront": "1149,169,40,32",
+    "roiBack": "1008,0,272,274",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": "当前活动主界面标志"
+    "profile": "High",
+    "description": ""
   },
   {
-    "itemName": "activity_signin_close",
-    "imageName": "page_activity_signin_close.png",
-    "profile": "High",
-    "roiFront": "1100,186,40,32",
-    "roiBack": "1072,160,94,85",
+    "itemName": "activity_skip_ensure",
+    "imageName": "page_activity_skip_ensure.png",
+    "roiFront": "719,446,120,30",
+    "roiBack": "679,417,192,85",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": ""
   }
 ]

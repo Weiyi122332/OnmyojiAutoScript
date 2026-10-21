@@ -7,11 +7,11 @@ from datetime import datetime, timedelta
 from module.logger import logger
 from module.exception import TaskEnd, GameStuckError
 from module.base.timer import Timer
-from tasks.Orochi.page import page_orochi
+from tasks.GameUi.task_pages import page_orochi
 from tasks.Orochi.script_task import ScriptTask as OrochiScriptTask
 from tasks.Orochi.config import Layer
 from tasks.GameUi.page import page_main, page_soul_zones, page_shikigami_records
-from tasks.Exploration.page import page_gameplay
+from tasks.GameUi.task_pages import page_gameplay
 from tasks.TrueOrochi.assets import TrueOrochiAssets
 
 
@@ -55,7 +55,7 @@ class ScriptTask(OrochiScriptTask, TrueOrochiAssets):
             self.run_true_orochi_battle()
             self.check_times(True)
 
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         raise TaskEnd('TrueOrochi')
 
     def run_true_orochi_battle(self):

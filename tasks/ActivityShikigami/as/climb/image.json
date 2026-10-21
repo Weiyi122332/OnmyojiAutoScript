@@ -1,18 +1,8 @@
 [
   {
-    "itemName": "lock",
-    "imageName": "as_lock.png",
-    "roiFront": "898,647,24,27",
-    "roiBack": "759,628,330,86",
-    "method": "Template matching",
-    "threshold": 0.7,
-    "profile": "High",
-    "description": "上锁图标"
-  },
-  {
     "itemName": "unlock",
     "imageName": "as_unlock.png",
-    "roiFront": "899,648,24,23",
+    "roiFront": "898,656,24,23",
     "roiBack": "752,625,313,92",
     "method": "Template matching",
     "threshold": 0.7,
@@ -20,49 +10,9 @@
     "description": "还未上锁图片"
   },
   {
-    "itemName": "climb_mode_pass",
-    "imageName": "as_climb_mode_pass.png",
-    "roiFront": "1143,544,21,21",
-    "roiBack": "1118,510,119,186",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "活动爬塔标志"
-  },
-  {
-    "itemName": "climb_mode_ap",
-    "imageName": "as_climb_mode_ap.png",
-    "roiFront": "1093,542,22,25",
-    "roiBack": "1055,495,202,219",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "体力爬塔标志"
-  },
-  {
-    "itemName": "climb_mode_switch",
-    "imageName": "as_climb_mode_switch.png",
-    "roiFront": "1233,547,29,26",
-    "roiBack": "1174,511,104,82",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "切换按键"
-  },
-  {
-    "itemName": "climb_mode_ap100",
-    "imageName": "as_climb_mode_ap100.png",
-    "roiFront": "1186,665,22,25",
-    "roiBack": "1055,495,202,219",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "100体爬塔标志"
-  },
-  {
     "itemName": "ap_unlock",
     "imageName": "as_ap_unlock.png",
-    "roiFront": "796,653,31,30",
+    "roiFront": "801,651,31,30",
     "roiBack": "758,628,313,92",
     "method": "Template matching",
     "threshold": 0.8,
@@ -70,19 +20,9 @@
     "description": "体力爬塔阵容解锁"
   },
   {
-    "itemName": "ap_lock",
-    "imageName": "as_ap_lock.png",
-    "roiFront": "796,653,31,30",
-    "roiBack": "758,628,313,92",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "体力爬塔阵容锁定"
-  },
-  {
-    "itemName": "act_fire",
-    "imageName": "as_act_fire.png",
-    "roiFront": "1125,578,99,97",
+    "itemName": "act_fire_ap100",
+    "imageName": "climb_act_fire_ap100.png",
+    "roiFront": "1134,590,90,64",
     "roiBack": "1080,530,192,190",
     "method": "Template matching",
     "threshold": 0.8,
@@ -100,19 +40,9 @@
     "description": "boss挑战标志"
   },
   {
-    "itemName": "fight_penta_use",
-    "imageName": "climb_fight_penta_use.png",
-    "roiFront": "867,650,31,30",
-    "roiBack": "755,631,330,86",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "使用五倍卷"
-  },
-  {
     "itemName": "fight_penta_disuse",
     "imageName": "climb_fight_penta_disuse.png",
-    "roiFront": "867,650,31,30",
+    "roiFront": "872,651,31,30",
     "roiBack": "746,629,330,86",
     "method": "Template matching",
     "threshold": 0.8,
@@ -122,8 +52,8 @@
   {
     "itemName": "check_climb_hard",
     "imageName": "climb_check_climb_hard.png",
-    "roiFront": "615,413,67,67",
-    "roiBack": "610,408,77,77",
+    "roiFront": "1117,363,111,114",
+    "roiBack": "1101,347,140,145",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "High",
@@ -132,22 +62,12 @@
   {
     "itemName": "check_climb_easy",
     "imageName": "climb_check_climb_easy.png",
-    "roiFront": "615,413,67,67",
-    "roiBack": "610,408,77,77",
+    "roiFront": "1121,256,109,106",
+    "roiBack": "1099,232,150,143",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "High",
-    "description": ""
-  },
-  {
-    "itemName": "useless_message_close",
-    "imageName": "climb_useless_message_close.png",
-    "roiFront": "1171,95,31,30",
-    "roiBack": "1042,68,179,170",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": ""
+    "description": "简单模式"
   },
   {
     "itemName": "autofight",
@@ -168,5 +88,105 @@
     "threshold": 0.8,
     "profile": "High",
     "description": "未选御魂"
+  },
+  {
+    "itemName": "climb_mode_switch",
+    "imageName": "as_climb_mode_switch.png",
+    "roiFront": "1233,547,29,26",
+    "roiBack": "1174,511,104,82",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "切换按键"
+  },
+  {
+    "itemName": "climb_mode_ap",
+    "imageName": "as_climb_mode_ap.png",
+    "roiFront": "1092,664,140,29",
+    "roiBack": "1071,495,186,218",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "体力爬塔标志"
+  },
+  {
+    "itemName": "climb_mode_ap100",
+    "imageName": "as_climb_mode_ap100.png",
+    "roiFront": "1102,667,164,28",
+    "roiBack": "1055,495,218,220",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "100体爬塔标志"
+  },
+  {
+    "itemName": "climb_mode_pass",
+    "imageName": "as_climb_mode_pass.png",
+    "roiFront": "1148,641,21,21",
+    "roiBack": "1118,510,119,186",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "活动爬塔标志"
+  },
+  {
+    "itemName": "act_fire_ap",
+    "imageName": "climb_act_fire_ap.png",
+    "roiFront": "1129,599,94,50",
+    "roiBack": "1080,530,192,190",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
+  },
+  {
+    "itemName": "battle_main_to_records",
+    "imageName": "as_battle_main_to_records.png",
+    "roiFront": "1015,560,39,42",
+    "roiBack": "674,539,439,157",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "从爬塔主界面进入式神录"
+  },
+  {
+    "itemName": "ap100_unlock",
+    "imageName": "climb_ap100_unlock.png",
+    "roiFront": "750,650,24,23",
+    "roiBack": "738,641,48,46",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
+  },
+  {
+    "itemName": "as_pass_fire",
+    "imageName": "climb_as_pass_fire.png",
+    "roiFront": "1130,590,92,47",
+    "roiBack": "1080,530,192,190",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
+  },
+  {
+    "itemName": "boss_unlock",
+    "imageName": "climb_boss_unlock.png",
+    "roiFront": "907,649,24,23",
+    "roiBack": "752,625,313,92",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
+  },
+  {
+    "itemName": "general_1_to_climb",
+    "imageName": "image_general_1_to_climb.png",
+    "roiFront": "17,152,218,31",
+    "roiBack": "0,141,313,92",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "通用界面1前往爬塔主页面按钮"
   }
 ]

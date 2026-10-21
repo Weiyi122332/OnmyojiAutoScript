@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
@@ -62,7 +63,7 @@ class AbyssShadowsAssets:
 	# 狭间_黑豹入口
 	I_ABYSS_LEOPARD = RuleImage(profile="High", roi_front=(1142,166,50,162), roi_back=(1093,143,138,297), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_abyss_leopard.png")
 	# 战报
-	I_ABYSS_NAVIGATION = RuleImage(profile="High", roi_front=(1200,372,50,44), roi_back=(1200,372,50,44), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_abyss_navigation.png")
+	I_ABYSS_NAVIGATION = _PageAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION
 	# 式神录
 	I_ABYSS_SHIKI = RuleImage(profile="High", roi_front=(1199,462,47,53), roi_back=(1199,462,47,53), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_abyss_shiki.png")
 	# 狭间暗域
@@ -78,7 +79,6 @@ class AbyssShadowsAssets:
 	# 前往
 	I_ABYSS_GOTO_ENEMY = RuleImage(profile="High", roi_front=(1120,610,75,45), roi_back=(1120,610,75,45), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_abyss_goto_enemy.png")
 	# description
-	I_CHANGE_AREA = RuleImage(profile="High", roi_front=(993,610,63,61), roi_back=(993,610,63,61), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_change_area.png")
 	# description
 	I_ENSURE_BUTTON = RuleImage(profile="High", roi_front=(672,405,169,55), roi_back=(672,405,169,55), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_ensure_button.png")
 	# 进攻中
@@ -108,7 +108,7 @@ class AbyssShadowsAssets:
 	# 开启按钮
 	I_BTN_START = RuleImage(profile="High", roi_front=(1120,570,100,120), roi_back=(1120,570,100,120), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_btn_start.png")
 	# 开启确认按钮
-	I_START_ENSURE = RuleImage(profile="High", roi_front=(660,390,190,80), roi_back=(660,390,190,80), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_start_ensure.png")
+	I_START_ENSURE = RuleImage(profile='High', roi_front=(664,408,180,64), roi_back=(664,408,180,64), threshold=0.8, method='Template matching', file='./tasks/AbyssShadows/res/res_start_ensure.png')
 	# 当附近有可用怪物时，右下角出现的开始战斗按钮
 	I_ABYSS_ENEMY_FIRE = RuleImage(profile="High", roi_front=(1100,560,130,130), roi_back=(1100,560,130,130), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_abyss_enemy_fire.png")
 	# 红标主怪
@@ -116,7 +116,7 @@ class AbyssShadowsAssets:
 	# 神社页面标志
 	I_CHECK_SHENSHE = RuleImage(profile="High", roi_front=(72,76,45,115), roi_back=(31,27,119,207), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_check_shenshe.png")
 	# 狭间暗域页面标志
-	I_CHECK_ABYSS = RuleImage(profile="High", roi_front=(1082,14,52,50), roi_back=(992,0,247,80), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_check_abyss.png")
+	I_CHECK_ABYSS = _PageAssets.I_PAGE_ABYSSSHADOWS_CHECK_ABYSS
 	# 极难度
 	I_DIFFICULTY_EXTREME = RuleImage(profile="High", roi_front=(644,593,40,39), roi_back=(620,383,89,263), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_difficulty_extreme.png")
 	#

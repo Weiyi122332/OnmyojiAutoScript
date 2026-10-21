@@ -1,15 +1,5 @@
 [
   {
-    "itemName": "check_town",
-    "imageName": "page_check_town.png",
-    "profile": "High",
-    "roiFront": "1026,106,68,82",
-    "roiBack": "765,98,402,96",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "description"
-  },
-  {
     "itemName": "town_goto_main",
     "imageName": "page_town_goto_main.png",
     "profile": "High",
@@ -70,56 +60,6 @@
     "description": "百鬼奕"
   },
   {
-    "itemName": "check_duel",
-    "imageName": "page_check_duel.png",
-    "profile": "High",
-    "roiFront": "149,16,64,38",
-    "roiBack": "133,0,110,74",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "斗技主界面左上角文字图像"
-  },
-  {
-    "itemName": "check_demon_encounter",
-    "imageName": "page_check_demon_encounter.png",
-    "profile": "High",
-    "roiFront": "26,658,42,43",
-    "roiBack": "2,619,100,100",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "现世逢魔页面标志"
-  },
-  {
-    "itemName": "check_hunt",
-    "imageName": "page_check_hunt.png",
-    "profile": "High",
-    "roiFront": "575,30,46,25",
-    "roiBack": "553,1,81,68",
-    "method": "Template matching",
-    "threshold": 0.7,
-    "description": "检查狩猎战界面"
-  },
-  {
-    "itemName": "check_hunt_kirin",
-    "imageName": "page_check_hunt_kirin.png",
-    "profile": "High",
-    "roiFront": "353,240,30,54",
-    "roiBack": "328,234,81,68",
-    "method": "Template matching",
-    "threshold": 0.7,
-    "description": "检查狩猎战麒麟界面"
-  },
-  {
-    "itemName": "check_draft_duel",
-    "imageName": "page_check_draft_duel.png",
-    "profile": "High",
-    "roiFront": "1051,612,56,58",
-    "roiBack": "1029,594,100,100",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "description"
-  },
-  {
     "itemName": "town_goto_hyakkiyakou",
     "imageName": "page_town_goto_hyakkiyakou.png",
     "profile": "High",
@@ -128,26 +68,6 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "町中进入百鬼标志"
-  },
-  {
-    "itemName": "check_kyakkiyakou",
-    "imageName": "page_check_kyakkiyakou.png",
-    "profile": "High",
-    "roiFront": "1062,564,84,73",
-    "roiBack": "68,519,1185,141",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "百鬼夜行标志"
-  },
-  {
-    "itemName": "check_demon_encounter_2",
-    "imageName": "page_check_demon_encounter_2.png",
-    "profile": "High",
-    "roiFront": "501,441,53,122",
-    "roiBack": "358,326,370,288",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "逢魔之时新页面标志"
   },
   {
     "itemName": "town_goto_entertainment",
@@ -160,31 +80,11 @@
     "description": ""
   },
   {
-    "itemName": "check_entertainment",
-    "imageName": "page_check_entertainment.png",
-    "profile": "High",
-    "roiFront": "151,18,102,40",
-    "roiBack": "151,18,102,40",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": ""
-  },
-  {
     "itemName": "entertainment_goto_chess",
     "imageName": "page_entertainment_goto_chess.png",
     "profile": "High",
     "roiFront": "304,175,41,127",
     "roiBack": "304,175,41,127",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": ""
-  },
-  {
-    "itemName": "check_chess",
-    "imageName": "page_check_chess.png",
-    "profile": "High",
-    "roiFront": "1159,592,66,70",
-    "roiBack": "1159,592,66,70",
     "method": "Template matching",
     "threshold": 0.8,
     "description": ""

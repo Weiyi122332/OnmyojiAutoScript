@@ -3,6 +3,7 @@
 
 from datetime import time, timedelta
 from enum import Enum
+from copy import deepcopy
 import re
 
 from pydantic import BaseModel, Field, model_validator, validator
@@ -19,14 +20,23 @@ class ActivityTask(str, Enum):
     RICH_MAN = '大富翁'
     FAKE_GOD = '伪神'
     CLIMB = '爬塔'
+    BOSS = '首领boss'
 
 
-ACTIVITY_EXECUTION_ORDER = ('探索', '大富翁', '伪神', '爬塔')
+class ClimbTask(str, Enum):
+    AP = '体力'
+    EASY = '简单'
+    HARD = '困难'
+    AP100 = '百体'
+
+
+ACTIVITY_EXECUTION_ORDER = ('探索', '大富翁', '伪神', '爬塔', '首领boss')
 ACTIVITY_NAME_TO_FIELD = {
     '大富翁': 'rich_man',
     '伪神': 'fakegod',
     '爬塔': 'climb',
     '探索': 'exploration',
+    '首领boss': 'boss',
 }
 ACTIVITY_NAME_ALIASES = {
     '探索': '探索',
@@ -42,9 +52,12 @@ ACTIVITY_NAME_ALIASES = {
     'fake_god': '伪神',
     '伪神': '伪神',
     '伪神降临': '伪神',
+    '首领boss': '首领boss',
+    '首领': '首领boss',
+    'boss': '首领boss',
 }
-CLIMB_TYPES = ('pass', 'ap', 'boss', 'ap100')
-BATTLE_TYPES = ('rich_man', *CLIMB_TYPES, 'fakegod')
+CLIMB_TYPES = ('pass', 'ap', 'ap100')
+BATTLE_TYPES = ('rich_man', *CLIMB_TYPES, 'pass_hard', 'boss', 'fakegod')
 
 
 class GeneralConfig(ConfigBase):
@@ -53,11 +66,17 @@ class GeneralConfig(ConfigBase):
             ActivityTask.RICH_MAN,
             ActivityTask.FAKE_GOD,
             ActivityTask.CLIMB,
+            ActivityTask.BOSS,
         ],
         title='Activity Task Sequence',
         description='activity_task_sequence_help',
     )
     throw_limit: int = Field(default=0, title='Throw Limit', ge=0)
+    climb_task_sequence: list[ClimbTask] = Field(
+        default=[ClimbTask.HARD, ClimbTask.EASY, ClimbTask.AP,
+                 ClimbTask.AP100],
+        title='Climb Task Sequence',
+    )
     ap_limit: int = Field(default=0, title='Ap Limit', ge=0)
     pass_limit: str = Field(
         default='0',
@@ -98,6 +117,28 @@ class GeneralConfig(ConfigBase):
         description='climb_drink_interval_help',
     )
 
+    @model_validator(mode='before')
+    @classmethod
+    def split_legacy_climb_boss(cls, data):
+        if not isinstance(data, dict):
+            return data
+        data = dict(data)
+        climb = data.get('climb_task_sequence')
+        legacy_boss = climb is None or '首领' in climb
+        if climb is not None:
+            data['climb_task_sequence'] = [item for item in climb if item != '首领']
+        # Only migrate the previous structure; a saved four-mode list marks the split.
+        if legacy_boss and data.get('task_sequence') is not None:
+            sequence = normalize_multi_select(data['task_sequence'])
+            names = [part.strip() for item in sequence
+                     for part in re.split(r'[,，;；\n\r]+', str(item.value if isinstance(item, ActivityTask) else item))
+                     if part.strip()]
+            names = [ACTIVITY_NAME_ALIASES.get(name.lower(), name) for name in names]
+            if '爬塔' in names and '首领boss' not in names:
+                names.insert(names.index('爬塔') + 1, '首领boss')
+            data['task_sequence'] = names
+        return data
+
     @property
     def limit_time_v(self) -> timedelta:
         if isinstance(self.limit_time, time):
@@ -110,19 +151,27 @@ class GeneralConfig(ConfigBase):
 
     @property
     def task_sequence_v(self) -> list[str]:
-        selected = {
+        selected = [
             item.value if isinstance(item, ActivityTask) else str(item)
             for item in self.task_sequence
-        }
+        ]
         return [
-            name for name in ACTIVITY_EXECUTION_ORDER
-            if name in selected and self.activity_enabled(name)
+            name for name in selected if self.activity_enabled(name)
         ]
 
     @property
     def climb_sequence_v(self) -> list[str]:
-        """爬塔四种战斗按 UI 约定顺序执行，并跳过次数为零的项。"""
-        return [name for name in CLIMB_TYPES if self.limit_for(name) > 0]
+        """按保存顺序执行已启用分支，并跳过次数为零的项。"""
+        actions = {'体力': 'ap', '简单': 'pass_easy', '困难': 'pass_hard',
+                   '百体': 'ap100'}
+        result = []
+        for item in self.climb_task_sequence:
+            name = actions[item.value if isinstance(item, ClimbTask) else item]
+            limit = (self.pass_limit_for(name[5:]) if name.startswith('pass_')
+                     else self.limit_for(name))
+            if limit > 0 and name not in result:
+                result.append(name)
+        return result
 
     @property
     def pass_limits_v(self) -> tuple[int, int]:
@@ -148,6 +197,8 @@ class GeneralConfig(ConfigBase):
             return self.throw_limit > 0
         if field == 'climb':
             return bool(self.climb_sequence_v)
+        if field == 'boss':
+            return self.boss_limit > 0
         return self.fakegod_limit > 0
 
     def limit_for(self, action_type: str) -> int:
@@ -265,6 +316,11 @@ class SwitchSoulConfig(BaseModel):
     enable_switch_pass_by_name: bool = Field(default=False, description='enable_switch_by_name_help')
     pass_group_team_name: str = Field(default='')
 
+    enable_switch_pass_hard: bool = Field(default=False)
+    pass_hard_group_team: str = Field(default='-1,-1', description='switch_group_team_help')
+    enable_switch_pass_hard_by_name: bool = Field(default=False, description='enable_switch_by_name_help')
+    pass_hard_group_team_name: str = Field(default='')
+
     enable_switch_boss: bool = Field(default=False)
     boss_group_team: str = Field(default='-1,-1', description='switch_group_team_help')
     enable_switch_boss_by_name: bool = Field(default=False, description='enable_switch_by_name_help')
@@ -304,6 +360,7 @@ class ActivityShikigami(ConfigBase):
     rich_man_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
     ap_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
     pass_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
+    pass_hard_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
     boss_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
     ap100_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
     fakegod_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
@@ -393,6 +450,16 @@ class ActivityShikigami(ConfigBase):
                 )
                 soul.setdefault('fakegod_group_team', old_soul.get('pass_group_team', '-1,-1'))
                 soul.setdefault('fakegod_group_team_name', old_soul.get('pass_group_team_name', ''))
+        # Split the former shared preset while preserving existing hard-ticket choices.
+        for old_key, new_key in (
+            ('enable_switch_ap100', 'enable_switch_pass_hard'),
+            ('ap100_group_team', 'pass_hard_group_team'),
+            ('enable_switch_ap100_by_name', 'enable_switch_pass_hard_by_name'),
+            ('ap100_group_team_name', 'pass_hard_group_team_name'),
+        ):
+            if old_key in soul:
+                soul.setdefault(new_key, soul[old_key])
+        data.setdefault('pass_hard_battle_conf', deepcopy(data.get('pass_battle_conf', {})))
         data['switch_soul_config'] = soul
 
         if isinstance(old_rich_man, dict):

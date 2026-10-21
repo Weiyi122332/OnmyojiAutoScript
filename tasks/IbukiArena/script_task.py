@@ -7,7 +7,7 @@ from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.GameUi.game_ui import GameUi
 from tasks.IbukiArena.assets import IbukiArenaAssets
 from tasks.IbukiArena.config import IbukiArena
-import tasks.IbukiArena.page as pages
+import tasks.GameUi.task_pages as pages
 
 
 class ScriptTask(GeneralBattle, GameUi, SwitchSoul, IbukiArenaAssets):
@@ -23,7 +23,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, IbukiArenaAssets):
         self.switch_soul()
         self.goto_page(pages.page_ibuki)
         success = self.run_arena()
-        self.goto_page(pages.page_main)
+        self.finish_task_navigation()
         self.set_next_run(task='IbukiArena', success=success, finish=success)
         raise TaskEnd
 
@@ -84,10 +84,9 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, IbukiArenaAssets):
             time.sleep(0.2)
 
     def switch_lock(self):
-        if self.conf.general_battle_config.lock_team_enable:
-            self.ui_click(self.I_IBUKI_UNLOCK, self.I_IBUKI_LOCK)
-            return
-        self.ui_click(self.I_IBUKI_LOCK, self.I_IBUKI_UNLOCK)
+        self.ui_click_until_appear(self.I_IBUKI_UNLOCK,
+            page_check=self.I_CHALLENGE,
+            expected_present=not (self.conf.general_battle_config.lock_team_enable))
 
     def switch_soul(self):
         """切换御魂"""

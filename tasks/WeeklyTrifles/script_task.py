@@ -18,7 +18,7 @@ from tasks.GameUi.page import (
     random_click,
 )
 from tasks.WeeklyTrifles.assets import WeeklyTriflesAssets
-from tasks.WeeklyTrifles.page import page_shikigami_share, page_touch_fish
+from tasks.GameUi.task_pages import page_shikigami_share, page_touch_fish
 
 
 class ScriptTask(GameUi, WeeklyTriflesAssets):
@@ -81,7 +81,7 @@ class ScriptTask(GameUi, WeeklyTriflesAssets):
         while 1:
             if fold_timer.reached():
                 logger.warning('Touch fish guild entry timeout')
-                self.goto_page(page_main)
+                self.finish_task_navigation()
                 return
             # 等个折叠窗口展开动画
             sleep(1)
@@ -100,7 +100,7 @@ class ScriptTask(GameUi, WeeklyTriflesAssets):
             logger.info(f'全部存储需要花费的福运御守数量：{cost_tickts}')
             if cost_tickts <= 0:
                 logger.warning('Touch fish save cost OCR unavailable')
-                self.goto_page(page_main)
+                self.finish_task_navigation()
                 return
             not_save_flag = True
             get_timer = Timer(7)
@@ -133,7 +133,7 @@ class ScriptTask(GameUi, WeeklyTriflesAssets):
                     logger.warning('Touch fish tickts not enough, exit!')
                     break
         logger.hr('Touch fish finished')
-        self.goto_page(page_main)
+        self.finish_task_navigation()
 
     def _share_collect(self):
         """
@@ -166,7 +166,7 @@ class ScriptTask(GameUi, WeeklyTriflesAssets):
             if get_timer.reached():
                 logger.warning('Share timeout. The reward may have been obtained')
                 break
-        self.goto_page(page_main)
+        self.finish_task_navigation()
 
     def _share_area_boss(self):
         """
@@ -200,7 +200,7 @@ class ScriptTask(GameUi, WeeklyTriflesAssets):
         if not obtained:
             # 点击分享
             self.click_share(self.I_WT_AB_WECHAT)
-        self.goto_page(page_main)
+        self.finish_task_navigation()
 
     def _share_secret(self):
         """
@@ -227,7 +227,7 @@ class ScriptTask(GameUi, WeeklyTriflesAssets):
                 if self.appear(self.I_WT_SE_SHARE):
                     continue
                 logger.warning('This week has not been obtained')
-                self.goto_page(page_main)
+                self.finish_task_navigation()
                 return
         logger.info('Enter secret')
         # 判断是否已经领取
@@ -240,7 +240,7 @@ class ScriptTask(GameUi, WeeklyTriflesAssets):
         if not obtained:
             self.click_share(self.I_WT_SE_WECHAT)
         # 返回
-        self.goto_page(page_main)
+        self.finish_task_navigation()
 
     def _broken_amulet(self, dest_num: int):
         """

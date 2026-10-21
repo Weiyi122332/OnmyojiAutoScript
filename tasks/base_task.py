@@ -2,7 +2,7 @@
 # @author runhey
 # github https://github.com/runhey
 
-from time import sleep, time
+from time import sleep, time, monotonic
 
 import random
 from datetime import datetime, time as clock_time, timedelta
@@ -10,6 +10,7 @@ from module.atom.animate import RuleAnimate
 from module.atom.click import RuleClick
 from module.atom.gif import RuleGif
 from module.atom.image import RuleImage
+from module.atom.frame import RuleFrame, FrameResult
 from module.atom.list import RuleList
 from module.atom.long_click import RuleLongClick
 from module.atom.ocr import RuleOcr
@@ -17,14 +18,14 @@ from module.atom.swipe import RuleSwipe
 from module.base.timer import Timer
 from module.config.config import Config
 from module.device.device import Device
-from module.exception import ScriptError
+from module.exception import ScriptError, GameStuckError, NetworkRecoveryRequired
 from module.image.rpc import get_image_client
 from module.logger import logger
 from module.ocr.base_ocr import OcrMode
 from tasks.Component.Costume.costume_base import CostumeBase
 from tasks.Component.config_base import Time
 from tasks.GlobalGame.assets import GlobalGameAssets
-from tasks.GlobalGame.config_emergency import FriendInvitation
+from tasks.GlobalGame.config_emergency import FriendInvitation, WhenNetworkAbnormal
 from typing import Union
 
 
@@ -116,6 +117,24 @@ class BaseTask(GlobalGameAssets, CostumeBase):
             self.set_next_run(task='WantedQuests', target=datetime.now().replace(microsecond=0))
         return True
 
+    def _handle_network(self):
+        # Raw device screenshots avoid recursively invoking this recovery hook.
+        deadline = None
+        while True:
+            if self.appear(self.I_NETWORK_ERROR):
+                raise NetworkRecoveryRequired(reconnect=True)
+            if not self.appear(self.I_NETWORK_ABNORMAL):
+                return
+            if self.config.global_game.emergency.when_network_abnormal == WhenNetworkAbnormal.RESTART:
+                raise NetworkRecoveryRequired()
+            if deadline is None:
+                logger.warning('Network abnormal; wait up to 5 seconds')
+                deadline = monotonic() + 5
+            if monotonic() >= deadline:
+                raise NetworkRecoveryRequired()
+            self.device.sleep(min(0.25, max(0, deadline - monotonic())))
+            self.device.screenshot()
+
     def screenshot(self):
         """
         截图 引入中间函数的目的是 为了解决如协作的这类突发的事件
@@ -125,18 +144,11 @@ class BaseTask(GlobalGameAssets, CostumeBase):
         # 其他方式未知
         self.device.screenshot()
         # 优先清理悬赏协作弹窗；处理后刷新并复核，避免原流程使用被遮挡的画面。
-        while self._burst():
+        while True:
+            self._handle_network()
+            if not self._burst():
+                break
             self.device.screenshot()
-
-        # # 判断网络异常
-        # if self.appear(self.I_NETWORK_ABNORMAL):
-        #     logger.warning(f"Network abnormal")
-        #     raise GameStuckError
-        #
-        # # 判断网络错误
-        # if self.appear(self.I_NETWORK_ERROR):
-        #     logger.warning(f"Network error")
-        #     raise GameStuckError
 
         return self.device.image
 
@@ -233,6 +245,15 @@ class BaseTask(GlobalGameAssets, CostumeBase):
             self.interval_timer[timer_key].reset()
 
         return appear
+
+    def runframe(self, target: RuleFrame, *range_results, interval=None, threshold=None) -> FrameResult:
+        """读取 frame.data（坐标、裁剪图、文字）；仅 Click 显式 True 点击，其余参数可选比对。"""
+        if not isinstance(target, RuleFrame):
+            raise ScriptError('runframe 的第一个参数必须是 RuleFrame')
+        try:
+            return target.run(self, *range_results, interval=interval, threshold=threshold)
+        except (TypeError, ValueError) as error:
+            raise ScriptError(f'runframe 配置或区域无效: {error}') from error
 
     def appear_then_click(self,
                           target: RuleImage | RuleGif | RuleOcr,
@@ -780,21 +801,76 @@ class BaseTask(GlobalGameAssets, CostumeBase):
                 elif isinstance(click, RuleOcr) and self.ocr_appear_click(click, interval=interval):
                     continue
 
-    def ui_click_until_disappear(self, click, interval: float = 1):
+    def ui_click_until_appear(self, target: RuleImage, page_check: RuleImage = None,
+                              *, click=None, expected_present: bool = True,
+                              interval: float = 1, timeout: float = 10,
+                              max_clicks: int = 3, confirm_delay: float = 0.2) -> bool:
+        """点击目标区域直到目标图片出现，可选传入界面检查图片。
+
+        两项均为 RuleImage 资产；未传 page_check 时不检查界面。
+        click 可覆盖点击区域；expected_present=False 用于等待关闭态消失。
+        连续两帧确认目标状态，返回是否点击过；超时或点击用尽则报错。
         """
-        点击一个按钮直到消失
-        :param interval:
-        :param click:
-        :return: True:出现并点击过, False:没有出现过
-        """
-        appear_and_clicked = False
-        while 1:
+        if timeout <= 0 or interval < 0 or confirm_delay <= 0 or max_clicks < 1:
+            raise ValueError('Invalid target confirmation timing or click limit')
+        click_rule = target if click is None else click
+        deadline = monotonic() + timeout
+        last_click = float('-inf')
+        clicks = 0
+        stable = 0
+        while monotonic() < deadline:
             self.screenshot()
-            if not self.appear(click):
-                break
+            in_page = page_check is None or self.appear(page_check)
+            if not in_page:
+                stable = 0
+                sleep(confirm_delay)
+                continue
+            is_present = bool(self.appear(target))
+            if is_present == expected_present:
+                stable += 1
+                if stable >= 2:
+                    return clicks > 0
+                sleep(confirm_delay)
+                continue
+            stable = 0
+            now = monotonic()
+            if clicks >= max_clicks and now - last_click >= max(interval, confirm_delay):
+                raise GameStuckError(f'Target {target.name} failed after {clicks} clicks')
+            if clicks < max_clicks and now - last_click >= interval:
+                if self.click(click_rule, interval=0):
+                    clicks += 1
+                    last_click = now
+            sleep(confirm_delay)
+        raise GameStuckError(f'Target {target.name} could not be confirmed on its page')
+
+    def ui_click_until_disappear(self, click, interval: float = 1, *,
+                                 click_target=None, visible=None, guard=None,
+                                 timeout: float | None = None, confirm_frames: int = 1):
+        """点击直到目标消失；可独立指定点击区、可见性判定和有界多帧确认。
+
+        超时或 guard 不满足时返回 False；默认行为与旧调用一致。
+        """
+        from time import monotonic
+        appear_and_clicked = False
+        missing = 0
+        deadline = monotonic() + timeout if timeout is not None else None
+        while deadline is None or monotonic() < deadline:
+            self.screenshot()
+            if guard is not None and not guard():
+                return False
+            present = visible() if visible is not None else self.appear(click)
+            if not present:
+                missing += 1
+                if missing >= confirm_frames:
+                    return appear_and_clicked
+                continue
+            missing = 0
+            if click_target is not None:
+                if self.click(click_target, interval=interval):
+                    appear_and_clicked = True
             elif self.appear_then_click(click, interval=interval):
                 appear_and_clicked = True
-        return appear_and_clicked
+        return False
 
     def ui_click_until_appear_or_timeout(self, click, stop=None, interval: float = 1, timeout: float = 10) -> bool:
         """

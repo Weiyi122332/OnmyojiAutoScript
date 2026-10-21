@@ -64,7 +64,7 @@ shikigami_costume_model = {
         'I_SOU_CHECK_IN': f'I_SOU_CHECK_IN_{i}',
         'I_SOU_TEAM_PRESENT': f'I_SOU_TEAM_PRESENT_{i}',
         'I_SOU_CLICK_PRESENT': f'I_SOU_CLICK_PRESENT_{i}',
-        'I_SOU_SWITCH_SURE': f'I_SOU_SWITCH_SURE_{i}',
+        # 预设切换确认是通用弹窗，使用 SwitchSoul 新版资源，不随式神录主题替换。
         # SwitchSoul 分组相关 (1-7组)
         **{f'I_SOU_CHECK_GROUP_{g}': f'I_SOU_CHECK_GROUP_{g}_{i}' for g in range(1, 8)},
         # SwitchSoul 队伍相关 (1-4队)

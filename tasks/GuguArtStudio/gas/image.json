@@ -1,15 +1,5 @@
 [
   {
-    "itemName": "check_gugu_act",
-    "imageName": "gas_check_gugu_act.png",
-    "profile": "High",
-    "roiFront": "1069,20,33,40",
-    "roiBack": "1052,10,74,59",
-    "method": "Template matching",
-    "threshold": 0.7,
-    "description": "呱呱画室主页面"
-  },
-  {
     "itemName": "obtain_paint",
     "imageName": "gas_obtain_paint.png",
     "profile": "High",
@@ -108,15 +98,5 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "解锁阵容状态"
-  },
-  {
-    "itemName": "gas_lock",
-    "imageName": "gas_gas_lock.png",
-    "profile": "High",
-    "roiFront": "885,659,16,21",
-    "roiBack": "845,637,224,79",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "锁定阵容状态"
   }
 ]

@@ -8,7 +8,7 @@ from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.page import page_entertainment
 from tasks.WeeklyPurchase.assets import WeeklyPurchaseAssets
 from tasks.WeeklyPurchase.config import ItachiCoinShop as ItachiCoinShopConfig
-from tasks.WeeklyPurchase.page import page_itachi_shop
+from tasks.GameUi.task_pages import page_itachi_shop
 
 
 class ItachiCoinShop(Buy, GameUi, WeeklyPurchaseAssets):

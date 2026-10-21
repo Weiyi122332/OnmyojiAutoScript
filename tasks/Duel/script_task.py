@@ -72,7 +72,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
                     break
             self.start_duel()
         logger.info('Duel battle end')
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         if self._weekly_goal_reached:
             self.set_next_run_next_monday(
                 task='Duel', scheduler=self.conf.scheduler,
@@ -83,7 +83,6 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
 
     def prepare_duel(self):
         """斗技准备工作(切换御魂or阴阳师...), 最后回到斗技主界面"""
-        self.goto_page(page_main)
         self.switch_soul()
         if self.conf.duel_config.switch_enabled:
             self.goto_page(page_onmyodo)

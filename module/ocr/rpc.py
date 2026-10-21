@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import atexit
-import hashlib
 import json
 import multiprocessing
 import os
@@ -14,7 +13,6 @@ import socket
 import tempfile
 import threading
 import time
-from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,7 +32,6 @@ _OCR_SERVER_PROCESS: Optional[multiprocessing.Process] = None
 _OCR_CLIENT_CACHE: dict[str, "ModelProxy"] = {}
 _OCR_LOGGING_ENABLED = False
 _OCR_MODEL_SIZE = "medium"
-_OCR_LOW_SPEC_MODE = False
 
 _BUNDLED_MODEL_DIRS = (
     "PP-OCRv6_medium_det_onnx",
@@ -47,10 +44,6 @@ _BUNDLED_MODEL_FILES = (
 )
 _OCR_STARTUP_TIMEOUT_SECONDS = 90.0
 _OCR_REQUEST_TIMEOUT_SECONDS = 10.0
-_OCR_LOW_SPEC_REQUEST_TIMEOUT_SECONDS = 30.0
-_OCR_RESULT_CACHE_TTL_SECONDS = 2.0
-_OCR_RESULT_CACHE_MAX_COUNT = 128
-_OCR_CACHE_MISS = object()
 _OCR_MODEL_DOWNLOAD_TIMEOUT_SECONDS = 900.0
 _OCR_MODEL_MIN_FILE_SIZE = {
     "inference.json": 1024,
@@ -60,54 +53,6 @@ _OCR_MODEL_MIN_FILE_SIZE = {
 _OCR_DOWNLOAD_CONTEXT = multiprocessing.get_context("spawn")
 
 
-class _OcrResultCache:
-    """低配模式下复用短时间内完全相同的 OCR 请求结果。"""
-
-    def __init__(
-        self,
-        ttl_seconds: float = _OCR_RESULT_CACHE_TTL_SECONDS,
-        max_count: int = _OCR_RESULT_CACHE_MAX_COUNT,
-    ) -> None:
-        self.ttl_seconds = max(0.1, float(ttl_seconds))
-        self.max_count = max(1, int(max_count))
-        self._items: OrderedDict[tuple[Any, ...], tuple[float, Any]] = OrderedDict()
-        self._lock = threading.Lock()
-
-    def get(self, key: tuple[Any, ...]):
-        now = time.monotonic()
-        with self._lock:
-            self._discard_expired(now)
-            entry = self._items.get(key)
-            if entry is None:
-                return _OCR_CACHE_MISS
-            created_at, value = entry
-            if now - created_at > self.ttl_seconds:
-                self._items.pop(key, None)
-                return _OCR_CACHE_MISS
-            self._items.move_to_end(key)
-            return value
-
-    def put(self, key: tuple[Any, ...], value: Any) -> None:
-        now = time.monotonic()
-        with self._lock:
-            self._discard_expired(now)
-            self._items[key] = (now, value)
-            self._items.move_to_end(key)
-            while len(self._items) > self.max_count:
-                self._items.popitem(last=False)
-
-    def clear(self) -> None:
-        with self._lock:
-            self._items.clear()
-
-    def _discard_expired(self, now: float) -> None:
-        expired = [
-            key
-            for key, (created_at, _value) in self._items.items()
-            if now - created_at > self.ttl_seconds
-        ]
-        for key in expired:
-            self._items.pop(key, None)
 
 
 def _bundled_ocr_cache_home() -> Path:
@@ -706,9 +651,6 @@ class ModelProxy:
         self.address = _normalize_address(address)
         self.save_log = _OCR_LOGGING_ENABLED
         self.model_size = _OCR_MODEL_SIZE
-        self.low_spec_mode = _OCR_LOW_SPEC_MODE
-        self._reconnect_lock = threading.Lock()
-        self._result_cache = _OcrResultCache()
         try:
             self.client = self._create_client(probe=True)
         except Exception as e:
@@ -716,7 +658,7 @@ class ModelProxy:
 
     def _create_client(self, *, probe: bool) -> zerorpc.Client:
         client = zerorpc.Client(
-            timeout=_ocr_request_timeout(self.model_size, self.low_spec_mode)
+            timeout=_ocr_request_timeout(self.model_size)
         )
         try:
             client.connect(self.address)
@@ -730,46 +672,10 @@ class ModelProxy:
                 pass
             raise
 
-    def _reconnect_after_timeout(self, failed_client) -> None:
-        """只在低配 OCR 请求超时后更换连接，避免重复重连。"""
-        with self._reconnect_lock:
-            if self.client is not failed_client:
-                return
-            replacement = self._create_client(probe=False)
-            self.client = replacement
-            try:
-                failed_client.close()
-            except Exception:
-                pass
 
-    def _call_with_timeout_retry(self, method_name: str, *args):
-        client = self.client
-        try:
-            return getattr(client, method_name)(*args)
-        except zerorpc.TimeoutExpired:
-            if not self.low_spec_mode:
-                raise
-            logger.warning(
-                'Low spec OCR request timed out; reconnecting and retrying once'
-            )
-            self._reconnect_after_timeout(client)
-            return getattr(self.client, method_name)(*args)
 
-    def _cache_key(self, operation: str, payload: bytes, *parameters) -> tuple[Any, ...]:
-        digest = hashlib.blake2b(payload, digest_size=16).digest()
-        return operation, self.model_size, digest, *parameters
 
-    def _cache_enabled(self) -> bool:
-        # 调试日志开启时不缓存，确保每次 OCR 输入都能被记录。
-        return self.low_spec_mode and not self.save_log
 
-    def set_low_spec_mode(self, enabled: bool) -> None:
-        self.low_spec_mode = bool(enabled)
-        self.client._timeout = _ocr_request_timeout(
-            self.model_size,
-            self.low_spec_mode,
-        )
-        self._result_cache.clear()
 
     def ping(self) -> bool:
         return bool(self.client.ping())
@@ -779,26 +685,11 @@ class ModelProxy:
 
     def warmup(self) -> bool:
         """要求OCR服务预加载当前脚本配置使用的模型。"""
-        return bool(self._call_with_timeout_retry('warmup', self.model_size))
+        return bool(self.client.warmup(self.model_size))
 
     def ocr_single_line(self, image: np.ndarray):
         payload = pickle.dumps(image, protocol=4)
-        cache_enabled = self._cache_enabled()
-        cache_key = None
-        if cache_enabled:
-            cache_key = self._cache_key('single', payload, self.save_log)
-            cached = self._result_cache.get(cache_key)
-            if cached is not _OCR_CACHE_MISS:
-                return cached
-        result = self._call_with_timeout_retry(
-            'ocr_single_line',
-            payload,
-            self.save_log,
-            self.model_size,
-        )
-        if cache_enabled:
-            self._result_cache.put(cache_key, result)
-        return result
+        return self.client.ocr_single_line(payload, self.save_log, self.model_size)
 
     def detect_and_ocr(
         self,
@@ -809,36 +700,10 @@ class ModelProxy:
         vertical: bool = False,
     ):
         payload = pickle.dumps(image, protocol=4)
-        cache_enabled = self._cache_enabled()
-        cache_key = None
-        if cache_enabled:
-            cache_key = self._cache_key(
-                'detect',
-                payload,
-                drop_score,
-                unclip_ratio,
-                box_thresh,
-                vertical,
-                self.save_log,
-            )
-            cached = self._result_cache.get(cache_key)
-        else:
-            cached = _OCR_CACHE_MISS
-        if cached is _OCR_CACHE_MISS:
-            results = self._call_with_timeout_retry(
-                'detect_and_ocr',
-                payload,
-                drop_score,
-                unclip_ratio,
-                box_thresh,
-                vertical,
-                self.save_log,
-                self.model_size,
-            )
-            if cache_enabled:
-                self._result_cache.put(cache_key, results)
-        else:
-            results = cached
+        results = self.client.detect_and_ocr(
+            payload, drop_score, unclip_ratio, box_thresh, vertical,
+            self.save_log, self.model_size,
+        )
         return [
             BoxedResult(np.array(item["box"]), None, item["ocr_text"], item["score"])
             for item in results
@@ -860,7 +725,6 @@ def set_ocr_logging_enabled(enabled: bool) -> None:
     _OCR_LOGGING_ENABLED = bool(enabled)
     for client in _OCR_CLIENT_CACHE.values():
         client.save_log = _OCR_LOGGING_ENABLED
-        client._result_cache.clear()
 
 
 def _normalize_model_size(model_size: str) -> str:
@@ -870,14 +734,7 @@ def _normalize_model_size(model_size: str) -> str:
     return normalized
 
 
-def _ocr_request_timeout(
-    model_size: str,
-    low_spec_mode: bool | None = None,
-) -> float:
-    if low_spec_mode is None:
-        low_spec_mode = _OCR_LOW_SPEC_MODE
-    if low_spec_mode:
-        return _OCR_LOW_SPEC_REQUEST_TIMEOUT_SECONDS
+def _ocr_request_timeout(model_size: str) -> float:
     # 小模型第一次使用时可能需要下载并初始化，给低配设备留出启动时间。
     if _normalize_model_size(model_size) == "small":
         return _OCR_STARTUP_TIMEOUT_SECONDS
@@ -892,17 +749,9 @@ def set_ocr_model_size(model_size: str) -> None:
         client.model_size = _OCR_MODEL_SIZE
         client.client._timeout = _ocr_request_timeout(
             _OCR_MODEL_SIZE,
-            client.low_spec_mode,
         )
-        client._result_cache.clear()
 
 
-def set_ocr_low_spec_mode(enabled: bool) -> None:
-    """设置低配 OCR 客户端的超时、重连与短期结果缓存策略。"""
-    global _OCR_LOW_SPEC_MODE
-    _OCR_LOW_SPEC_MODE = bool(enabled)
-    for client in _OCR_CLIENT_CACHE.values():
-        client.set_low_spec_mode(_OCR_LOW_SPEC_MODE)
 
 
 atexit.register(shutdown_ocr_server)

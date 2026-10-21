@@ -50,16 +50,6 @@
     "description": "狭间_黑豹入口"
   },
   {
-    "itemName": "abyss_navigation",
-    "imageName": "res_abyss_navigation.png",
-    "profile": "High",
-    "roiFront": "1200,372,50,44",
-    "roiBack": "1200,372,50,44",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "战报"
-  },
-  {
     "itemName": "abyss_shiki",
     "imageName": "res_abyss_shiki.png",
     "profile": "High",
@@ -128,16 +118,6 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "前往"
-  },
-  {
-    "itemName": "change_area",
-    "imageName": "res_change_area.png",
-    "profile": "High",
-    "roiFront": "993,610,63,61",
-    "roiBack": "993,610,63,61",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "description"
   },
   {
     "itemName": "ensure_button",
@@ -282,12 +262,12 @@
   {
     "itemName": "start_ensure",
     "imageName": "res_start_ensure.png",
-    "profile": "High",
-    "roiFront": "660,390,190,80",
-    "roiBack": "660,390,190,80",
+    "roiFront": "664,408,180,64",
+    "roiBack": "664,408,180,64",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": "开启确认按钮"
+    "description": "开启确认按钮",
+    "profile": "High"
   },
   {
     "itemName": "abyss_enemy_fire",
@@ -318,16 +298,6 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "神社页面标志"
-  },
-  {
-    "itemName": "check_abyss",
-    "imageName": "res_check_abyss.png",
-    "profile": "High",
-    "roiFront": "1082,14,52,50",
-    "roiBack": "992,0,247,80",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "狭间暗域页面标志"
   },
   {
     "itemName": "difficulty_extreme",

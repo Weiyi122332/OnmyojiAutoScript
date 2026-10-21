@@ -362,8 +362,8 @@
   {
     "itemName": "gi_cancel",
     "imageName": "gi_cancel.png",
-    "roiFront": "438,407,171,55",
-    "roiBack": "438,407,171,55",
+    "roiFront": "485,419,87,36",
+    "roiBack": "440,411,171,55",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "High",
@@ -372,8 +372,8 @@
   {
     "itemName": "gi_sure",
     "imageName": "gi_gi_sure.png",
-    "roiFront": "670,402,175,60",
-    "roiBack": "670,402,175,60",
+    "roiFront": "698,419,106,36",
+    "roiBack": "666,406,175,60",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "High",

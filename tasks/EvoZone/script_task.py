@@ -51,9 +51,9 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
             self.goto_page(page_shikigami_records)
             self.run_switch_soul_by_name(con.switch_soul_config.group_name, con.switch_soul_config.team_name)
 
-        self.goto_page(page_main)
         config: EvoZone = self.config.evo_zone
         if config.evo_zone_config.soul_buff_enable:
+            self.goto_page(page_main)
             self.open_buff()
             self.awake(is_open=True)
             self.close_buff()
@@ -71,12 +71,13 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
             case _:
                 logger.error('Unknown user status')
 
-        self.goto_page(page_main)
-        # 记得关掉
         if config.evo_zone_config.soul_buff_enable:
+            self.goto_page(page_main)
             self.open_buff()
             self.awake(is_open=False)
             self.close_buff()
+        else:
+            self.finish_task_navigation()
         # 下一次运行时间
         if success:
             self.set_next_run('EvoZone', finish=True, success=True)
@@ -116,6 +117,7 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
         return False
 
     def run_leader(self):
+        self.prepare_battle_cooperation('EvoZone')
         logger.info('Start run leader')
         self.goto_page(page_awake_zones)
         self.evozone_enter()
@@ -200,6 +202,7 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
         return True
 
     def run_member(self):
+        self.prepare_battle_cooperation('EvoZone')
         logger.info('Start run member')
         # 进入战斗流程
         self.device.stuck_record_add('BATTLE_STATUS_S')

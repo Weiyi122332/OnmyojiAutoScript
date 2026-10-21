@@ -1,62 +1,42 @@
 [
   {
-    "itemName": "to_battle_main",
-    "imageName": "as_to_battle_main.png",
-    "profile": "High",
-    "roiFront": "315,204,91,77",
-    "roiBack": "287,125,149,201",
+    "itemName": "to_general_1",
+    "imageName": "as_to_general_1.png",
+    "roiFront": "814,460,110,34",
+    "roiBack": "776,402,207,140",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "进入爬塔主界面"
   },
   {
     "itemName": "to_battle_boss",
     "imageName": "as_to_battle_boss.png",
-    "profile": "High",
-    "roiFront": "125,449,88,58",
-    "roiBack": "97,402,145,138",
+    "roiFront": "1058,295,112,33",
+    "roiBack": "1026,251,193,125",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "进入首领战斗页面"
   },
   {
-    "itemName": "battle_main_to_records",
-    "imageName": "as_battle_main_to_records.png",
-    "profile": "High",
-    "roiFront": "1015,560,39,42",
-    "roiBack": "674,539,439,157",
+    "itemName": "to_battle_ap",
+    "imageName": "climb_to_battle_ap.png",
+    "roiFront": "213,251,112,33",
+    "roiBack": "168,206,193,125",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": "从爬塔主界面进入式神录"
-  },
-  {
-    "itemName": "check_battle_pass",
-    "imageName": "as_check_battle_pass.png",
     "profile": "High",
-    "roiFront": "151,18,134,40",
-    "roiBack": "141,0,157,67",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "爬塔主界面标志"
-  },
-  {
-    "itemName": "to_battle_climb",
-    "imageName": "climb_to_battle_climb.png",
-    "profile": "High",
-    "roiFront": "68,98,140,33",
-    "roiBack": "32,83,247,97",
-    "method": "Template matching",
-    "threshold": 0.8,
     "description": ""
   },
   {
-    "itemName": "check_climb_main",
-    "imageName": "climb_check_climb_main.png",
-    "profile": "High",
-    "roiFront": "151,18,134,40",
-    "roiBack": "141,0,157,67",
+    "itemName": "to_battle_ap100",
+    "imageName": "climb_to_battle_ap100.png",
+    "roiFront": "397,454,107,33",
+    "roiBack": "360,409,193,125",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": ""
   }
 ]

@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
@@ -95,7 +96,6 @@ class ExplorationAssets:
 	# description 
 	I_BATTLE_START = RuleImage(profile="High", roi_front=(555,688,39,27.5), roi_back=(221,677,561,41), threshold=0.8, method="Template matching", file="./tasks/Exploration/res/res_battle_start.png")
 	# description 
-	I_GET_REWARD = RuleImage(profile="High", roi_front=(464,231,339,44), roi_back=(464,231,339,44), threshold=0.8, method="Template matching", file="./tasks/Exploration/res/res_get_reward.png")
 	# description 
 	I_RED_CLOSE = RuleImage(profile="High", roi_front=(1027,129,41,42), roi_back=(1021,121,54,55), threshold=0.6, method="Template matching", file="./tasks/Exploration/res/res_red_close.png")
 	# description 
@@ -111,7 +111,7 @@ class ExplorationAssets:
 	# 打开探索侧边折叠 
 	I_E_OPEN_FOLDER = RuleImage(profile="High", roi_front=(1241,114,22,28), roi_back=(1212,88,68,123), threshold=0.8, method="Template matching", file="./tasks/Exploration/res/res_e_open_folder.png")
 	# 退出探索标志 
-	I_E_CHECK_EXIT = RuleImage(profile="High", roi_front=(528,299,216,50), roi_back=(344,258,597,209), threshold=0.8, method="Template matching", file="./tasks/Exploration/res/res_e_check_exit.png")
+	I_E_CHECK_EXIT = _PageAssets.I_PAGE_EXPLORATION_E_CHECK_EXIT
 	# 探索退出取消 
 	I_E_EXIT_CANCEL = RuleImage(profile="High", roi_front=(422,380,163,49), roi_back=(422,380,163,49), threshold=0.8, method="Template matching", file="./tasks/Exploration/res/res_e_exit_cancel.png")
 	# 探索界面大宝箱 
@@ -121,9 +121,9 @@ class ExplorationAssets:
 	# 右侧候补标志 
 	I_E_ROTATE_EXIST_RIGHT = RuleImage(profile="High", roi_front=(829,580,33,35), roi_back=(700,574,450,46), threshold=0.8, method="Template matching", file="./tasks/Exploration/res/res_e_ratate_exsit.png")
 	# 主线tab中的 “章” 
-	I_CHECK_MAIN_TITLE = RuleImage(profile="High", roi_front=(1150,457,32,32), roi_back=(1069,222,113,336), threshold=0.85, method="Template matching", file="./tasks/Exploration/res/res_check_main_title.png")
+	I_CHECK_MAIN_TITLE = _PageAssets.I_PAGE_EXPLORATION_CHECK_MAIN_TITLE
 	# 玩法tab中“御魂” 
-	I_CHECK_PLAY_TITLE = RuleImage(profile="High", roi_front=(1073,214,40,32), roi_back=(1065,210,190,316), threshold=0.85, method="Template matching", file="./tasks/Exploration/res/res_check_play_title.png")
+	I_CHECK_PLAY_TITLE = _PageAssets.I_PAGE_EXPLORATION_CHECK_PLAY_TITLE
 
 
 	# Long Click Rule Assets

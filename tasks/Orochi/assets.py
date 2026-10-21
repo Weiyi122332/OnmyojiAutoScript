@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
@@ -26,13 +27,13 @@ class OrochiAssets:
 	# 小小宠物，发现宝藏 
 	I_PET_PRESENT = RuleImage(profile="High", roi_front=(873,184,62,147), roi_back=(873,184,62,147), threshold=0.8, method="Template matching", file="./tasks/Orochi/o/o_pet_present.png")
 	# 八岐大蛇标志 
-	I_OROCHI_CHECK_10 = RuleImage(profile="High", roi_front=(929,123,203,39), roi_back=(896,100,269,84), threshold=0.8, method="Template matching", file="./tasks/Orochi/o/o_orochi_check_10.png")
+	I_OROCHI_CHECK_10 = _PageAssets.I_PAGE_OROCHI_OROCHI_CHECK_10
 	# 巫女大蛇标志 
-	I_OROCHI_CHECK_11 = RuleImage(profile="High", roi_front=(929,123,203,39), roi_back=(896,100,269,84), threshold=0.8, method="Template matching", file="./tasks/Orochi/o/o_orochi_check_11.png")
+	I_OROCHI_CHECK_11 = _PageAssets.I_PAGE_OROCHI_OROCHI_CHECK_11
 	# 神罚标志 
-	I_OROCHI_CHECK_12 = RuleImage(profile="High", roi_front=(929,116,100,46), roi_back=(896,100,269,84), threshold=0.8, method="Template matching", file="./tasks/Orochi/o/o_orochi_check_12.png")
+	I_OROCHI_CHECK_12 = _PageAssets.I_PAGE_OROCHI_OROCHI_CHECK_12
 	# 虚无大蛇标志 
-	I_OROCHI_CHECK_13 = RuleImage(profile="High", roi_front=(929,121,211,41), roi_back=(896,100,269,84), threshold=0.8, method="Template matching", file="./tasks/Orochi/o/o_orochi_check_13.png")
+	I_OROCHI_CHECK_13 = _PageAssets.I_PAGE_OROCHI_OROCHI_CHECK_13
 
 
 	# List Rule Assets

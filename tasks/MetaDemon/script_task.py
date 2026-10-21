@@ -12,7 +12,7 @@ from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.GameUi.game_ui import GameUi
 from tasks.MetaDemon.config import MetaDemon, BossType
 from tasks.MetaDemon.assets import MetaDemonAssets
-import tasks.MetaDemon.page as ipages
+import tasks.GameUi.task_pages as ipages
 
 from module.logger import logger
 from module.exception import TaskEnd
@@ -337,7 +337,7 @@ class ScriptTask(GeneralBattle, SwitchSoul, GameUi, MetaDemonAssets):
         return True
 
     def finish_task(self):
-        self.goto_page(ipages.page_main)
+        self.finish_task_navigation()
         raise TaskEnd
 
 

@@ -20,16 +20,6 @@
     "description": ""
   },
   {
-    "itemName": "pk_boss_lock",
-    "imageName": "pk_pk_boss_lock.png",
-    "profile": "High",
-    "roiFront": "1129,530,20,25",
-    "roiBack": "1129,530,20,25",
-    "method": "Template matching",
-    "threshold": 0.95,
-    "description": ""
-  },
-  {
     "itemName": "pk_boss_fire",
     "imageName": "pk_pk_boss_fire.png",
     "profile": "High",

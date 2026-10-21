@@ -18,7 +18,7 @@ from tasks.GameUi.page import page_main, page_shikigami_records
 from tasks.GlobalGame.assets import GlobalGameAssets
 from tasks.LBS.assets import LBSAssets
 from tasks.LBS.config import LBSMode
-from tasks.LBS.page import page_lbs
+from tasks.GameUi.task_pages import page_lbs
 
 
 class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, LBSAssets):
@@ -61,7 +61,7 @@ class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, 
         else:
             self._run_solo(timeout, limit_count)
 
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         self.set_next_run(task='LBS', success=True)
         raise TaskEnd('LBS')
 

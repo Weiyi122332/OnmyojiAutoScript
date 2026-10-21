@@ -60,3 +60,11 @@ class RequestHumanTakeover(Exception):
 
 class TaskEnd(Exception):
     pass
+
+
+class NetworkRecoveryRequired(Exception):
+    """Unwind task state before network recovery."""
+
+    def __init__(self, reconnect=False):
+        self.reconnect = reconnect
+        super().__init__("Network reconnect required" if reconnect else "Network restart required")

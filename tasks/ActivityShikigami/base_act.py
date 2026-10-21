@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets
 """式神活动三种玩法共用运行能力。"""
 
 from datetime import datetime
@@ -16,7 +17,7 @@ from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleCon
 from tasks.Component.GeneralBattle.general_battle import BattleAction, BattleContext, GeneralBattle
 from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.GameUi.game_ui import GameUi
-import tasks.ActivityShikigami.page as pages
+import tasks.GameUi.task_pages as pages
 
 
 class ActivityResourceNotEnough(Exception):
@@ -71,18 +72,18 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
     def _exit_matcher(self):
         if self.current_action_type == 'fakegod':
             return self.I_FG_ACT_FIRE
-        if self.current_action_type == 'boss':
-            return self.I_AS_BOSS_FIRE
-        if self.current_action_type in ('ap', 'pass', 'ap100'):
-            return self.I_ACT_FIRE
+        if self.current_action_type in ('ap', 'pass', 'ap100', 'boss'):
+            return self._climb_fire_rule(self.current_action_type)
         return None
 
     def _handle_result(self, context: BattleContext, config: GeneralBattleConfig) -> BattleAction:
         if self.current_action_type == 'boss':
-            self.appear_then_click(self.I_UI_BACK_RED, interval=1.5)
+            pages.handle_activity_close(self)
         return super()._handle_result(context, config)
 
     def battle_config(self, action_type: str) -> GeneralBattleConfig:
+        if action_type == 'pass' and getattr(self, 'current_pass_mode', None) == 'hard':
+            action_type = 'pass_hard'
         return getattr(self.conf, f'{action_type}_battle_conf')
 
     def _battle_settlement_click(self):
@@ -158,7 +159,7 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
             self.goto_page(return_page)
 
     def switch_soul_for_from_courtyard(self, action_type: str):
-        """从庭院进入式神录，按原配置切换指定玩法的御魂预设。"""
+        """导航进入式神录，按原配置切换指定玩法的御魂预设。"""
         if self.switched_soul[action_type]:
             return
         conf = self.conf.switch_soul_config
@@ -169,8 +170,7 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
             return
 
         conf.validate_switch_soul()
-        logger.hr(f'Start switch soul from courtyard: {action_type}', 2)
-        self.goto_page(pages.page_main)
+        logger.hr(f'Start switch soul via navigator: {action_type}', 2)
         self.goto_page(pages.page_shikigami_records)
         if enable_name:
             group, team = getattr(conf, f'{action_type}_group_team_name').split(',', 1)
@@ -179,10 +179,9 @@ class BaseAct(GameUi, GeneralBattle, SwitchSoul, BaseActivity, ActivityShikigami
             self.run_switch_soul(getattr(conf, f'{action_type}_group_team'))
 
         self.exit_shikigami_records()
-        self.goto_page(pages.page_main)
 
     def finish_activity_task(self):
-        self.goto_page(pages.page_main)
+        self.finish_task_navigation()
         if self.conf.general_config.active_souls_clean:
             self.set_next_run(task='SoulsTidy', success=False, finish=False, target=datetime.now())
         self.set_next_run(task=self.scheduled_task_name, success=True)

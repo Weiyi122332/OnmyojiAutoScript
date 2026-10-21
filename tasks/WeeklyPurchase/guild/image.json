@@ -78,15 +78,5 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "功勋礼包"
-  },
-  {
-    "itemName": "rm_check_guild_store",
-    "imageName": "guild_rm_check_guild_store.png",
-    "profile": "High",
-    "roiFront": "519,66,193,38",
-    "roiBack": "483,34,257,100",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "寮商店标志"
   }
 ]

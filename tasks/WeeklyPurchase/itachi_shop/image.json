@@ -8,15 +8,5 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": ""
-  },
-  {
-    "itemName": "itachi_shop_check",
-    "imageName": "itachi_shop_itachi_shop_check.png",
-    "profile": "High",
-    "roiFront": "121,37,78,39",
-    "roiBack": "116,33,88,49",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": ""
   }
 ]

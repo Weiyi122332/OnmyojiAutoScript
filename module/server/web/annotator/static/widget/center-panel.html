@@ -16,6 +16,13 @@
           <span class="resize-handle resize-handle-sw" data-resize-dir="sw"></span>
           <span class="resize-handle resize-handle-se" data-resize-dir="se"></span>
         </div>
+        <div id="roiRange" class="roi roi-range hidden">
+          <span class="tag">Range</span>
+          <span class="resize-handle resize-handle-nw" data-resize-dir="nw"></span>
+          <span class="resize-handle resize-handle-ne" data-resize-dir="ne"></span>
+          <span class="resize-handle resize-handle-sw" data-resize-dir="sw"></span>
+          <span class="resize-handle resize-handle-se" data-resize-dir="se"></span>
+        </div>
         <div id="roiFront" class="roi roi-front">
           <span class="tag">Front</span>
           <span class="resize-handle resize-handle-nw" data-resize-dir="nw"></span>
@@ -24,6 +31,7 @@
           <span class="resize-handle resize-handle-se" data-resize-dir="se"></span>
         </div>
         <div id="testRoiBack" class="roi roi-test-back hidden"><span class="tag">TestBack</span></div>
+        <div id="testRoiRange" class="roi roi-test-range hidden"><span class="tag">TestRange</span></div>
         <div id="testRoiFront" class="roi roi-test-front hidden"><span class="tag">TestFront</span></div>
       </div>
     </div>
@@ -38,7 +46,8 @@
     <span id="polygonHint">点击画布依次落点，至少三个顶点后完成。</span>
   </div>
   <div class="roi-values">
-    <label>roiFront<input id="roiFrontValue" type="text"></label>
+    <label><span id="roiFrontLabel">roiFront</span><input id="roiFrontValue" type="text"></label>
+    <label id="roiRangeLabel" class="hidden">roiRange<input id="roiRangeValue" type="text"></label>
     <label>roiBack<input id="roiBackValue" type="text"></label>
   </div>
 

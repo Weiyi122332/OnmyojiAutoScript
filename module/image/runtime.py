@@ -610,6 +610,7 @@ class ImageRuntime:
             "roi_back": roi_back,
             "scale_range": scale_range,
             "scale_step": float(rule_data.get("scale_step", 0.1)),
+            "grayscale": bool(rule_data.get("grayscale", False)),
         }
 
     def _match_rule_payload(
@@ -619,6 +620,15 @@ class ImageRuntime:
         threshold: float | None = None,
     ) -> dict[str, Any]:
         """执行单规则匹配并把结果转换为可直接返回给 RPC 层的字典。"""
+        if rule_data.get('badges'):
+            best = {'matched': False, 'score': 0.0, 'roi_front': None}
+            for index, badge in enumerate(rule_data['badges']):
+                result = self._match_rule_payload(image, badge, threshold)
+                if result.get('matched'):
+                    return {**result, 'badge_index': index}
+                if result.get('score', 0) > best.get('score', 0):
+                    best = result
+            return best
         rule = self._normalize_rule(rule_data=rule_data, threshold=threshold)
         matched, score, roi_front, extra = self._match_rule(image=image, rule=rule)
         payload = {
@@ -655,6 +665,7 @@ class ImageRuntime:
                 threshold=rule["threshold"],
                 log_name=rule["name"],
                 mask=entry.mask,
+                grayscale=rule.get('grayscale', False),
             )
             return matched, score, roi_front, {}
         if method == "Multi-scale template matching":
@@ -727,6 +738,7 @@ class ImageRuntime:
         threshold: float,
         log_name: str,
         mask: np.ndarray | None = None,
+        grayscale: bool = False,
     ) -> tuple[bool, float, list[int] | None]:
         """
         执行普通模板匹配，并在命中时回传前景 ROI。
@@ -735,6 +747,9 @@ class ImageRuntime:
         `mask` 为可选的单通道掩码，非零区域参与匹配、零区域忽略。
         """
         source = self._crop(image, roi_back)
+        if grayscale:
+            source = self._to_gray(source)
+            template = self._to_gray(template)
         if self._template_image_invalid(template):
             logger.error(f"Template image is invalid: {None if template is None else template.shape}")
             return True, 1.0, [int(v) for v in roi_back]
@@ -919,6 +934,9 @@ class ImageRuntime:
         entry = self._get_template_entry(rule["file"], with_mask=method == "Masked template matching")
         template = entry.image_rgb
         source = self._crop(image, rule["roi_back"])
+        if rule.get('grayscale', False):
+            source = self._to_gray(source)
+            template = self._to_gray(template)
         if self._template_image_invalid(template):
             logger.error(f"Template image is invalid: {None if template is None else template.shape}")
             return []

@@ -1,0 +1,12 @@
+[
+  {
+    "itemName": "page_frogchallenge_check_frog_challenge",
+    "imageName": "page_check_frogchallenge_check_frog_challenge.png",
+    "roiFront": "1080,19,27,26",
+    "roiBack": "1065,7,62,52",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "青蛙瓷器挑战赛页面标志"
+  }
+]

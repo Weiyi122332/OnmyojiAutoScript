@@ -135,3 +135,11 @@ __all__ = [
     "page_battle_team_exit",
     "page_pet"
 ]
+
+
+def __getattr__(name):
+    """普通任务页面也可通过总页面入口按名称取得。"""
+    if name.startswith(('page_', 'PAGE_ACT_GENERAL_')):
+        from tasks.GameUi import task_pages
+        return getattr(task_pages, name)
+    raise AttributeError(name)

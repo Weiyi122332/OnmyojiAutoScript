@@ -1,0 +1,12 @@
+[
+  {
+    "itemName": "check_bondling_fairyland",
+    "imageName": "page_check_bondling_fairyland.png",
+    "roiFront": "614,660,56,49",
+    "roiBack": "582,630,130,90",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "契灵页面标志"
+  }
+]

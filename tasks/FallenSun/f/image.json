@@ -40,16 +40,6 @@
     "description": "description"
   },
   {
-    "itemName": "fallen_sun_lock",
-    "imageName": "f_fallen_sun_lock.png",
-    "profile": "High",
-    "roiFront": "705,659,19,26",
-    "roiBack": "661,641,169,79",
-    "method": "Template matching",
-    "threshold": 0.6,
-    "description": "description"
-  },
-  {
     "itemName": "pet_present",
     "imageName": "f_pet_present.png",
     "profile": "High",

@@ -14,7 +14,7 @@ from tasks.GameUi.page import page_realm_raid
 from tasks.RealmRaid.assets import RealmRaidAssets
 from tasks.RealmRaid.config import RealmRaid, AttackNumber, WhenAttackFail
 from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
-from tasks.RealmRaid.page import page_shikigami_records
+from tasks.GameUi.task_pages import page_shikigami_records
 
 
 from module.logger import logger

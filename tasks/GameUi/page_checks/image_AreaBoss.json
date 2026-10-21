@@ -1,0 +1,12 @@
+[
+  {
+    "itemName": "check_area_boss",
+    "imageName": "page_check_area_boss.png",
+    "roiFront": "20,320,150,130",
+    "roiBack": "20,320,150,130",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "地鬼页面标志"
+  }
+]

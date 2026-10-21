@@ -1,7 +1,7 @@
 from module.atom.gif import RuleGif
 from module.atom.image import RuleImage
 from module.logger import logger
-from tasks.Exploration import page as pages
+import tasks.GameUi.task_pages as pages
 from tasks.Exploration.base import BaseExploration
 from tasks.Exploration.config import UpType, UserStatus
 from tasks.Exploration.script_task import ScriptTask as ExplorationScriptTask

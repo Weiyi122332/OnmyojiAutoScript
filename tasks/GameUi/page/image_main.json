@@ -1,15 +1,5 @@
 [
   {
-    "itemName": "check_main",
-    "imageName": "page_check_main.png",
-    "roiFront": "807,108,76,45",
-    "roiBack": "47,88,1046,102",
-    "method": "Template matching",
-    "threshold": 0.95,
-    "profile": "High",
-    "description": "庭院标志"
-  },
-  {
     "itemName": "back_brown",
     "imageName": "page_back_brown.png",
     "roiFront": "20,18,41,36",
@@ -140,106 +130,6 @@
     "description": "庭院前往珍旅居"
   },
   {
-    "itemName": "check_travel",
-    "imageName": "page_check_travel.png",
-    "roiFront": "1134,583,78,77",
-    "roiBack": "1134,583,78,77",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "珍旅居页面标志"
-  },
-  {
-    "itemName": "check_records",
-    "imageName": "page_check_records.png",
-    "roiFront": "269,71,55,50",
-    "roiBack": "269,71,55,50",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "式神录页面标志"
-  },
-  {
-    "itemName": "check_onmyodo",
-    "imageName": "page_check_onmyodo.png",
-    "roiFront": "1166,117,84,547",
-    "roiBack": "1166,117,84,547",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "阴阳术页面标志"
-  },
-  {
-    "itemName": "check_friends",
-    "imageName": "page_check_friends.png",
-    "roiFront": "74,628,58,66",
-    "roiBack": "74,628,58,66",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "好友页面标志"
-  },
-  {
-    "itemName": "check_daily",
-    "imageName": "page_check_daily.png",
-    "roiFront": "28,515,58,62",
-    "roiBack": "1,487,154,145",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "花合战页面标志"
-  },
-  {
-    "itemName": "check_mall",
-    "imageName": "page_check_mall.png",
-    "roiFront": "831,150,41,33",
-    "roiBack": "771,76,185,121",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "商店页面标志"
-  },
-  {
-    "itemName": "check_mall_recommend",
-    "imageName": "page_check_mall_recommend.png",
-    "roiFront": "930,12,42,37",
-    "roiBack": "905,0,100,100",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "商店推荐页面标志"
-  },
-  {
-    "itemName": "check_guild",
-    "imageName": "page_check_guild.png",
-    "roiFront": "1072,630,49,46",
-    "roiBack": "1072,630,49,46",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "阴阳寮页面标志"
-  },
-  {
-    "itemName": "check_team",
-    "imageName": "page_check_team.png",
-    "roiFront": "32,585,82,65",
-    "roiBack": "0,563,148,139",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "组队页面标志"
-  },
-  {
-    "itemName": "check_collection",
-    "imageName": "page_check_collection.png",
-    "roiFront": "380,620,100,100",
-    "roiBack": "371,608,880,112",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "图鉴页面标志"
-  },
-  {
     "itemName": "back_daily",
     "imageName": "page_back_daily.png",
     "roiFront": "33,13,39,50",
@@ -260,26 +150,6 @@
     "description": "庭院召唤标志"
   },
   {
-    "itemName": "check_summon",
-    "imageName": "page_check_summon.png",
-    "roiFront": "750,580,30,28",
-    "roiBack": "578,516,419,204",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "召唤页面标志"
-  },
-  {
-    "itemName": "check_shrin",
-    "imageName": "page_check_shrin.png",
-    "roiFront": "80,92,33,97",
-    "roiBack": "56,73,84,138",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "阴阳寮神社左上角"
-  },
-  {
     "itemName": "guild_to_shrin",
     "imageName": "page_guild_to_shrin.png",
     "roiFront": "877,629,49,53",
@@ -288,15 +158,5 @@
     "threshold": 0.8,
     "profile": "High",
     "description": "阴阳寮前往神社"
-  },
-  {
-    "itemName": "check_main_set",
-    "imageName": "page_check_main_set.png",
-    "roiFront": "255,37,41,36",
-    "roiBack": "214,6,120,100",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "闲庭设置"
   }
 ]

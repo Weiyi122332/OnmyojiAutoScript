@@ -15,7 +15,7 @@ from module.atom.image import RuleImage
 from module.base.utils import point2str
 from module.logger import logger
 from module.exception import TaskEnd, GameStuckError
-from tasks.KekkaiUtilize.page import page_guild_realm, page_guild_realm_growth, page_guild_card
+from tasks.GameUi.task_pages import page_guild_realm, page_guild_realm_growth, page_guild_card
 
 from tasks.KekkaiUtilize.script_task import ScriptTask as KU
 from tasks.KekkaiUtilize.utils import CardClass
@@ -44,7 +44,7 @@ class ScriptTask(KU, KekkaiActivationAssets):
 
         if con.exchange_max:
             self.check_max_lv(con.shikigami_class, con.auto_fill)
-        self.goto_page(page_main)
+        self.finish_task_navigation()
 
         raise TaskEnd('KekkaiActivation')
 

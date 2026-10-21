@@ -141,7 +141,7 @@ class ChessStateLoopMixin:
                     'Chess rank protection: actively exit this game; '
                     'the game will not count toward completed runs'
                 )
-                if self.exit_chess_battle(return_to_lobby=False):
+                if self.Chess_Exit(return_to_lobby=False):
                     self._rank_protection_exit_succeeded = True
                     self._publish_chess_events(game_ended=True)
                     return None
@@ -268,7 +268,6 @@ _GAME_STATE_FIELDS = {
     '_economy_sequence_level': 'economy_sequence_level',
     '_economy_sequence_index': 'economy_sequence_index',
     '_economy_battle_mode': 'economy_battle_mode',
-    '_formation_pending': 'formation_pending',
     '_shop_assumed_open': 'shop_assumed_open',
     '_board_lineup_names': 'board_lineup_names',
     '_board_actual_positions': 'board_actual_positions',

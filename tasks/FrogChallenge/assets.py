@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
@@ -17,7 +18,7 @@ class FrogChallengeAssets:
 	# 首次进入跳过 
 	I_FC_SKIP = RuleImage(roi_front=(1157,32,53,29), roi_back=(1129,17,105,63), threshold=0.8, method="Template matching", file="./tasks/FrogChallenge/fc/fc_fc_skip.png")
 	# 青蛙瓷器挑战赛页面标志 
-	I_CHECK_FROG_CHALLENGE = RuleImage(roi_front=(1080,19,27,26), roi_back=(1065,7,62,52), threshold=0.8, method="Template matching", file="./tasks/FrogChallenge/fc/fc_check_frog_challenge.png")
+	I_CHECK_FROG_CHALLENGE = _PageAssets.I_PAGE_FROGCHALLENGE_CHECK_FROG_CHALLENGE
 	# 战斗 
 	I_FC_FIRE = RuleImage(roi_front=(1159,641,64,28), roi_back=(1121,571,141,126), threshold=0.8, method="Template matching", file="./tasks/FrogChallenge/fc/fc_fc_fire.png")
 	# 无奖励战斗就停止 

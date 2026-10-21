@@ -14,7 +14,6 @@
       "emulatorinfo_path": "",
       "emulator_window_minimize": false,
       "run_background_only": false,
-      "low_spec_mode": false,
       "continuous_task_rest_enable": false,
       "continuous_task_rest_interval": "60,120",
       "resource_precache_enable": false
@@ -64,7 +63,7 @@
   "global_game": {
     "emergency": {
       "friend_invitation": "accept",
-      "when_network_abnormal": "wait_10s",
+      "when_network_abnormal": "wait_5s",
       "when_network_error": "restart",
       "home_client_clear": true
     },
@@ -1914,7 +1913,7 @@
       "float_time": "00:00:00"
     },
     "chess_config": {
-      "lineup_bond": "荒川",
+      "lineup_bond": "七角山",
       "rank_protection": false,
       "run_count": 1,
       "limit_time": "00:30:00",

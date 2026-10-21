@@ -10,6 +10,36 @@ page_sr_prepare_exit = Page(SixRealmsAssets.I_MS_CHECK_EXIT_PREPARE, priority=88
 # 商店打开弹窗
 page_sr_open_store = Page(SixRealmsAssets.I_MS_CHECK_OPEN_STORE, priority=88)
 
+# Shared transient dialog: the short confirm button identifies the page.
+from module.logger import logger
+
+page_sr_confirm_tip = Page(
+    SixRealmsAssets.I_SR_SELECT_ENSURE_SHORT,
+    category="six_realms", priority=100,
+)
+
+
+def handle_sr_confirm_tip(task) -> bool:
+    """Recognize by confirm alone; optionally check do-not-remind, then confirm."""
+    confirm = SixRealmsAssets.I_SR_SELECT_ENSURE_SHORT
+    unchecked = SixRealmsAssets.I_SR_NOT_TIP
+    if not task.appear(confirm):
+        return False
+    logger.info('SixRealms short confirmation dialog')
+    if task.appear(unchecked):
+        task.ui_click_until_appear(
+            unchecked, confirm, expected_present=False,
+            interval=1, timeout=6, max_clicks=3, confirm_delay=0.2,
+        )
+    # The unchecked marker must disappear on two fresh frames before confirmation.
+    task.ui_click_until_appear(
+        confirm, expected_present=False,
+        interval=1, timeout=6, max_clicks=3, confirm_delay=0.2,
+    )
+    task.screenshot()
+    return True
+
+
 # ----------------月之海----------------
 def handle_enter_moon_sea(task) -> bool:
     """六道之门页面切换到月之海"""

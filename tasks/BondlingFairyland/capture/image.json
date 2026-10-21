@@ -1,15 +1,5 @@
 [
   {
-    "itemName": "c_auto_true",
-    "imageName": "capture_c_auto_true.png",
-    "profile": "High",
-    "roiFront": "765,200,50,24",
-    "roiBack": "749,187,79,51",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "启用自动结契"
-  },
-  {
     "itemName": "c_auto_false",
     "imageName": "capture_c_auto_false.png",
     "profile": "High",
@@ -138,16 +128,6 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "启用连续使用盘子"
-  },
-  {
-    "itemName": "c_minimal_mode_enable",
-    "imageName": "capture_c_minimal_mode_enable.png",
-    "profile": "High",
-    "roiFront": "764,155,48,24",
-    "roiBack": "757,149,63,39",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "启用结契极简模式"
   },
   {
     "itemName": "c_minimal_mode_disable",

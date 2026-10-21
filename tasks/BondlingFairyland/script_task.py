@@ -154,7 +154,7 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
                 cu = int(str(cu)[1:])
             if cu >= MAX_COUNT:
                 logger.info(f'契忆数量: {cu} 大于 {MAX_COUNT}')
-                self.goto_page(page_main)
+                self.finish_task_navigation()
                 self.set_next_run(task='BondlingFairyland', finish=True, success=True)
                 raise TaskEnd
             logger.info(f'契忆数量: {cu} 小于 {MAX_COUNT}, 继续任务')
@@ -173,7 +173,7 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
                 raise ValueError(
                     f'Now is model1, but user status is not alone, current: {cong.bondling_config.user_status.value}')
             self.run_search(cong.bondling_config)
-            self.goto_page(page_main)
+            self.finish_task_navigation()
             self.set_next_run(task='BondlingFairyland', finish=True, success=True)
             raise TaskEnd
         match cong.bondling_config.user_status:
@@ -194,6 +194,7 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
                 logger.error(f'Unknown user status: {cong.bondling_config.user_status}')
 
     def run_leader(self):
+        self.prepare_battle_cooperation('BondlingFairyland')
         """  点击 求援， 组队模式  """
         logger.hr('Start run leader', 2)
         success = True
@@ -294,11 +295,12 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
         if UserStatus.handoff1 == self.config.bondling_fairyland.bondling_config.user_status:
             self.current_count = 0
             self.run_member()
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         self.set_next_run(task='BondlingFairyland', finish=True, success=True)
         raise TaskEnd
 
     def run_member(self):
+        self.prepare_battle_cooperation('BondlingFairyland')
         logger.hr('Start run member', 2)
         # 开始等待队长拉人
         wait_time = self.config.bondling_fairyland.invite_config.wait_time
@@ -370,7 +372,7 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
                 pass
                 # 引用配置
         if UserStatus.MEMBER == self.config.bondling_fairyland.bondling_config.user_status:
-            self.goto_page(page_main)
+            self.finish_task_navigation()
             self.set_next_run(task='BondlingFairyland', finish=True, success=True)
             raise TaskEnd
 
@@ -422,7 +424,7 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
                 break
 
         logger.info('BondlingFairyland task finished')
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         self.set_next_run(task='BondlingFairyland', finish=True, success=True)
         raise TaskEnd
 
@@ -657,8 +659,14 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
             return None
         logger.info(f'Capture setting mode: {mode}')
         self.ui_click(self.I_CLICK_CAPTION, self.I_CAPTION_ENSURE, interval=1)  # 打开结契设置
-        self.ui_click(self.I_C_AUTO_FALSE, self.I_C_AUTO_TRUE, interval=1)  # 自动结契
-        self.ui_click(self.I_C_MINIMAL_MODE_DISABLE, self.I_C_MINIMAL_MODE_ENABLE, interval=0.8)  # 极简模式
+        self.ui_click_until_appear(self.I_C_AUTO_FALSE,
+            page_check=self.I_CAPTION_ENSURE,
+            expected_present=False,
+            interval=1)  # 自动结契
+        self.ui_click_until_appear(self.I_C_MINIMAL_MODE_DISABLE,
+            page_check=self.I_CAPTION_ENSURE,
+            expected_present=False,
+            interval=0.8)  # 极简模式
 
         target_true = None
         target_false = None

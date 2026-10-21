@@ -18,7 +18,7 @@ from tasks.Orochi.config import Orochi, UserStatus, Layer
 from tasks.TrueOrochi.assets import TrueOrochiAssets
 from module.logger import logger
 from module.exception import TaskEnd
-from tasks.Orochi.page import page_orochi
+from tasks.GameUi.task_pages import page_orochi
 
 
 class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi, SwitchSoul, OrochiAssets, TrueOrochiAssets):
@@ -87,8 +87,8 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
 
         config: Orochi = self.config.orochi
         if not self.is_in_battle(True):
-            self.goto_page(page_main)
             if config.orochi_config.soul_buff_enable:
+                self.goto_page(page_main)
                 self.open_buff()
                 self.soul(is_open=True)
                 self.close_buff()
@@ -108,12 +108,13 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
             if self.appear(self.I_FIND_TS):
                 logger.info('Find true orochi after orochi battle, set TrueOrochi task to run now')
                 self.set_next_run(task='TrueOrochi', success=False, finish=False, server=False, target=datetime.now())
-        self.goto_page(page_main)
-        # 记得关掉
         if config.orochi_config.soul_buff_enable:
+            self.goto_page(page_main)
             self.open_buff()
             self.soul(is_open=False)
             self.close_buff()
+        else:
+            self.finish_task_navigation()
         # 下一次运行时间
         if success:
             self.set_next_run('Orochi', finish=True, success=True)
@@ -148,6 +149,7 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
         return False
 
     def run_leader(self):
+        self.prepare_battle_cooperation('Orochi')
         logger.info('Start run leader')
         self.goto_page(page_orochi)
         layer = self.config.orochi.orochi_config.layer
@@ -225,6 +227,7 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralBuff, GeneralRoom, GameUi,
         return True
 
     def run_member(self):
+        self.prepare_battle_cooperation('Orochi')
         logger.info('Start run member')
         # 进入战斗流程
         self.device.stuck_record_add('BATTLE_STATUS_S')

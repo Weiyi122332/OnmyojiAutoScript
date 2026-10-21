@@ -50,16 +50,6 @@
     "description": "点击祝福"
   },
   {
-    "itemName": "luck_title",
-    "imageName": "Screenshots_luck_title.png",
-    "profile": "High",
-    "roiFront": "600,52,131,67",
-    "roiBack": "600,52,131,67",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "吉闻页"
-  },
-  {
     "itemName": "friendship_up",
     "imageName": "friendship_up.png",
     "profile": "High",

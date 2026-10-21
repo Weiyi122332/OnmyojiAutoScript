@@ -20,7 +20,7 @@ from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.Component.config_base import Time
 from tasks.Dokan.assets import DokanAssets
 from tasks.Dokan.config import Dokan
-import tasks.Dokan.page as pages
+import tasks.GameUi.task_pages as pages
 from tasks.GameUi.game_ui import GameUi
 
 
@@ -159,7 +159,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             is_dokan_activated = True
         except DokanNotStartedError:
             is_dokan_activated = False
-        self.goto_page(pages.page_main)
+        self.finish_task_navigation()
         self.next_run(skip_today=False, is_dokan_activated=is_dokan_activated)
         raise TaskEnd
 

@@ -1,0 +1,62 @@
+[
+  {
+    "itemName": "check_moon_sea",
+    "imageName": "page_check_moon_sea.png",
+    "roiFront": "347,163,29,106",
+    "roiBack": "296,117,165,256",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "月之海标志"
+  },
+  {
+    "itemName": "check_incense_realm",
+    "imageName": "page_check_incense_realm.png",
+    "roiFront": "347,163,29,106",
+    "roiBack": "296,117,165,256",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "香行域标志"
+  },
+  {
+    "itemName": "check_seasonrift_forest",
+    "imageName": "page_check_seasonrift_forest.png",
+    "roiFront": "348,158,30,106",
+    "roiBack": "296,117,165,256",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "错季森标志"
+  },
+  {
+    "itemName": "check_pure_buddha_realm",
+    "imageName": "page_check_pure_buddha_realm.png",
+    "roiFront": "348,158,30,106",
+    "roiBack": "296,117,165,256",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "净佛刹标志"
+  },
+  {
+    "itemName": "check_mantra_tower",
+    "imageName": "page_check_mantra_tower.png",
+    "roiFront": "348,158,30,106",
+    "roiBack": "296,117,165,256",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "真言塔标志"
+  },
+  {
+    "itemName": "check_peacock_kingdom",
+    "imageName": "page_check_peacock_kingdom.png",
+    "roiFront": "348,158,30,106",
+    "roiBack": "296,117,165,256",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "孔雀国标志"
+  }
+]

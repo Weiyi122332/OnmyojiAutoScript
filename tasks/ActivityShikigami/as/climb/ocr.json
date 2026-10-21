@@ -1,8 +1,8 @@
 [
   {
     "itemName": "remain_pass",
-    "roiFront": "756,17,88,31",
-    "roiBack": "756,17,88,31",
+    "roiFront": "1124,23,88,31",
+    "roiBack": "1124,23,88,31",
     "mode": "Digit",
     "method": "Default",
     "keyword": "",
@@ -10,8 +10,8 @@
   },
   {
     "itemName": "remain_boss",
-    "roiFront": "1169,668,70,30",
-    "roiBack": "1169,668,70,30",
+    "roiFront": "1182,669,94,32",
+    "roiBack": "1182,669,94,32",
     "mode": "DigitCounter",
     "method": "Default",
     "keyword": "",
@@ -19,8 +19,8 @@
   },
   {
     "itemName": "remain_ap100",
-    "roiFront": "936,16,99,42",
-    "roiBack": "911,8,129,61",
+    "roiFront": "1124,24,93,33",
+    "roiBack": "1124,24,93,33",
     "mode": "Digit",
     "method": "Default",
     "keyword": "",
@@ -37,11 +37,20 @@
   },
   {
     "itemName": "remain_ap_pass",
-    "roiFront": "567,14,93,34",
-    "roiBack": "567,14,93,34",
+    "roiFront": "761,15,93,34",
+    "roiBack": "761,15,93,34",
     "mode": "Digit",
     "method": "Default",
     "keyword": "",
     "description": "剩余体力门票"
+  },
+  {
+    "itemName": "boss_score",
+    "roiFront": "70,113,231,52",
+    "roiBack": "1124,23,88,31",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "",
+    "description": "首领战分数"
   }
 ]

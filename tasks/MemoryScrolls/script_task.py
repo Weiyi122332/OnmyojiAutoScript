@@ -22,7 +22,7 @@ class ScriptTask(GameUi, MemoryScrollsAssets):
         # 进入绘卷主界面
         self.goto_memoryscrolls_main(con)
         # 返回主界面
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         raise TaskEnd
     
     def goto_memoryscrolls_main(self, con):
@@ -63,7 +63,7 @@ class ScriptTask(GameUi, MemoryScrollsAssets):
                 # 先返回绘卷主界面
                 self.ui_click_until_disappear(GlobalGameAssets.I_UI_BACK_YELLOW, interval=1.5)
                 # 再返回庭院主界面
-                self.goto_page(page_main)
+                self.finish_task_navigation()
                 self.set_next_run(task='MemoryScrolls', success=False)
                 raise TaskEnd
             self.ui_click_until_smt_disappear(self.I_MS_FRAGMENT_S, stop=self.I_MS_FRAGMENT_S_VERIFICATION, interval=1.5)

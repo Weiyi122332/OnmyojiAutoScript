@@ -12,7 +12,7 @@ from module.logger import logger
 from module.exception import TaskEnd, GamePageUnknownError, GameStuckError
 
 from tasks.GameUi.game_ui import GameUi
-from tasks.KekkaiUtilize.page import page_guild_realm, page_guild_realm_utilize, page_guild_realm_growth, \
+from tasks.GameUi.task_pages import page_guild_realm, page_guild_realm_utilize, page_guild_realm_growth, \
     page_friend_utilize, page_gr_ap_box, page_gr_exp_jug
 from tasks.Utils.config_enum import ShikigamiClass
 from tasks.KekkaiUtilize.assets import KekkaiUtilizeAssets
@@ -102,7 +102,7 @@ class ScriptTask(GameUi, ReplaceShikigami, KekkaiUtilizeAssets):
         self.receive_guild_assets(con.harvest_guild_max_times)
         if not con.utilize_enable:
             self.set_next_run(task='KekkaiUtilize', finish=True, success=True)
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         raise TaskEnd
 
     def receive_guild_assets(self, max_tries: int = 3):

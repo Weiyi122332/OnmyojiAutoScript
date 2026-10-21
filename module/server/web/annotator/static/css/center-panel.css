@@ -348,3 +348,18 @@ html[data-theme="light"] .roi .tag {
     grid-template-columns: 1fr;
   }
 }
+
+/* RuleFrame: red badge, yellow click area, green search area. */
+.roi-range { border: 2px solid #facc15; color: #facc15; z-index: 3; }
+.roi-range .tag { background: #facc15; color: #222; }
+.roi-test-range { border: 2px dashed #facc15; pointer-events: none; z-index: 25; }
+.roi-test-range .tag { background: #facc15; color: #222; }
+
+.frame-collections { grid-column: 1 / -1; display: grid; gap: 8px; }
+.frame-collection-row { display: flex; gap: 5px; align-items: center; }
+.frame-collection-row input { min-width: 0; flex: 1; }
+.frame-collection-row button { flex-shrink: 0; }
+.frame-extra-range { pointer-events: none; }
+.frame-operation-fields { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 8px 12px; }
+.frame-operation-fields label { display: grid; gap: 4px; flex: 1; min-width: 120px; }
+.frame-operation-fields input, .frame-operation-fields select { width: 100%; box-sizing: border-box; }

@@ -1,3 +1,4 @@
+from tasks.SixRealms.page import handle_sr_confirm_tip
 from module.atom.image import RuleImage
 from module.logger import logger
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
@@ -88,15 +89,14 @@ class BasePeacockKingdom(GeneralBattle, SixRealmsCommon):
 
     def _handle_reward(self, context: BattleContext, config: GeneralBattleConfig) -> BattleAction:
         context.reward_no_battle_ts = None
+        if handle_sr_confirm_tip(self):
+            return BattleAction.CONTINUE
         if self.appear(self.I_BOSS_SHUTU):  # 极表示boss战赢了
             context.is_win = True
         if context.is_win and self.appear_then_click(self.I_SR_DOUBLE_REWARD_USE, interval=1.5):
             return BattleAction.CONTINUE
         if not context.is_win and self.appear_then_click(self.I_SR_DOUBLE_REWARD_CANCEL, interval=1.5):
             return BattleAction.CONTINUE
-        if self.appear(self.I_SR_CHECK_BUY_BOX): # 是否前往购买万相赐福
-            if self.appear_then_click(self.I_SR_NOT_TIP, interval=1.5) and self.appear_then_click(self.I_UI_CANCEL):
-                return BattleAction.CONTINUE
         if self.appear(self.I_COIN, interval=2):
             self.coin_num += self.get_coin_num(self.I_COIN)
             logger.info(f'Current coin: {self.coin_num}')

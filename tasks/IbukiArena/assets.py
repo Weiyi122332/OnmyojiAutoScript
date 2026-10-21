@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
@@ -15,19 +16,17 @@ class IbukiArenaAssets:
 	# 庭院右侧活动栏进入伊吹之擂 
 	I_MAIN_TO_IBUKI = RuleImage(roi_front=(1186,291,32,34), roi_back=(1160,110,120,470), threshold=0.8, method="Template matching", file="./tasks/IbukiArena/iba/iba_main_to_ibuki.png")
 	# 伊吹之擂主界面标题 
-	I_CHECK_IBUKI = RuleImage(roi_front=(88,24,136,44), roi_back=(60,10,190,70), threshold=0.8, method="Template matching", file="./tasks/IbukiArena/iba/iba_check_ibuki.png")
+	I_CHECK_IBUKI = _PageAssets.I_PAGE_IBUKIARENA_CHECK_IBUKI
 	# 狭间幻境入口 
 	I_GOTO_ARENA = RuleImage(roi_front=(42,662,116,32), roi_back=(20,560,170,140), threshold=0.8, method="Template matching", file="./tasks/IbukiArena/iba/iba_goto_arena.png")
 	# 狭间幻境标题 
-	I_CHECK_ARENA = RuleImage(roi_front=(143,25,148,40), roi_back=(120,10,200,70), threshold=0.8, method="Template matching", file="./tasks/IbukiArena/iba/iba_check_arena.png")
+	I_CHECK_ARENA = _PageAssets.I_PAGE_IBUKIARENA_CHECK_ARENA
 	# 挑战 
 	I_CHALLENGE = RuleImage(roi_front=(1128,558,104,52), roi_back=(1090,530,180,150), threshold=0.8, method="Template matching", file="./tasks/IbukiArena/iba/iba_challenge.png")
 	# 跳过剧情 
 	I_SKIP = RuleImage(roi_front=(808,416,70,44), roi_back=(740,380,240,110), threshold=0.75, method="Template matching", file="./tasks/IbukiArena/iba/iba_skip.png")
 	# 未锁定状态 
 	I_IBUKI_UNLOCK = RuleImage(roi_front=(760,634,22,27), roi_back=(733,617,117,61), threshold=0.8, method="Template matching", file="./tasks/IbukiArena/iba/iba_ibuki_unlock.png")
-	# 锁定状态 
-	I_IBUKI_LOCK = RuleImage(roi_front=(760,634,22,27), roi_back=(733,617,117,61), threshold=0.8, method="Template matching", file="./tasks/IbukiArena/iba/iba_ibuki_lock.png")
 
 
 	# Ocr Rule Assets

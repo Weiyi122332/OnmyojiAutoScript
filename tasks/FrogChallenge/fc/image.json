@@ -18,15 +18,6 @@
     "description": "首次进入跳过"
   },
   {
-    "itemName": "check_frog_challenge",
-    "imageName": "fc_check_frog_challenge.png",
-    "roiFront": "1080,19,27,26",
-    "roiBack": "1065,7,62,52",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "青蛙瓷器挑战赛页面标志"
-  },
-  {
     "itemName": "fc_fire",
     "imageName": "fc_fc_fire.png",
     "roiFront": "1159,641,64,28",

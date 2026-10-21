@@ -18,7 +18,7 @@ from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.matcher import any_of
 from tasks.MartialArts.assets import MartialArtsAssets
 from tasks.MartialArts.config import MartialArts
-import tasks.MartialArts.page as pages
+import tasks.GameUi.task_pages as pages
 
 
 class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, BaseActivity, MartialArtsAssets):
@@ -501,6 +501,6 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, BaseActivity, 
             if battle_type == 'boss':
                 self.run_boss_battles()
 
-        self.goto_page(pages.page_main)
+        self.finish_task_navigation()
         self.set_next_run(task='MartialArts', success=True, finish=True)
         raise TaskEnd('MartialArts')

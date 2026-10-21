@@ -1,0 +1,22 @@
+[
+  {
+    "itemName": "page_abyssshadows_abyss_navigation",
+    "imageName": "page_check_abyssshadows_abyss_navigation.png",
+    "roiFront": "1200,372,50,44",
+    "roiBack": "1200,372,50,44",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "战报"
+  },
+  {
+    "itemName": "page_abyssshadows_check_abyss",
+    "imageName": "page_check_abyssshadows_check_abyss.png",
+    "roiFront": "1082,14,52,50",
+    "roiBack": "992,0,247,80",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "狭间暗域页面标志"
+  }
+]

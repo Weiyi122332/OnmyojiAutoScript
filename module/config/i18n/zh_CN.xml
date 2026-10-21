@@ -418,7 +418,7 @@ window_background >>> DroidCast_raw >  ADB_nc >> DroidCast > uiautomator2 ~= ADB
 	<message><source>Home Client Clear</source><translation>启用庭院客户端清空缓存</translation></message>
 	<message><source>friend_invitation_help</source><translation>默认全部接受</translation></message>
 	<message><source>invitation_detect_interval_help</source><translation>默认每隔10秒检测一次是否有协作</translation></message>
-	<message><source>when_network_abnormal_help</source><translation>默认会先等待10S</translation></message>
+	<message><source>when_network_abnormal_help</source><translation>默认会先等待5S</translation></message>
 	<message><source>when_network_error_help</source><translation>重启游戏</translation></message>
 	<message><source>home_client_clear_help</source><translation>有时会出现进入庭院要求清理缓存</translation></message>
 </context>

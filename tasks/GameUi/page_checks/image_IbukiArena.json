@@ -1,0 +1,22 @@
+[
+  {
+    "itemName": "page_ibukiarena_check_arena",
+    "imageName": "page_check_ibukiarena_check_arena.png",
+    "roiFront": "143,25,148,40",
+    "roiBack": "120,10,200,70",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "狭间幻境标题"
+  },
+  {
+    "itemName": "page_ibukiarena_check_ibuki",
+    "imageName": "page_check_ibukiarena_check_ibuki.png",
+    "roiFront": "88,24,136,44",
+    "roiBack": "60,10,190,70",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "伊吹之擂主界面标题"
+  }
+]

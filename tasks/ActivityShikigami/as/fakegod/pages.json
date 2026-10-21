@@ -1,23 +1,13 @@
 [
   {
-    "itemName": "fg_main_goto_act",
-    "imageName": "as_main_goto_act.png",
+    "itemName": "fg_as_open_eye",
+    "imageName": "as_as_open_eye.png",
     "profile": "High",
-    "roiFront": "1188,304,35,28",
-    "roiBack": "1164,134,83,393",
-    "method": "Template matching",
-    "threshold": 0.7,
-    "description": "庭院进入活动"
-  },
-  {
-    "itemName": "fg_skip_button",
-    "imageName": "as_skip_button.png",
-    "profile": "High",
-    "roiFront": "1159,37,51,22",
-    "roiBack": "1141,27,86,43",
+    "roiFront": "1198,300,60,54",
+    "roiBack": "1146,253,134,217",
     "method": "Template matching",
     "threshold": 0.8,
-    "description": "跳过按钮"
+    "description": "打开暗黑地图"
   },
   {
     "itemName": "fg_to_battle_main",
@@ -38,66 +28,6 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "进入首领战"
-  },
-  {
-    "itemName": "fg_check_battle_boss",
-    "imageName": "as_check_battle_boss.png",
-    "profile": "High",
-    "roiFront": "151,18,129,46",
-    "roiBack": "141,0,151,85",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "首领界面标志"
-  },
-  {
-    "itemName": "fg_battle_main_to_records",
-    "imageName": "as_battle_main_to_records.png",
-    "profile": "High",
-    "roiFront": "1015,560,39,42",
-    "roiBack": "674,539,439,157",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "进入式神录"
-  },
-  {
-    "itemName": "fg_as_check_main_2",
-    "imageName": "as_as_check_main_2.png",
-    "profile": "High",
-    "roiFront": "153,19,164,39",
-    "roiBack": "116,0,256,92",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "活动第二页面"
-  },
-  {
-    "itemName": "fg_as_open_eye",
-    "imageName": "as_as_open_eye.png",
-    "profile": "High",
-    "roiFront": "1198,300,60,54",
-    "roiBack": "1146,253,134,217",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "打开暗黑地图"
-  },
-  {
-    "itemName": "fg_as_locate",
-    "imageName": "as_as_locate.png",
-    "profile": "High",
-    "roiFront": "1212,394,34,36",
-    "roiBack": "1146,253,134,217",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "地图定位按钮"
-  },
-  {
-    "itemName": "fg_as_close_eye",
-    "imageName": "as_as_close_eye.png",
-    "profile": "High",
-    "roiFront": "1197,297,63,57",
-    "roiBack": "1146,253,134,217",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "暗黑地图标志"
   },
   {
     "itemName": "fg_as_to_pass",

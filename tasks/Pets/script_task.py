@@ -7,7 +7,7 @@ from module.logger import logger
 from module.exception import TaskEnd
 from tasks.GameUi.default_pages import page_pet, page_shikigami_records
 from tasks.Orochi.config import Layer
-from tasks.Orochi.page import page_orochi
+from tasks.GameUi.task_pages import page_orochi
 from tasks.Orochi.script_task import ScriptTask as OrochiScriptTask
 from tasks.GameUi.page import page_main
 from tasks.Pets.assets import PetsAssets
@@ -22,10 +22,10 @@ class ScriptTask(OrochiScriptTask, PetsAssets):
         self.goto_page(page_pet)
         if self.conf.pets_feast:
             self._feed()
-            self.goto_page(page_main)
+            self.finish_task_navigation()
         if self.conf.enable_orochi_ten_once:
             self.run_orochi()
-            self.goto_page(page_main)
+            self.finish_task_navigation()
         self.set_next_run(task='Pets', success=True, finish=True)
         raise TaskEnd('Pets')
 

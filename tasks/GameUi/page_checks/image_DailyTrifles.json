@@ -1,0 +1,22 @@
+[
+  {
+    "itemName": "page_dailytrifles_dt_check_guild_wish",
+    "imageName": "page_check_dailytrifles_dt_check_guild_wish.png",
+    "roiFront": "13,569,76,139",
+    "roiBack": "0,511,124,209",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "寮祈愿页面标志"
+  },
+  {
+    "itemName": "page_dailytrifles_luck_title",
+    "imageName": "page_check_dailytrifles_luck_title.png",
+    "roiFront": "600,52,131,67",
+    "roiBack": "600,52,131,67",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "吉闻页"
+  }
+]

@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
@@ -32,7 +33,7 @@ class DailyTriflesAssets:
 
 	# Image Rule Assets
 	# 寮祈愿页面标志 
-	I_DT_CHECK_GUILD_WISH = RuleImage(profile="High", roi_front=(13,569,76,139), roi_back=(0,511,124,209), threshold=0.8, method="Template matching", file="./tasks/DailyTrifles/dt/dt_dt_check_guild_wish.png")
+	I_DT_CHECK_GUILD_WISH = _PageAssets.I_PAGE_DAILYTRIFLES_DT_CHECK_GUILD_WISH
 	# 赠予 
 	I_DT_GW_DONATE = RuleImage(profile="High", roi_front=(839,167,109,49), roi_back=(816,90,301,490), threshold=0.8, method="Template matching", file="./tasks/DailyTrifles/dt/dt_dt_gw_donate.png")
 	# 交换 
@@ -120,7 +121,7 @@ class DailyTriflesAssets:
 	# 点击祝福 
 	I_CLICK_BLESS = RuleImage(profile="High", roi_front=(617,442,92,39), roi_back=(617,442,92,39), threshold=0.8, method="Template matching", file="./tasks/DailyTrifles/love/Screenshots_click_bless.png")
 	# 吉闻页 
-	I_LUCK_TITLE = RuleImage(profile="High", roi_front=(600,52,131,67), roi_back=(600,52,131,67), threshold=0.8, method="Template matching", file="./tasks/DailyTrifles/love/Screenshots_luck_title.png")
+	I_LUCK_TITLE = _PageAssets.I_PAGE_DAILYTRIFLES_LUCK_TITLE
 	# 好友羁绊提升弹窗 
 	I_FRIENDSHIP_UP = RuleImage(profile="High", roi_front=(1147,80,27,28), roi_back=(1147,80,27,28), threshold=0.8, method="Template matching", file="./tasks/DailyTrifles/love/friendship_up.png")
 	# 吉闻关闭的红色按钮,必须与好友的关闭按钮进行区分 

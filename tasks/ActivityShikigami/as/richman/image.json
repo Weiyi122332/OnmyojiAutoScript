@@ -10,16 +10,6 @@
     "description": "投掷骰子"
   },
   {
-    "itemName": "rm_main_lock",
-    "imageName": "as_lock.png",
-    "profile": "High",
-    "roiFront": "886,646,31,30",
-    "roiBack": "871,620,69,76",
-    "method": "Template matching",
-    "threshold": 0.7,
-    "description": "大富翁主界面已锁定阵容"
-  },
-  {
     "itemName": "rm_main_unlock",
     "imageName": "as_unlock.png",
     "profile": "High",
@@ -80,36 +70,6 @@
     "description": ""
   },
   {
-    "itemName": "rm_fight_lock",
-    "imageName": "rm_rm_fight_lock.png",
-    "profile": "High",
-    "roiFront": "1132,511,32,32",
-    "roiBack": "1121,502,53,51",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": ""
-  },
-  {
-    "itemName": "rm_fight_goto_records",
-    "imageName": "rm_rm_fight_goto_records.png",
-    "profile": "High",
-    "roiFront": "1028,639,41,34",
-    "roiBack": "1015,619,69,66",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": ""
-  },
-  {
-    "itemName": "rm_fight_boss_goto_records",
-    "imageName": "rm_rm_fight_boss_goto_records.png",
-    "profile": "High",
-    "roiFront": "1021,642,41,34",
-    "roiBack": "1005,626,69,66",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": ""
-  },
-  {
     "itemName": "rm_mode_fight_boss",
     "imageName": "rm_rm_mode_fight_boss.png",
     "roiFront": "1135,601,83,38",
@@ -117,16 +77,6 @@
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "High",
-    "description": ""
-  },
-  {
-    "itemName": "rm_fight_lock_boss",
-    "imageName": "rm_rm_fight_lock_boss.png",
-    "profile": "High",
-    "roiFront": "1129,515,32,32",
-    "roiBack": "1118,502,53,51",
-    "method": "Template matching",
-    "threshold": 0.8,
     "description": ""
   },
   {
@@ -165,6 +115,26 @@
     "profile": "High",
     "roiFront": "356,123,90,51",
     "roiBack": "336,82,129,106",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": ""
+  },
+  {
+    "itemName": "rm_fight_goto_records",
+    "imageName": "rm_rm_fight_goto_records.png",
+    "profile": "High",
+    "roiFront": "1028,639,41,34",
+    "roiBack": "1015,619,69,66",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": ""
+  },
+  {
+    "itemName": "rm_fight_boss_goto_records",
+    "imageName": "rm_rm_fight_boss_goto_records.png",
+    "profile": "High",
+    "roiFront": "1021,642,41,34",
+    "roiBack": "1005,626,69,66",
     "method": "Template matching",
     "threshold": 0.8,
     "description": ""

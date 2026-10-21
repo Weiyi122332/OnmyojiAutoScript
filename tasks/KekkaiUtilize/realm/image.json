@@ -90,16 +90,6 @@
     "description": "种树活动关闭标识"
   },
   {
-    "itemName": "check_guild_card",
-    "imageName": "realm_check_guild_card.png",
-    "profile": "High",
-    "roiFront": "66,93,49,85",
-    "roiBack": "29,61,150,210",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "寮结界卡界面"
-  },
-  {
     "itemName": "auto_fill",
     "imageName": "realm_auto_fill.png",
     "profile": "High",

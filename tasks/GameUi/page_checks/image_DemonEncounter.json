@@ -1,0 +1,22 @@
+[
+  {
+    "itemName": "check_demon_encounter",
+    "imageName": "page_check_demon_encounter.png",
+    "roiFront": "26,658,42,43",
+    "roiBack": "2,619,100,100",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "现世逢魔页面标志"
+  },
+  {
+    "itemName": "check_demon_encounter_2",
+    "imageName": "page_check_demon_encounter_2.png",
+    "roiFront": "501,441,53,122",
+    "roiBack": "358,326,370,288",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "逢魔之时新页面标志"
+  }
+]

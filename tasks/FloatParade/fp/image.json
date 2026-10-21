@@ -138,15 +138,5 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "放置奖励不可领取"
-  },
-  {
-    "itemName": "fp_pr_check",
-    "imageName": "fp_fp_pr_check.png",
-    "profile": "High",
-    "roiFront": "194,91,167,46",
-    "roiBack": "161,65,229,102",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "花车放置界面标志"
   }
 ]

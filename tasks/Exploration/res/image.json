@@ -160,16 +160,6 @@
     "description": "description"
   },
   {
-    "itemName": "get_reward",
-    "imageName": "res_get_reward.png",
-    "roiFront": "464,231,339,44",
-    "roiBack": "464,231,339,44",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "description"
-  },
-  {
     "itemName": "red_close",
     "imageName": "res_red_close.png",
     "roiFront": "1027,129,41,42",
@@ -240,16 +230,6 @@
     "description": "打开探索侧边折叠"
   },
   {
-    "itemName": "e_check_exit",
-    "imageName": "res_e_check_exit.png",
-    "roiFront": "528,299,216,50",
-    "roiBack": "344,258,597,209",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "profile": "High",
-    "description": "退出探索标志"
-  },
-  {
     "itemName": "e_exit_cancel",
     "imageName": "res_e_exit_cancel.png",
     "roiFront": "422,380,163,49",
@@ -288,25 +268,5 @@
     "threshold": 0.8,
     "profile": "High",
     "description": "右侧候补标志"
-  },
-  {
-    "itemName": "check_main_title",
-    "imageName": "res_check_main_title.png",
-    "roiFront": "1150,457,32,32",
-    "roiBack": "1069,222,113,336",
-    "method": "Template matching",
-    "threshold": 0.85,
-    "profile": "High",
-    "description": "主线tab中的 “章”"
-  },
-  {
-    "itemName": "check_play_title",
-    "imageName": "res_check_play_title.png",
-    "roiFront": "1073,214,40,32",
-    "roiBack": "1065,210,190,316",
-    "method": "Template matching",
-    "threshold": 0.85,
-    "profile": "High",
-    "description": "玩法tab中“御魂”"
   }
 ]

@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
@@ -40,5 +41,5 @@ class FloatParadeAssets:
 	# 放置奖励不可领取
 	I_FP_PR_CANNOT_GET = RuleImage(profile="High", roi_front=(795,514,135,44), roi_back=(769,494,192,92), threshold=0.8, method="Template matching", file="./tasks/FloatParade/fp/fp_fp_pr_cannot_get.png")
 	# 花车放置界面标志
-	I_FP_PR_CHECK = RuleImage(profile="High", roi_front=(194,91,167,46), roi_back=(161,65,229,102), threshold=0.8, method="Template matching", file="./tasks/FloatParade/fp/fp_fp_pr_check.png")
+	I_FP_PR_CHECK = _PageAssets.I_PAGE_FLOATPARADE_FP_PR_CHECK
 

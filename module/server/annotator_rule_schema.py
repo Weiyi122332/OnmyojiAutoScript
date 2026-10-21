@@ -178,6 +178,13 @@ RULE_TYPE_SCHEMAS: OrderedDict[str, dict[str, Any]] = OrderedDict(
 )
 
 
+RULE_TYPE_SCHEMAS['frame'] = deepcopy(RULE_TYPE_SCHEMAS['image'])
+RULE_TYPE_SCHEMAS['frame'].update(type='frame', label='RuleFrame')
+RULE_TYPE_SCHEMAS['frame']['capabilities'].update(
+    supports_multiple_badges=True, supports_multiple_ranges=True,
+    supports_range_handlers=True,
+)
+
 ROI_DEFAULT = "0,0,100,100"
 
 
@@ -210,7 +217,9 @@ def _field_defaults(fields: list[dict[str, Any]]) -> dict[str, Any]:
 def default_rule(rule_type: str) -> dict[str, Any]:
     schema = get_rule_schema(rule_type)
     rule = _field_defaults(schema.get("fields", []))
-    rule["roiFront"] = ROI_DEFAULT
+    rule['roiBadge' if rule_type == 'frame' else 'roiFront'] = ROI_DEFAULT
+    if rule_type == 'frame':
+        rule['roiRange'] = ROI_DEFAULT
     if rule_type != "list":
         rule["roiBack"] = ROI_DEFAULT
     return rule

@@ -75,7 +75,7 @@ class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, 
             case UserStatus.MEMBER: success = self.run_member()
             case UserStatus.ALONE: success = self.run_alone()
             case _: logger.error('Unknown user status')
-        self.goto_page(page_main)
+        self.finish_task_navigation()
         if success:
             self.set_next_run(self.task_name, finish=True, success=True)
         else:
@@ -83,6 +83,7 @@ class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, 
         raise TaskEnd(self.task_name)
 
     def run_leader(self):
+        self.prepare_battle_cooperation('EternitySea')
         logger.info('Start run leader')
         self.goto_page(page_soul_zones)
         self._enter_eternity_sea()
@@ -150,6 +151,7 @@ class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, 
         return success
 
     def run_member(self):
+        self.prepare_battle_cooperation('EternitySea')
         logger.info('Start run member')
         # 进入战斗流程
         self.device.stuck_record_add('BATTLE_STATUS_S')

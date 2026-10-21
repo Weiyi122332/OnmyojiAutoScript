@@ -1,0 +1,22 @@
+[
+  {
+    "itemName": "check_duel",
+    "imageName": "page_check_duel.png",
+    "roiFront": "149,16,64,38",
+    "roiBack": "133,0,110,74",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "斗技主界面左上角文字图像"
+  },
+  {
+    "itemName": "check_draft_duel",
+    "imageName": "page_check_draft_duel.png",
+    "roiFront": "1051,612,56,58",
+    "roiBack": "1029,594,100,100",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "description"
+  }
+]

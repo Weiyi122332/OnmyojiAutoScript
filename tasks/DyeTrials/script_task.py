@@ -34,7 +34,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, DyeTrialsAssets):
 
         self.get_all()
 
-        self.goto_page(page_main)
+        self.finish_task_navigation()
 
         self.set_next_run(task='DyeTrials', success=True, finish=True)
         raise TaskEnd('DyeTrials')

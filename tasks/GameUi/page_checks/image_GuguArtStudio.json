@@ -1,0 +1,12 @@
+[
+  {
+    "itemName": "page_guguartstudio_check_gugu_act",
+    "imageName": "page_check_guguartstudio_check_gugu_act.png",
+    "roiFront": "1069,20,33,40",
+    "roiBack": "1052,10,74,59",
+    "method": "Template matching",
+    "threshold": 0.7,
+    "profile": "High",
+    "description": "呱呱画室主页面"
+  }
+]

@@ -79,14 +79,16 @@ class ScriptTask(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, SwitchSoul, 
         self.experience_exit(con)
 
     def experience_exit(self, con):
-        self.goto_page(page_main)
         if con.buff_exp_50_click or con.buff_exp_100_click:
+            self.goto_page(page_main)
             self.open_buff()
             if con.buff_exp_50_click:
                 self.exp_50(False)
             if con.buff_exp_100_click:
                 self.exp_100(False)
             self.close_buff()
+        else:
+            self.finish_task_navigation()
 
         self.set_next_run(task='ExperienceYoukai', success=True, finish=False)
         raise TaskEnd('ExperienceYoukai')

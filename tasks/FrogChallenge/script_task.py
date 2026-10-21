@@ -8,7 +8,7 @@ from tasks.GameUi.default_pages import random_click
 from tasks.GameUi.game_ui import GameUi
 from tasks.FrogChallenge.assets import FrogChallengeAssets
 from tasks.FrogChallenge.config import FrogChallenge
-import tasks.FrogChallenge.page as pages
+import tasks.GameUi.task_pages as pages
 
 
 class ScriptTask(GeneralBattle, GameUi, SwitchSoul, FrogChallengeAssets):
@@ -27,7 +27,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, FrogChallengeAssets):
         # 点击庭院右侧图标直接进入挑战页面, 没有中间页面
         self.goto_page(pages.page_frog_challenge)
         success = self.run_challenge()
-        self.goto_page(pages.page_main)
+        self.finish_task_navigation()
         self.set_next_run(task='FrogChallenge', success=success, finish=success)
         raise TaskEnd
 

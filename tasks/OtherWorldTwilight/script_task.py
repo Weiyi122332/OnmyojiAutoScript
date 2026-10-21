@@ -13,7 +13,7 @@ from tasks.GameUi.game_ui import GameUi
 from module.logger import logger
 from module.exception import TaskEnd
 from tasks.OtherWorldTwilight.assets import OtherWorldTwilightAssets
-import tasks.OtherWorldTwilight.page as pages
+import tasks.GameUi.task_pages as pages
 from tasks.OtherWorldTwilight.config import OtherWorldTwilight, UserStatus
 
 
@@ -35,11 +35,12 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralRoom, GameUi, SwitchSoul, 
             case UserStatus.MEMBER: success = self.run_member()
             case UserStatus.ALONE: self.run_alone()
             case _: logger.error('Unknown user status')
-        self.goto_page(pages.page_main)
+        self.finish_task_navigation()
         self.set_next_run('OtherWorldTwilight', finish=not success, success=success)
         raise TaskEnd
 
     def run_leader(self):
+        self.prepare_battle_cooperation('OtherWorldTwilight')
         logger.info('Start run leader')
         self.goto_page(pages.page_owt)
         self.check_lock(self.conf.general_battle_config.lock_team_enable, self.I_OWT_LOCK, self.I_OWT_UNLOCK)
@@ -106,6 +107,7 @@ class ScriptTask(GeneralBattle, GeneralInvite, GeneralRoom, GameUi, SwitchSoul, 
         return True
 
     def run_member(self):
+        self.prepare_battle_cooperation('OtherWorldTwilight')
         logger.info('Start run member')
         self.goto_page(pages.page_main)
         # 进入战斗流程

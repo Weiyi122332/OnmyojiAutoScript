@@ -1,0 +1,22 @@
+[
+  {
+    "itemName": "page_weeklypurchase_rm_check_guild_store",
+    "imageName": "page_check_weeklypurchase_rm_check_guild_store.png",
+    "roiFront": "519,66,193,38",
+    "roiBack": "483,34,257,100",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "寮商店标志"
+  },
+  {
+    "itemName": "page_weeklypurchase_itachi_shop_check",
+    "imageName": "page_check_weeklypurchase_itachi_shop_check.png",
+    "roiFront": "121,37,78,39",
+    "roiBack": "116,33,88,49",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
+  }
+]

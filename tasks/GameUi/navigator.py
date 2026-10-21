@@ -16,14 +16,15 @@ from time import sleep
 from module.atom.click import RuleClick
 from module.atom.gif import RuleGif
 from module.atom.image import RuleImage
+from module.atom.frame import RuleFrame
 from module.atom.list import RuleList
 from module.atom.ocr import RuleOcr
 from module.base.timer import Timer
 from module.exception import GamePageUnknownError, GameNotRunningError
 from module.logger import logger
-from tasks.ActivityShikigami.assets import ActivityShikigamiAssets
 from tasks.GameUi.action import ActionSequence, ConditionalAction
 from tasks.GameUi.assets import GameUiAssets
+from tasks.GameUi.activity_handlers import handle_activity_close
 from tasks.GameUi.chess_battle import ChessBattleNavigationMixin
 from tasks.GameUi.common import infer_tasks_category_from_parts, infer_tasks_category_from_path
 from tasks.GameUi.matcher import collect_rule_images
@@ -43,7 +44,7 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
     DEFAULT_UNKNOWN_CLOSERS = [
         GlobalGameAssets.I_UI_BACK_RED,
         GlobalGameAssets.I_CHAT_CLOSE_BUTTON,
-        ActivityShikigamiAssets.I_SKIP_BUTTON,
+        GameUiAssets.I_ACTIVITY_SKIP,
         GlobalGameAssets.I_UI_CONFIRM_SAMLL,
         GlobalGameAssets.I_UI_CONFIRM,
         ExplorationAssets.I_E_EXIT_CONFIRM,
@@ -242,6 +243,15 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
             return None
 
         self.maybe_screenshot(skip_first_screenshot)
+        if getattr(self, '_six_realms_confirm_overlays', False) is True:
+            from tasks.SixRealms.page import handle_sr_confirm_tip
+            handle_sr_confirm_tip(self)
+        current = getattr(self.navigator, 'current_page', None)
+        if all(GameUi._is_activity_page(page) for page in pages) or (
+            current is not None and GameUi._is_activity_page(current)
+        ):
+            from tasks.GameUi.activity_handlers import handle_activity_overlays
+            handle_activity_overlays(self)
         GameUi._prepare_page_rule_image_cache(self, pages)
         indexed_candidates = [(index, page) for index, page in enumerate(pages) if self.match_page_once(page)]
         if not indexed_candidates:
@@ -339,6 +349,8 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
 
         if isinstance(action, RuleList):
             return self.list_appear_click(action, interval=interval or 0.8)
+        if isinstance(action, RuleFrame):
+            return bool(self.runframe(action, True, interval=interval))
         if isinstance(action, (RuleImage, RuleGif)):
             return self.appear_then_click(action, interval=interval)
         if isinstance(action, RuleOcr):
@@ -468,6 +480,10 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
         """
 
         current = self.navigator.current_page
+        if self._is_activity_page(destination) or (current is not None and self._is_activity_page(current)):
+            # 弹窗遮挡页面标志时，先清理，再按真实页面标志导航。
+            handle_activity_close(self)
+            skip_first_screenshot = True
         if current is not None and self.confirm_page(current, skip_first_screenshot=skip_first_screenshot):
             return current
         return self._detect_current_page_with_fallback(
@@ -489,10 +505,16 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
 
         timer = Timer(timeout).start()
         while not timer.reached():
+            if self._is_activity_page(destination):
+                handle_activity_close(self)
             if self.confirm_page(destination, skip_first_screenshot=False):
                 self.navigator.current_page = destination
                 return True
         return False
+
+    @staticmethod
+    def _is_activity_page(page: Page) -> bool:
+        return page.category == 'activity_shikigami' or page.key == 'page_activity'
 
     def _execute_transition(self, transition: Transition) -> bool:
         """执行一条导航边。
@@ -739,6 +761,14 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
             Timer(confirm_wait, count=int(confirm_wait // 0.5)).start().wait()
         logger.attr(f'{time.time() - start_time:.1f}s', f"Page arrived {destination}")
         return True
+
+    def finish_task_navigation(self) -> bool:
+        """任务收尾导航由调度器决定；连续运行时保留当前页面。"""
+        if getattr(self.config, 'defer_task_courtyard_return', False):
+            logger.info('Keep current page for scheduler handoff; return to courtyard only when idle')
+            return True
+        from tasks.GameUi.default_pages import page_main
+        return self.goto_page(page_main)
 
     def goto_page(self, destination: Page, confirm_wait: float = 0, skip_first_screenshot: bool = True,
                   timeout: int = 30, *, accepted_pages: tuple[Page, ...] = ()) -> bool | None:

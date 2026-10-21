@@ -10,16 +10,6 @@
     "description": "大boss挑战"
   },
   {
-    "itemName": "boss_team_lock",
-    "imageName": "ms_boss_team_lock.png",
-    "profile": "High",
-    "roiFront": "1139,493,21,21",
-    "roiBack": "1130,487,38,43",
-    "method": "Template matching",
-    "threshold": 0.95,
-    "description": "description"
-  },
-  {
     "itemName": "boss_team_unlock",
     "imageName": "ms_boss_team_unlock.png",
     "profile": "High",

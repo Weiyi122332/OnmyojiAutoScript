@@ -8,25 +8,5 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "探索入口"
-  },
-  {
-    "itemName": "exp_check_exploration",
-    "imageName": "exp_check_exploration.png",
-    "profile": "High",
-    "roiFront": "541,16,193,35",
-    "roiBack": "536,11,203,45",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "探索页面"
-  },
-  {
-    "itemName": "exploration_to_main",
-    "imageName": "exploration_to_main.png",
-    "profile": "High",
-    "roiFront": "17,17,47,42",
-    "roiBack": "0,0,76,76",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": ""
   }
 ]

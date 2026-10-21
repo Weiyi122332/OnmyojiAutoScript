@@ -1,3 +1,4 @@
+from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
@@ -25,7 +26,7 @@ class GuguArtStudioAssets:
 
 	# Image Rule Assets
 	# 呱呱画室主页面 
-	I_CHECK_GUGU_ACT = RuleImage(profile="High", roi_front=(1069,20,33,40), roi_back=(1052,10,74,59), threshold=0.7, method="Template matching", file="./tasks/GuguArtStudio/gas/gas_check_gugu_act.png")
+	I_CHECK_GUGU_ACT = _PageAssets.I_PAGE_GUGUARTSTUDIO_CHECK_GUGU_ACT
 	# 获取颜料 
 	I_OBTAIN_PAINT = RuleImage(profile="High", roi_front=(1156,453,51,55), roi_back=(1118,406,156,149), threshold=0.7, method="Template matching", file="./tasks/GuguArtStudio/gas/gas_obtain_paint.png")
 	# 提交颜料 
@@ -46,7 +47,5 @@ class GuguArtStudioAssets:
 	I_GAS_REWARD_LOCK = RuleImage(profile="High", roi_front=(790,582,14,15), roi_back=(517,536,594,125), threshold=0.8, method="Template matching", file="./tasks/GuguArtStudio/gas/gas_gas_reward_lock.png")
 	# 解锁阵容状态 
 	I_GAS_UNLOCK = RuleImage(profile="High", roi_front=(885,659,16,21), roi_back=(845,637,224,79), threshold=0.8, method="Template matching", file="./tasks/GuguArtStudio/gas/gas_gas_unlock.png")
-	# 锁定阵容状态 
-	I_GAS_LOCK = RuleImage(profile="High", roi_front=(885,659,16,21), roi_back=(845,637,224,79), threshold=0.8, method="Template matching", file="./tasks/GuguArtStudio/gas/gas_gas_lock.png")
 
 

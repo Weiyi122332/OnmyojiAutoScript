@@ -2,31 +2,31 @@
   {
     "itemName": "u_confirm_small",
     "imageName": "utilize_u_confirm_small.png",
-    "profile": "High",
     "roiFront": "672,513,131,60",
     "roiBack": "672,513,131,60",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "小一个尺寸的 确认按钮"
   },
   {
     "itemName": "u_confirm_alternate",
     "imageName": "rs_u_confirm_alternate.png",
-    "profile": "High",
-    "roiFront": "692,407,134,47",
-    "roiBack": "692,407,134,47",
+    "roiFront": "696,421,115,35",
+    "roiBack": "648,405,209,71",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "候补式神确认"
   },
   {
     "itemName": "u_circle_alternate",
     "imageName": "rs_u_circle_alternate.png",
-    "profile": "High",
     "roiFront": "535,339,41,43",
     "roiBack": "535,339,41,43",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "候补式神圆圈"
   }
 ]

@@ -1,0 +1,12 @@
+[
+  {
+    "itemName": "page_floatparade_fp_pr_check",
+    "imageName": "page_check_floatparade_fp_pr_check.png",
+    "roiFront": "194,91,167,46",
+    "roiBack": "161,65,229,102",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "花车放置界面标志"
+  }
+]

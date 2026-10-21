@@ -21,17 +21,8 @@ _IMAGE_SERVER_CONTEXT = multiprocessing.get_context("spawn")
 _IMAGE_SERVER_PROCESS: Optional[multiprocessing.Process] = None
 # 按地址缓存 RPC 客户端，避免同一入口反复建立 zerorpc 连接。
 _IMAGE_CLIENT_CACHE: dict[str, "ImageClient"] = {}
-# 脚本进程级识别参数。由 Script 启动时设置，运行中不随配置热更新。
-_IMAGE_FRAME_CACHE_EXPIRE_SECONDS: float | None = None
 
 
-def set_image_low_spec_mode(enabled: bool) -> None:
-    """设置当前脚本进程的低配截图帧缓存时间。"""
-    global _IMAGE_FRAME_CACHE_EXPIRE_SECONDS
-    if enabled:
-        _IMAGE_FRAME_CACHE_EXPIRE_SECONDS = 10.0
-    else:
-        _IMAGE_FRAME_CACHE_EXPIRE_SECONDS = None
 
 
 def _normalize_address(address: str) -> str:
@@ -265,7 +256,7 @@ class ImageClient:
         return self.client.register_frame(
             payload,
             config_name,
-            _IMAGE_FRAME_CACHE_EXPIRE_SECONDS,
+            None,
         )
 
     def get_frame_info(self, frame_id: str) -> dict[str, Any]:
