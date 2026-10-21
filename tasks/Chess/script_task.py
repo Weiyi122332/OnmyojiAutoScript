@@ -9,6 +9,7 @@ from tasks.Chess.assets import ChessAssets
 from tasks.Chess.config import Chess
 from tasks.Chess.runtime.economy import ChessEconomyMixin
 from tasks.Chess.runtime.hand_operations import ChessHandOperationsMixin
+from tasks.Chess.runtime.hyakki_draft import ChessHyakkiDraftMixin
 from tasks.Chess.runtime.recognition import ChessRecognitionMixin
 from tasks.Chess.runtime.round_state import ChessRoundStateMixin
 from tasks.Chess.runtime.settings import ChessRuntimeSettings
@@ -19,6 +20,7 @@ from tasks.GameUi.page import page_chess
 
 
 class ChessLegacyScriptTask(
+    ChessHyakkiDraftMixin,
     ChessRecognitionMixin,
     ChessHandOperationsMixin,
     ChessRoundStateMixin,
@@ -476,7 +478,9 @@ class ChessLegacyScriptTask(
         return self._read_chess_mode() == '战'
 
     def _handle_passive_stage(self, mode: str) -> bool:
-        """战、鬼、待阶段只等待，不主动改变商店状态。"""
+        """战和待阶段等待；鬼阶段执行试行投掷。"""
+        if mode == '鬼':
+            self._handle_hyakki_draft()
         return mode in ('战', '鬼', '待')
 
 
