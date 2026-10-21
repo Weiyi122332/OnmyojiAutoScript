@@ -2,51 +2,61 @@
   {
     "itemName": "chess_exit",
     "imageName": "page_chess_exit.png",
-    "profile": "High",
     "roiFront": "12,14,48,38",
     "roiBack": "12,14,48,38",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "百鬼棋局主动退出"
   },
   {
     "itemName": "chess_exit_to_lobby",
     "imageName": "page_chess_exit_to_lobby.png",
-    "profile": "High",
     "roiFront": "384,591,172,47",
     "roiBack": "340,570,270,100",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "百鬼棋局正常结算返回大厅"
   },
   {
     "itemName": "chess_exit_to_lobby_2",
     "imageName": "page_chess_exit_to_lobby_2.png",
-    "profile": "High",
     "roiFront": "580,593,123,43",
     "roiBack": "580,593,123,43",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "百鬼棋局主动退出后返回大厅"
   },
   {
     "itemName": "chess_share",
     "imageName": "page_chess_share.png",
-    "profile": "High",
     "roiFront": "1138,560,107,113",
     "roiBack": "1138,560,107,113",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "百鬼棋局分享页"
   },
   {
     "itemName": "chess_rank_goto_lobby",
     "imageName": "page_chess_rank_goto_lobby.png",
-    "profile": "High",
     "roiFront": "66,646,133,42",
     "roiBack": "66,646,133,42",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "百鬼棋局排名页返回大厅"
+  },
+  {
+    "itemName": "close_red",
+    "imageName": "page_close_red.png",
+    "roiFront": "1169,60,33,25",
+    "roiBack": "1077,19,151,144",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
   }
 ]

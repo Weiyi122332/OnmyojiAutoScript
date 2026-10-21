@@ -1,5 +1,5 @@
 from module.atom.image import RuleImage
-from module.atom.frame import RuleFrame
+from module.atom.frame import RuleFrame, Image, Ocr, Click
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
 from module.atom.long_click import RuleLongClick
@@ -62,6 +62,8 @@ class GameUiAssets:
 	I_CHESS_SHARE = RuleImage(roi_front=(1138,560,107,113), roi_back=(1138,560,107,113), threshold=0.8, method="Template matching", profile="High", file="./tasks/GameUi/page/page_chess_share.png")
 	# 百鬼棋局排名页返回大厅 
 	I_CHESS_RANK_GOTO_LOBBY = RuleImage(roi_front=(66,646,133,42), roi_back=(66,646,133,42), threshold=0.8, method="Template matching", profile="High", file="./tasks/GameUi/page/page_chess_rank_goto_lobby.png")
+	#  
+	I_CLOSE_RED = RuleImage(roi_front=(1169,60,33,25), roi_back=(1077,19,151,144), threshold=0.8, method="Template matching", profile="High", file="./tasks/GameUi/page/page_close_red.png")
 
 
 	# Image Rule Assets
