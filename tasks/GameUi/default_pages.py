@@ -45,15 +45,11 @@ HIGH_DENSITY_RANDOM_CLICK_TASKS = frozenset({
 # 依据现有设备日志：这些任务的结算点击量较低，或运行频率极低。
 # 未列出的普通任务也默认按低密度处理，仅高密度任务显式传入 Scatter。
 LOW_DENSITY_RANDOM_CLICK_TASKS = frozenset({
-    'AbyssShadows', 'AreaBoss', 'DailyTrifles', 'Delegation',
+    'AbyssShadows', 'AreaBoss', 'Chess', 'DailyTrifles', 'Delegation',
     'DemonEncounter', 'Dokan', 'Duel', 'GoldYoukai', 'GuildBanquet',
     'Hunt', 'KekkaiUtilize', 'Orochi', 'RealmRaid', 'Restart',
     'WantedQuests', 'WeeklyPurchase',
 })
-
-# 百鬼棋局虽然日志点击量低，但其奖励页有独立安全多边形，不走通用四区域。
-DEDICATED_SCATTER_RANDOM_CLICK_TASKS = frozenset({'Chess'})
-
 
 def settlement_random_click(area=None) -> RuleClick:
     """低密度任务使用四区域中的左右区域；高密度任务显式传入 Scatter。"""
@@ -367,7 +363,7 @@ page_chess.connect(
 # 棋局内页面属于全局异常恢复节点。任意任务启动时若停留在遗留棋局，
 # 导航器会先调用统一退出流程返回棋局大厅，再继续规划原目标页面。
 page_chess_battle = Page(
-    GameUiAssets.I_CHECK_CHESS_BATTLE,
+    any_of(GameUiAssets.I_CHECK_CHESS_BATTLE, ChessAssets.I_SELECT_SIXREALMS),
     category="global",
     priority=95,
 )
@@ -378,11 +374,11 @@ page_chess_battle.connect(
 )
 # 棋局可能在脚本已判定进入超时后才落到名次结算页。将全部既有结算
 # 标志注册为独立全局页面，使任何导航过程都能继续结算并返回大厅。
+# 通用奖励页由 page_reward 处理，避免把其他玩法的奖励误认成棋局结算。
 page_chess_result = Page(
     any_of(
         GameUiAssets.I_CHESS_EXIT_TO_LOBBY,
         GameUiAssets.I_CHESS_EXIT_TO_LOBBY_2,
-        ChessAssets.I_REWARD_CHESS,
         ChessAssets.I_SHARE,
         GameUiAssets.I_CHECK_CHESS_RANK,
         GameUiAssets.I_CHESS_RANK_GOTO_LOBBY,

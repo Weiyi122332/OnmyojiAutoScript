@@ -9,6 +9,7 @@ from pathlib import Path
 import cv2
 
 from module.atom.image import RuleImage
+from tasks.Chess.runtime.frame_cards import ChessFrameCardsMixin
 from module.logger import logger
 from tasks.Chess.strategy.lineup import resolve_lineup_key
 from tasks.Chess.strategy.shikigami_catalog import (
@@ -21,7 +22,7 @@ from tasks.Chess.strategy.soul_catalog import SOUL_BY_ROMAJI
 CHESS_TASK_DIR = Path(__file__).resolve().parents[1]
 
 
-class ChessRecognitionMixin:
+class ChessRecognitionMixin(ChessFrameCardsMixin):
     """Internal mixin; use through ``ScriptTask`` only."""
 
     def get_lineup_strategy(
@@ -83,12 +84,12 @@ class ChessRecognitionMixin:
     @cached_property
     def store_gold_rule(self) -> RuleImage:
         """商店卡价格前的金币图标，用于定位其右侧价格数字。"""
-        return RuleImage(
+        return RuleImage(profile="High",
             roi_front=(0, 0, 18, 18),
             roi_back=(0, 0, 1280, 720),
             method=RuleImage.METHOD_TEMPLATE_MATCH,
             threshold=self.SHOP_GOLD_ICON_THRESHOLD,
-            file=str(CHESS_TASK_DIR / 'c' / 'store_gold.png'),
+            file=str(CHESS_TASK_DIR / 'resource' / 'store' / 'store_gold.png'),
         )
 
     def _shop_shikigami_summary(self) -> list[str]:
@@ -145,7 +146,7 @@ class ChessRecognitionMixin:
             # 两类模板归一为同一个式神名，并同时参与匹配。
             if folder == 'shikigami' and name.endswith('_1'):
                 name = name[:-2]
-            rule = RuleImage(
+            rule = RuleImage(profile="High",
                 roi_front=(cls.HAND_AREA[0], cls.HAND_AREA[1], 1, 1),
                 roi_back=cls.HAND_AREA,
                 threshold=cls.HAND_TEMPLATE_THRESHOLD,
@@ -160,14 +161,14 @@ class ChessRecognitionMixin:
     @cached_property
     def shikigami_hand_rules(self) -> list[tuple[str, RuleImage]]:
         """式神资源大全；用于通用手牌分类，不代表当前阵容会使用。"""
-        return self._load_hand_template_folder('shikigami/card', prefix='card_')
+        return self._frame_portrait_rules('card', self.HAND_TEMPLATE_THRESHOLD)
 
     @cached_property
     def board_occupancy_rules(self) -> tuple[RuleImage, ...]:
         """直接加载三种场上勾玉；不依赖 assets/json 注册项。"""
-        template_dir = CHESS_TASK_DIR / 'c'
+        template_dir = CHESS_TASK_DIR / 'resource' / 'board'
         return tuple(
-            RuleImage(
+            RuleImage(profile="High",
                 roi_front=(0, 0, 1, 1),
                 roi_back=(0, 0, 1, 1),
                 threshold=self.BOARD_OCCUPANCY_TEMPLATE_THRESHOLD,
@@ -184,7 +185,7 @@ class ChessRecognitionMixin:
         threshold: float,
     ) -> list[tuple[str, RuleImage]]:
         """按阵容策略声明的文件名加载式神资源。"""
-        template_dir = CHESS_TASK_DIR / 'shikigami'
+        template_dir = CHESS_TASK_DIR / 'resource'
         rules = []
         for name, config in entries.items():
             for filename in config.get(image_field, ()):
@@ -196,7 +197,7 @@ class ChessRecognitionMixin:
                         f'name={name}, file={filename}'
                     )
                     continue
-                rules.append((name, RuleImage(
+                rules.append((name, RuleImage(profile="High",
                     roi_front=(self.HAND_AREA[0], self.HAND_AREA[1], 1, 1),
                     roi_back=self.HAND_AREA,
                     threshold=threshold,
@@ -208,15 +209,8 @@ class ChessRecognitionMixin:
     @cached_property
     def lineup_shikigami_hand_rules(self) -> list[tuple[str, RuleImage]]:
         """当前阵容允许上阵的式神手牌模板。"""
-        rules = self._load_strategy_shikigami_rules(
-            self.get_lineup_strategy()['shikigami'],
-            image_field='hand_images',
-            threshold=self.HAND_TEMPLATE_THRESHOLD,
-        )
-        logger.debug(
-            f'Loaded {len(rules)} active Chess lineup hand templates'
-        )
-        return rules
+        allowed = self.get_lineup_strategy()['shikigami']
+        return [(name, rule) for name, rule in self.shikigami_hand_rules if name in allowed]
 
     @cached_property
     def hakuzosu_protect_rule(self) -> RuleImage:
@@ -225,7 +219,7 @@ class ChessRecognitionMixin:
             CHESS_TASK_DIR
             / self.HAKUZOSU_PROTECT_IMAGE
         )
-        return RuleImage(
+        return RuleImage(profile="High",
             roi_front=(self.HAND_AREA[0], self.HAND_AREA[1], 1, 1),
             roi_back=self.HAND_AREA,
             threshold=self.HAND_TEMPLATE_THRESHOLD,
@@ -236,38 +230,18 @@ class ChessRecognitionMixin:
     @cached_property
     def shikigami_shop_rules(self) -> list[tuple[str, RuleImage]]:
         """仅加载当前阵容声明的商店卡面头像模板。"""
-        rules = self._load_strategy_shikigami_rules(
-            self.get_lineup_strategy()['shikigami'],
-            image_field='shop_images',
-            threshold=self.SHOP_TEMPLATE_THRESHOLD,
-        )
-        logger.debug(f'Loaded {len(rules)} Chess shop avatar templates')
-        return rules
+        allowed = self.get_lineup_strategy()['shikigami']
+        return [(name, rule) for name, rule in self.all_shikigami_shop_rules if name in allowed]
 
     @cached_property
     def all_shikigami_shop_rules(self) -> list[tuple[str, RuleImage]]:
         """全式神商店模板；只用于日志汇总，不参与购买决策。"""
-        template_dir = CHESS_TASK_DIR / 'shikigami/store'
-        rules: list[tuple[str, RuleImage]] = []
-        for file in sorted(template_dir.glob('store_*.png')):
-            name = file.stem[len('store_'):]
-            rules.append((
-                name,
-                RuleImage(
-                    roi_front=(self.HAND_AREA[0], self.HAND_AREA[1], 1, 1),
-                    roi_back=self.HAND_AREA,
-                    threshold=self.SHOP_TEMPLATE_THRESHOLD,
-                    method=RuleImage.METHOD_TEMPLATE_MATCH,
-                    file=file.as_posix(),
-                ),
-            ))
-        logger.debug(f'Loaded {len(rules)} all Chess shop avatar templates')
-        return rules
+        return self._frame_portrait_rules('store', self.SHOP_TEMPLATE_THRESHOLD)
 
     @cached_property
     def soul_hand_rules(self) -> list[tuple[str, RuleImage]]:
         """按拼音文件名加载御魂模板，运行时统一使用拼音键。"""
-        rules = self._load_hand_template_folder('soul', prefix='sou_')
+        rules = self._load_hand_template_folder('resource/soul', prefix='sou_')
         normalized = []
         for romaji, rule in rules:
             entry = SOUL_BY_ROMAJI.get(romaji)
@@ -281,6 +255,9 @@ class ChessRecognitionMixin:
 
     def classify_hand_card(self, card_roi: tuple[int, int, int, int]) -> dict:
         """识别一个已定位的手牌框，未收录时返回 `unknown`。"""
+        frame_card = self._frame_hand_in_roi(card_roi)
+        if frame_card is not None:
+            return dict(frame_card)
         best = None
         categories = (
             ('shikigami', self.shikigami_hand_rules),

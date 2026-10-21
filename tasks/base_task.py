@@ -10,6 +10,7 @@ from module.atom.animate import RuleAnimate
 from module.atom.click import RuleClick
 from module.atom.gif import RuleGif
 from module.atom.image import RuleImage
+from module.atom.frame import RuleFrame, FrameResult
 from module.atom.list import RuleList
 from module.atom.long_click import RuleLongClick
 from module.atom.ocr import RuleOcr
@@ -244,6 +245,16 @@ class BaseTask(GlobalGameAssets, CostumeBase):
             self.interval_timer[timer_key].reset()
 
         return appear
+
+    def runframe(self, target: RuleFrame, *range_results, interval=None, threshold=None) -> FrameResult:
+        """读取 frame.data（坐标、裁剪图、文字）；仅 Click 显式 True 点击，其余参数可选比对。"""
+        if not isinstance(target, RuleFrame):
+            raise ScriptError('runframe 的第一个参数必须是 RuleFrame')
+        try:
+            return target.run(self, *range_results, interval=interval, threshold=threshold)
+        except (TypeError, ValueError) as error:
+            raise ScriptError(f'runframe 配置或区域无效: {error}') from error
+
 
     def appear_then_click(self,
                           target: RuleImage | RuleGif | RuleOcr,
@@ -791,21 +802,34 @@ class BaseTask(GlobalGameAssets, CostumeBase):
                 elif isinstance(click, RuleOcr) and self.ocr_appear_click(click, interval=interval):
                     continue
 
-    def ui_click_until_disappear(self, click, interval: float = 1):
+    def ui_click_until_disappear(self, click, interval: float = 1, *,
+                                 click_target=None, visible=None, guard=None,
+                                 timeout: float | None = None, confirm_frames: int = 1):
+        """点击直到目标消失；可独立指定点击区、可见性判定和有界多帧确认。
+
+        超时或 guard 不满足时返回 False；默认行为与旧调用一致。
         """
-        点击一个按钮直到消失
-        :param interval:
-        :param click:
-        :return: True:出现并点击过, False:没有出现过
-        """
+        from time import monotonic
         appear_and_clicked = False
-        while 1:
+        missing = 0
+        deadline = monotonic() + timeout if timeout is not None else None
+        while deadline is None or monotonic() < deadline:
             self.screenshot()
-            if not self.appear(click):
-                break
+            if guard is not None and not guard():
+                return False
+            present = visible() if visible is not None else self.appear(click)
+            if not present:
+                missing += 1
+                if missing >= confirm_frames:
+                    return appear_and_clicked
+                continue
+            missing = 0
+            if click_target is not None:
+                if self.click(click_target, interval=interval):
+                    appear_and_clicked = True
             elif self.appear_then_click(click, interval=interval):
                 appear_and_clicked = True
-        return appear_and_clicked
+        return False
 
     def ui_click_until_appear_or_timeout(self, click, stop=None, interval: float = 1, timeout: float = 10) -> bool:
         """

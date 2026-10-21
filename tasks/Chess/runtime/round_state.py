@@ -27,7 +27,7 @@ class ChessRoundStateMixin:
     @cached_property
     def grigri_icon_templates(self) -> dict[str, object]:
         """按中文名缓存全部符咒图标，供 OCR 失败时进行图像兜底。"""
-        badge_dir = Path(__file__).resolve().parents[1] / 'badge'
+        badge_dir = Path(__file__).resolve().parents[1] / 'resource' / 'badge'
         templates = {}
         for name in grigri_names_for_quality(None):
             file = badge_dir / grigri_file(name)

@@ -17,6 +17,7 @@ from module.base.utils import is_approx_rectangle
 class RuleImage:
     debug_mode: bool = False
     METHOD_TEMPLATE_MATCH = "Template matching"
+    METHOD_MASKED_TEMPLATE_MATCH = "Masked template matching"
     METHOD_MULTI_SCALE_TEMPLATE_MATCH = "Multi-scale template matching"
     METHOD_SIFT_FLANN = "Sift Flann"
     DEFAULT_MULTI_SCALE_RANGE = (0.6, 1.2)
@@ -116,6 +117,10 @@ class RuleImage:
         return self.method == self.METHOD_TEMPLATE_MATCH
 
     @property
+    def is_masked_template_match(self) -> bool:
+        return self.method == self.METHOD_MASKED_TEMPLATE_MATCH
+
+    @property
     def is_multi_scale_template_match(self) -> bool:
         return self.method == self.METHOD_MULTI_SCALE_TEMPLATE_MATCH
 
@@ -182,6 +187,7 @@ class RuleImage:
             "roi_back": list(self.roi_back),
             "scale_range": scale_range,
             "scale_step": float(self.scale_step),
+            "grayscale": bool(getattr(self, 'grayscale', False)),
         }
 
     def match_cache_key(self) -> tuple:
@@ -194,6 +200,7 @@ class RuleImage:
             tuple(self.roi_front) if self.is_sift_flann else None,
             tuple(self.scale_range) if self.scale_range is not None else None,
             float(self.scale_step),
+            bool(getattr(self, 'grayscale', False)),
         )
 
     def _apply_match_result(self, result: dict) -> bool:
@@ -209,6 +216,12 @@ class RuleImage:
             threshold = self.threshold
         source = self.corp(image)
         mat = self.image
+
+        if getattr(self, 'grayscale', False):
+            if source.ndim == 3:
+                source = cv2.cvtColor(source, cv2.COLOR_RGB2GRAY)
+            if mat.ndim == 3:
+                mat = cv2.cvtColor(mat, cv2.COLOR_RGB2GRAY)
 
         if self._template_image_invalid(mat):
             return True  # 如果模板图像无效，直接返回 True
@@ -368,7 +381,7 @@ class RuleImage:
 
     def test_match(self, image: np.array):
         self.debug_mode = True
-        if self.is_template_match:
+        if self.is_template_match or self.is_masked_template_match:
             return self.match(image)
         if self.is_multi_scale_template_match:
             return self.match(image)

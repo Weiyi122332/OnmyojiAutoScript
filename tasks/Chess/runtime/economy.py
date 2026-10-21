@@ -619,38 +619,8 @@ class ChessEconomyMixin:
         expected_name: str | None = None,
         fallback_rules: list[tuple[str, RuleImage]] | None = None,
     ) -> dict | None:
-        """商店统一识别入口：名字→羁绊及费用→图片兜底。"""
-        recognized = self._recognize_shop_shikigami_by_name(
-            slot_index,
-            click_rule,
-        )
-        if recognized is None:
-            recognized = self._recognize_shop_shikigami_by_ocr(
-                slot_index,
-                click_rule,
-            )
-        if recognized is not None:
-            if expected_name is None or recognized['name'] == expected_name:
-                return recognized
-            # 购买复检时若 OCR 突然识别成另一张卡，再用原目标头像复核
-            # 一次，避免单帧 OCR 误识别造成“已经购买成功”的假结论。
-            fallback = self._match_shop_shikigami_avatar(
-                click_rule,
-                expected_name=expected_name,
-                rules=fallback_rules,
-            )
-            if fallback is not None:
-                fallback['source'] = 'avatar_after_ocr_mismatch'
-            return fallback
-
-        fallback = self._match_shop_shikigami_avatar(
-            click_rule,
-            expected_name=expected_name,
-            rules=fallback_rules,
-        )
-        if fallback is not None:
-            fallback['source'] = 'avatar'
-        return fallback
+        """商店统一识别入口：金币定位，Frame 读取名字、特质及头像。"""
+        return self._frame_shop_in_slot(click_rule, expected_name=expected_name)
 
     @staticmethod
     def _template_gray(image: np.ndarray) -> np.ndarray:
@@ -726,6 +696,9 @@ class ChessEconomyMixin:
             click_rule,
             expected_name=matched_name,
         )
+        # A target missing before any click is not a confirmed purchase.
+        if current_match is None:
+            return False
         attempts = 0
         emergency_cleanup_done = False
         lineup_sale_done = False
@@ -753,14 +726,29 @@ class ChessEconomyMixin:
                 f'attempt={attempts}, source={current_match["source"]}, '
                 f'identity_score={current_match["score"]:.3f})'
             )
-            self.click(click_rule)
-            time.sleep(self.SCREENSHOT_INTERVAL)
-            self.screenshot()
+            clicked_and_gone = self.ui_click_until_disappear(
+                click_rule,
+                click_target=click_rule,
+                visible=lambda: self._recognize_shop_slot(
+                    slot_index, click_rule, expected_name=matched_name,
+                ) is not None,
+                guard=lambda: self._is_purchase_allowed() and not self.appear(self.I_SELECT_GRIGRI),
+                interval=0.3,
+                timeout=min(2.0, max(0.0, deadline-time.monotonic())),
+                confirm_frames=2,
+            )
+            if clicked_and_gone:
+                return True
+            if not self._is_purchase_allowed() or self.appear(self.I_SELECT_GRIGRI):
+                return False
             current_match = self._recognize_shop_slot(
                 slot_index,
                 click_rule,
                 expected_name=matched_name,
             )
+            if current_match is None:
+                # Timeout or pre-click disappearance did not pass two-frame confirmation.
+                return False
             if current_match is not None:
                 if not self._is_purchase_allowed():
                     logger.debug(
@@ -823,7 +811,7 @@ class ChessEconomyMixin:
         return False
 
     def buy_lineup_shikigami_from_shop(self) -> list[str] | None:
-        """先以费用＋羁绊记录商店目标，再按记录购买所有阵容式神。"""
+        """整页识别一次记录目标，再逐格复核头像并购买。"""
         if not self._is_purchase_allowed():
             logger.debug('Stop Chess shop purchase: Hyakki mode detected')
             return None
@@ -904,10 +892,8 @@ class ChessEconomyMixin:
                 matched_name=target['matched_name'],
             ):
                 purchased.append(target['matched_name'])
-                # 第一张卡购买/升星动画会短暂覆盖其他商店格。等待稳定并
-                # 刷新截图后再处理目标列表中的下一格，重复卡也逐格购买。
-                time.sleep(self.ACTION_SETTLE_INTERVAL)
-                self.screenshot()
+                # Reuse the two-frame disappearance confirmation screenshot;
+                # the next target rechecks only its own portrait before clicking.
             elif not self._is_purchase_allowed():
                 return None
             elif not self._can_afford_shop_shikigami(

@@ -17,8 +17,6 @@ from tasks.Chess.runtime.board_positions import SET_JADE_AREAS, SET_POSITIONS
 from tasks.Chess.runtime.press_and_drag import Press_and_Drag
 from tasks.Chess.strategy.grigri import (
     grigri_bond_name,
-    grigri_category,
-    resolve_grigri_name,
 )
 from tasks.Chess.strategy.shikigami_catalog import (
     SHIKIGAMI_BONDS_BY_ROMAJI,
@@ -599,36 +597,8 @@ class ChessHandOperationsMixin:
         return False
 
     def _lineup_hand_card_match_count(self, name: str) -> int:
-        """统计手牌区内指定阵容式神的实际卡位数量。"""
-        candidates = []
-        for rule_name, rule in self.lineup_shikigami_hand_rules:
-            if rule_name != name:
-                continue
-            matches = rule.match_all_any(
-                self.device.image,
-                roi=list(self.HAND_AREA),
-                threshold=self.HAND_DEPLOY_TEMPLATE_THRESHOLD,
-                nms_threshold=0.3,
-                frame_id=self.device.image_frame_id,
-            )
-            candidates.extend(
-                (score, x + width // 2, y + height // 2)
-                for score, x, y, width, height in matches
-            )
-
-        # 同一个式神若存在多个模板，每张实际手牌可能产生多个重叠命中。
-        # 以人物中心聚类，只计算一次。
-        distinct = []
-        for candidate in sorted(candidates, reverse=True):
-            _, center_x, center_y = candidate
-            if any(
-                abs(center_x - kept_x) <= 32
-                and abs(center_y - kept_y) <= 40
-                for _, kept_x, kept_y in distinct
-            ):
-                continue
-            distinct.append(candidate)
-        return len(distinct)
+        """Count identities from this screenshot's shared Frame scan."""
+        return sum(card['name'] == name for card in self._frame_card_scan('card'))
 
     def _find_best_shikigami_hand_card(
         self,
@@ -719,50 +689,10 @@ class ChessHandOperationsMixin:
         self,
         excluded_names: set[str],
     ) -> list[dict]:
-        """单帧：阵容头像模板直接在完整手牌区域内匹配。"""
-        candidates = []
-        for name, rule in self.lineup_shikigami_hand_rules:
-            if name in excluded_names:
-                continue
-            matches = rule.match_all_any(
-                self.device.image,
-                roi=list(self.HAND_AREA),
-                threshold=self.HAND_DEPLOY_TEMPLATE_THRESHOLD,
-                nms_threshold=0.3,
-                frame_id=self.device.image_frame_id,
-            )
-            for score, x, y, width, height in matches:
-                candidate = {
-                    'name': name,
-                    'score': score,
-                    'position': (x + width // 2, y + height // 2),
-                }
-                logger.info(
-                    'Chess deploy hand scan: '
-                    f'best={self._shikigami_display_name(name)}, '
-                    f'score={score:.3f}, position={candidate["position"]}'
-                )
-                candidates.append(candidate)
-
-        # 不同角色模板可能在同一张卡上同时得到较低分命中。按人物中心
-        # 聚类，每个实际卡位只保留最高分结果，避免同一卡被认成两个人。
-        deduplicated = []
-        for candidate in sorted(
-            candidates,
-            key=lambda item: item['score'],
-            reverse=True,
-        ):
-            if any(
-                abs(candidate['position'][0] - kept['position'][0]) <= 32
-                and abs(candidate['position'][1] - kept['position'][1]) <= 40
-                for kept in deduplicated
-            ):
-                continue
-            deduplicated.append(candidate)
-        return sorted(
-            deduplicated,
-            key=lambda item: item['position'][0],
-        )
+        """Return recognized Frame cards allowed by the active lineup."""
+        allowed = self.get_lineup_strategy()['shikigami']
+        return [dict(card) for card in self._frame_card_scan('card')
+                if card['name'] in allowed and card['name'] not in excluded_names]
 
     def _soul_category(self, name: str) -> str | None:
         if name in self.ATTACK_SOUL_NAMES:
@@ -956,59 +886,19 @@ class ChessHandOperationsMixin:
             return None
         return max(matches, key=lambda item: item['score'])
 
-    def _discover_named_hand_cards(
-        self,
-        expected_text: str,
-        allow_fuzzy: bool,
-    ) -> list[dict]:
-        """使用完整卡名在手牌文字区定位发现类特殊卡。"""
-        results = self.O_BADGE_AREA.detect_and_ocr(self.device.image)
-        roi_x, roi_y = self.O_BADGE_AREA.roi[:2]
-        cards = []
-        for result in results:
-            text = self._normalize_ocr_text(result.ocr_text).strip(
-                '()（）[]【】'
-            )
-            if not text:
-                continue
-            if text == expected_text:
-                similarity = 1.0
-                matched = True
-            elif allow_fuzzy:
-                matched, similarity, _ = self._fuzzy_text_match(
-                    expected_text,
-                    text,
-                )
-            else:
-                matched = False
-                similarity = 0.0
-            if not matched:
-                continue
-
-            points = result.box
-            left = min(int(point[0]) for point in points)
-            right = max(int(point[0]) for point in points)
-            top = min(int(point[1]) for point in points)
-            bottom = max(int(point[1]) for point in points)
-            cards.append({
-                'kind': expected_text,
-                'text': text,
-                'similarity': similarity,
-                'score': float(result.score),
-                'position': (
-                    roi_x + (left + right) // 2,
-                    roi_y + (top + bottom) // 2,
-                ),
-            })
-        return sorted(cards, key=lambda item: item['position'][0])
+    def _discover_named_hand_cards(self, expected_text: str) -> list[dict]:
+        """共用灰度 badge 定位；只接受 OCR 完整命中的发现卡名称。"""
+        if any(self.appear(rule) for rule in
+               (self.I_SELECT_SOUL_1, self.I_SELECT_SOUL_2, self.I_SELECT_SOUL_3)):
+            return []  # 三选一弹窗后的手牌仍可能可见，不操作被遮挡的背景卡。
+        return [dict(card) for card in self._frame_card_scan('emblem')
+                if card['type'] == 'discovery' and card['kind'] == expected_text]
 
     def _discover_soul_hand_cards(self) -> list[dict]:
-        """定位“发现御魂”；保留原有 OCR 编辑距离兜底。"""
-        return self._discover_named_hand_cards('发现御魂', allow_fuzzy=True)
+        return self._discover_named_hand_cards('发现御魂')
 
     def _discover_badge_hand_cards(self) -> list[dict]:
-        """严格按完整四字定位“发现纹章”，禁止仅匹配“纹章”。"""
-        return self._discover_named_hand_cards('发现纹章', allow_fuzzy=False)
+        return self._discover_named_hand_cards('发现纹章')
 
     def _wait_for_discover_soul_choices(self) -> list[RuleImage]:
         """等待发现御魂三选一界面，并返回本帧实际出现的选项。"""
@@ -1476,16 +1366,10 @@ class ChessHandOperationsMixin:
         return deployed
 
     def _hand_card_detections(self) -> list[dict]:
-        """直接用式神/御魂素材定位已收录手牌，不依赖羁绊 OCR。"""
-        template_rules = [
-            rule
-            for _, rule in (
-                list(self.shikigami_hand_rules)
-                + list(self.soul_hand_rules)
-            )
-        ]
+        """Frame locates shikigami/emblem cards; souls retain existing matching."""
+        template_rules = [rule for _, rule in self.soul_hand_rules]
         template_rules.append(self.hakuzosu_protect_rule)
-        candidates = []
+        candidates = [(card['badge_score'], *card['roi']) for card in self._frame_card_scan('card') + self._frame_card_scan('emblem')]
         for rule in template_rules:
             matches = rule.match_all_any(
                 self.device.image,
@@ -1542,6 +1426,10 @@ class ChessHandOperationsMixin:
         name: str | None,
     ) -> int:
         """统计手牌中指定素材的命中张数，用于确认出售确实生效。"""
+        if card_type == 'shikigami' and name:
+            return self._lineup_hand_card_match_count(name)
+        if card_type == 'emblem' and name:
+            return sum(card['name'] == name for card in self._frame_card_scan('emblem'))
         if card_type == 'shikigami' and name:
             rules = [
                 rule
@@ -1615,8 +1503,7 @@ class ChessHandOperationsMixin:
                 )
                 break
 
-            # 纹章没有式神卡左上角的星级标志，无法进入下面的卡框分类。
-            # 直接在 badge_area 中定位“纹章”文本，并从文字所在卡片拖出出售。
+            # 先处理 Frame 已确认种类的纹章；图案未知的纹章留给下方保护。
             badge_target = self._find_badge_hand_card()
             if badge_target is not None:
                 logger.info(
@@ -1675,7 +1562,8 @@ class ChessHandOperationsMixin:
                     continue
                 result = self.classify_hand_card(card_roi)
                 keep = (
-                    result['type'] == 'soul'
+                    (result.get('source') == 'frame' and result['type'] == 'unknown')
+                    or result['type'] in ('soul', 'discovery')
                     or (
                         result['type'] == 'shikigami'
                         and result['name'] in self.shikigami_deploy_positions
@@ -1791,7 +1679,7 @@ class ChessHandOperationsMixin:
                 f'Cannot run emergency Chess hand cleanup in mode={mode}'
             )
             return None
-        if not self._ensure_shop_closed():
+        if not self._ensure_shop_closed(allowed_modes=('备', '战')):
             logger.warning(
                 'Cannot run emergency Chess hand cleanup: '
                 'shop could not be closed'
@@ -1834,7 +1722,7 @@ class ChessHandOperationsMixin:
     ) -> dict | None:
         """购买受阻时统一清理；清理后重试仍手满才出售阵容卡。"""
         if sell_lineup:
-            if not self._ensure_shop_closed():
+            if not self._ensure_shop_closed(allowed_modes=('备', '战')):
                 return None
             self.screenshot()
             result = self.sell_one_lineup_hand_card()
@@ -1857,35 +1745,9 @@ class ChessHandOperationsMixin:
         return result
 
     def _recognized_emblem_hand_cards(self) -> list[dict]:
-        """OCR 识别手牌中的具体纹章，并映射到符咒图鉴标准名称。"""
-        results = self.O_BADGE_AREA.detect_and_ocr(self.device.image)
-        roi_x, roi_y = self.O_BADGE_AREA.roi[:2]
-        cards = []
-        for result in results:
-            text = self._normalize_ocr_text(result.ocr_text).strip(
-                '()（）[]【】'
-            )
-            if not text or text == '发现纹章':
-                continue
-            name, similarity = resolve_grigri_name(text)
-            if name is None or grigri_category(name) != 'emblem':
-                continue
-            points = result.box
-            left = min(int(point[0]) for point in points)
-            right = max(int(point[0]) for point in points)
-            top = min(int(point[1]) for point in points)
-            bottom = max(int(point[1]) for point in points)
-            cards.append({
-                'name': name,
-                'text': text,
-                'similarity': similarity,
-                'score': float(result.score),
-                'position': (
-                    roi_x + (left + right) // 2,
-                    roi_y + (top + bottom) // 2,
-                ),
-            })
-        return sorted(cards, key=lambda item: item['position'][0])
+        """纹章 Frame 定位卡牌，中心图案确认种类；Click 范围用于拖拽。"""
+        return [dict(card) for card in self._frame_card_scan('emblem')
+                if card['type'] == 'emblem']
 
     def _emblem_targets(
         self,
@@ -2000,41 +1862,9 @@ class ChessHandOperationsMixin:
         return equipped
 
     def _find_badge_hand_card(self) -> dict | None:
-        """返回 badge_area 内最左侧“纹章”文字的屏幕坐标。"""
-        results = self.O_BADGE_AREA.detect_and_ocr(self.device.image)
-        matches = []
-        roi_x, roi_y = self.O_BADGE_AREA.roi[:2]
-        for result in results:
-            text = self._normalize_ocr_text(result.ocr_text).strip(
-                '()（）[]【】'
-            )
-            # “发现纹章”必须由专用完整卡名流程处理；若这里只按
-            # “纹章”子串判断，会在使用前被当作普通纹章卖掉并卡死。
-            if text == '发现纹章':
-                continue
-            if '纹章' not in text:
-                continue
-
-            # detect_and_ocr 返回的是相对于 OCR 裁剪区的四点框。
-            points = result.box
-            left = min(int(point[0]) for point in points)
-            right = max(int(point[0]) for point in points)
-            top = min(int(point[1]) for point in points)
-            bottom = max(int(point[1]) for point in points)
-            position = (
-                roi_x + (left + right) // 2,
-                roi_y + (top + bottom) // 2,
-            )
-            matches.append({
-                'text': text,
-                'position': position,
-                'score': float(result.score),
-            })
-
-        if not matches:
-            return None
-        matches.sort(key=lambda item: item['position'][0])
-        return matches[0]
+        """返回最左侧已确认种类的纹章，未识别的纹章保留。"""
+        cards = self._recognized_emblem_hand_cards()
+        return cards[0] if cards else None
 
     def _recall_one_system_board_card(
         self,

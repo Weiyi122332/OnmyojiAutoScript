@@ -1787,12 +1787,13 @@
       "cron": ""
     },
     "chess_config": {
-      "lineup_bond": "荒川",
+      "lineup_bond": "七角山",
       "rank_protection": false,
       "run_count": 1,
       "limit_time": "00:30:00",
       "matchmaking_timeout_seconds": 60,
-      "coin_full_exit": false
+      "coin_full_exit": false,
+      "continue_grigri_refresh_below_nine": true
     }
   },
   "collective_missions": {

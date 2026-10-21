@@ -258,7 +258,7 @@ class ChessLegacyScriptTask(
                     'Chess rank protection: actively exit this game; '
                     'the game will not count toward completed runs'
                 )
-                if self.exit_chess_battle(return_to_lobby=False):
+                if self.Chess_Exit(return_to_lobby=False):
                     self._rank_protection_exit_succeeded = True
                     return None
                 logger.warning(
@@ -509,6 +509,9 @@ class ChessLegacyScriptTask(
     def _refresh_round_state_screenshot(self) -> bool:
         """刷新回目状态截图；选符咒出现时必须优先处理完毕。"""
         self.screenshot()
+        if self.select_chess_sixrealms_if_visible():
+            self.screenshot()
+            return True
         if not self.appear(self.I_SELECT_GRIGRI):
             return False
         logger.info(
@@ -670,7 +673,8 @@ class ChessLegacyScriptTask(
 
             now = time.monotonic()
             if share_seen and now >= next_safe_click_at:
-                self.click(ChessAssets.C_C_REWARD_RANDOM_CLICK, interval=1.5)
+                from tasks.GameUi.default_pages import random_click
+                self.click(random_click(), interval=1.5)
                 safe_clicks += 1
                 next_safe_click_at = now + 1.5
             time.sleep(self.CHESS_EXIT_SCREENSHOT_INTERVAL)
@@ -765,6 +769,10 @@ class ChessLegacyScriptTask(
             # 在每次截图之前清除，不能等识别到“取消等待”后才清除。
             self.device.stuck_record_clear()
             self.screenshot()
+
+            if self.select_chess_sixrealms_if_visible():
+                deadline = time.monotonic() + timeout
+                continue
 
             # 以阵容入口或问号图标确认真正进入棋局；商店按钮不再作为
             # 开局成功标志，避免大厅或匹配动画中的相似区域造成误判。
@@ -1012,14 +1020,15 @@ class ChessLegacyScriptTask(
         # c_question_check.png。
         # chess_mode OCR 仅供已确认在局内后的回目状态机使用，不能拿来
         # 判断全局页面，否则庭院等页面中的任意非空误识别都会触发退出。
-        if not self._is_in_chess_game():
+        selected_sixrealms = self.select_chess_sixrealms_if_visible()
+        if not selected_sixrealms and not self._is_in_chess_game():
             return False
 
         logger.warning(
             'Chess startup recovery: interrupted in-game state detected '
             'by I_OPEN_LINEUP or I_QUESTION_CHECK'
         )
-        if not self.exit_chess_battle():
+        if not self.Chess_Exit():
             raise GameStuckError(
                 'Chess: interrupted game detected but active exit was unavailable'
             )

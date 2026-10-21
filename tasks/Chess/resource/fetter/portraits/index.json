@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "layout": {
+    "itemName": "fetter_badge",
+    "imageName": "fetter/fetter_badge_badge_1.png",
+    "roiBack": "166,439,970,281",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "纹章识别",
+    "roiBadge": "574,548,65,20",
+    "badgeSerial": 1,
+    "roiRange": [
+      "564,665,79,23",
+      "562,551,86,137",
+      "578,589,53,48"
+    ],
+    "badges": [
+      {
+        "imageName": "fetter/fetter_badge_badge_1.png"
+      }
+    ],
+    "rangeOperations": [
+      {
+        "type": "ocr",
+        "mode": "Single",
+        "method": "Default",
+        "keyword": ""
+      },
+      {
+        "type": "click"
+      },
+      {
+        "imageName": "",
+        "method": "Template matching",
+        "threshold": 0.8,
+        "type": "image"
+      }
+    ]
+  },
+  "entries": {
+    "haiguo": {
+      "name": "海国纹章",
+      "file": "emblem_haiguo.png",
+      "ocr_aliases": []
+    },
+    "jiazhou": {
+      "name": "甲胄纹章",
+      "file": "emblem_jiazhou.png",
+      "ocr_aliases": []
+    },
+    "dajiangshan": {
+      "name": "大江山纹章",
+      "file": "emblem_dajiangshan.png",
+      "ocr_aliases": []
+    },
+    "mingfu": {
+      "name": "冥府纹章",
+      "file": "emblem_mingfu.png",
+      "ocr_aliases": []
+    },
+    "huangchuan": {
+      "name": "荒川纹章",
+      "file": "emblem_huangchuan.png",
+      "ocr_aliases": []
+    },
+    "qijiaoshan": {
+      "name": "七角山纹章",
+      "file": "emblem_qijiaoshan.png",
+      "ocr_aliases": []
+    },
+    "pinganjing": {
+      "name": "平安京纹章",
+      "file": "emblem_pinganjing.png",
+      "ocr_aliases": []
+    },
+    "fenlie": {
+      "name": "分裂纹章",
+      "file": "emblem_fenlie.png",
+      "ocr_aliases": []
+    },
+    "yixing": {
+      "name": "易形纹章",
+      "file": "emblem_yixing.png",
+      "ocr_aliases": []
+    },
+    "shizhan": {
+      "name": "嗜战纹章",
+      "file": "emblem_shizhan.png",
+      "ocr_aliases": []
+    },
+    "duanren": {
+      "name": "锻刃纹章",
+      "file": "emblem_duanren.png",
+      "ocr_aliases": [
+        "锻刀纹章"
+      ]
+    },
+    "qiangti": {
+      "name": "强体纹章",
+      "file": "emblem_qiangti.png",
+      "ocr_aliases": []
+    },
+    "huyou": {
+      "name": "护佑纹章",
+      "file": "emblem_huyou.png",
+      "ocr_aliases": []
+    },
+    "guihuo": {
+      "name": "鬼火纹章",
+      "file": "emblem_guihuo.png",
+      "ocr_aliases": []
+    },
+    "hanshuang": {
+      "name": "寒霜纹章",
+      "file": "emblem_hanshuang.png",
+      "ocr_aliases": []
+    },
+    "huyao": {
+      "name": "狐妖纹章",
+      "file": "emblem_huyao.png",
+      "ocr_aliases": []
+    },
+    "liuhuo": {
+      "name": "流火纹章",
+      "file": "emblem_liuhuo.png",
+      "ocr_aliases": []
+    },
+    "huixiang": {
+      "name": "回响纹章",
+      "file": "emblem_huixiang.png",
+      "ocr_aliases": []
+    },
+    "yinian": {
+      "name": "遗念纹章",
+      "file": "emblem_yinian.png",
+      "ocr_aliases": []
+    }
+  }
+}

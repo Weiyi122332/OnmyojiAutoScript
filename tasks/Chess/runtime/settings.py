@@ -60,7 +60,7 @@ class ChessRuntimeSettings:
     SHOP_REFRESH_COST = 2
     HAKUZOSU_PROTECT_NAME = 'hakuzosu_protect'
     HAKUZOSU_PROTECT_DISPLAY_NAME = '守护之印'
-    HAKUZOSU_PROTECT_IMAGE = 'c/c_hakuzosu_protect.png'
+    HAKUZOSU_PROTECT_IMAGE = 'resource/card/c_hakuzosu_protect.png'
     HAKUZOSU_NAME = 'yume_san_byakuzou'
     ARAKAWA_BOND_NAME = '荒川'
     DEFAULT_LINEUP_KEY = REGISTERED_DEFAULT_LINEUP_KEY
