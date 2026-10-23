@@ -229,6 +229,7 @@ class ChessFlowIntegrationTest(unittest.TestCase):
         task._recognize_shop_slot = Mock(return_value={'source': 'image', 'score': 1.0})
         task._is_purchase_allowed = Mock(return_value=True)
         task._can_afford_shop_shikigami = Mock(return_value=True)
+        task._hand_capacity_count = Mock(return_value=0)
         task.appear = Mock(return_value=False)
         task.ui_click_until_disappear = Mock(return_value=purchase_succeeds)
         task.device = SimpleNamespace(click_record_remove=Mock())

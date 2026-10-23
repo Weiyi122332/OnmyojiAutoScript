@@ -11,7 +11,7 @@ class ChessConfig(ConfigBase):
     """百鬼棋局循环与结束条件。"""
 
     hyakki_draft_enabled: bool = Field(
-        title='百鬼投掷试行', default=True,
+        title='百鬼优先所需御魂', default=True,
     )
 
     lineup_bond: LineupBond = Field(

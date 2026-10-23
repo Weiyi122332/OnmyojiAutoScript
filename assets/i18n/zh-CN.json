@@ -416,5 +416,6 @@
   "welfare_plugin_url": "福利寮插件接口地址",
   "welfare_plugin_url_help": "填写完整地址，例如 http://服务器:2537/welfare-dojo/today。端口使用福利寮检测插件中配置的http_port。",
   "welfare_plugin_token": "插件访问令牌",
-  "welfare_plugin_token_help": "填写福利寮检测插件配置中的api_token。"
+  "welfare_plugin_token_help": "填写福利寮检测插件配置中的api_token。",
+  "hyakki_draft_enabled": "百鬼优先所需御魂"
 }

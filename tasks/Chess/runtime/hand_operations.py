@@ -551,6 +551,11 @@ class ChessHandOperationsMixin:
             return False
         count_before = self._read_shikigami_count()
         hand_count_before = self._lineup_hand_card_match_count(name)
+        hand_stars_before = self._lineup_hand_stars(name)
+        actual_position = getattr(self, '_board_actual_positions', {}).get(name, set_index)
+        same_board_unit = (name in getattr(self, '_board_lineup_names', set())
+                           and actual_position == set_index)
+        board_star_before = self._board_set_star(set_index) if same_board_unit else None
         target_occupied_before = self._board_set_has_shikigami(set_index)
         target_position = self._set_position(set_index)
         logger.debug(
@@ -567,10 +572,36 @@ class ChessHandOperationsMixin:
             name=f'CHESS_DEPLOY_{name.upper()}_SET_{set_index}',
         )
         self.close_shikigami_specifics_if_open()
-        succeeded = self._wait_hand_card_removed(
-            hand_count_before,
-            lambda: self._lineup_hand_card_match_count(name),
-        )
+        star_confirmations = 0
+        confirmed_stars = None
+        success_reason = None
+
+        def deployed():
+            nonlocal star_confirmations, confirmed_stars, success_reason
+            if self.close_shikigami_specifics_if_open():
+                star_confirmations = 0
+                return False
+            if self._lineup_hand_card_match_count(name) < hand_count_before:
+                success_reason = 'hand_count_decreased'
+                return True
+            hand_stars = self._lineup_hand_stars(name)
+            board_star = self._board_set_star(set_index) if same_board_unit else None
+            hand_upgraded = (hand_stars_before is not None and hand_stars is not None
+                             and len(hand_stars_before) == len(hand_stars)
+                             and hand_stars > hand_stars_before)
+            board_upgraded = (board_star_before is not None and board_star is not None
+                              and board_star > board_star_before)
+            if not (hand_upgraded or board_upgraded):
+                star_confirmations = 0
+                confirmed_stars = None
+                return False
+            current = (hand_stars, board_star)
+            star_confirmations = star_confirmations + 1 if current == confirmed_stars else 1
+            confirmed_stars = current
+            success_reason = 'hand_star_increased' if hand_upgraded else 'board_star_increased'
+            return star_confirmations >= 2
+
+        succeeded = self._wait_chess_action_state(deployed)
         count_after = self._read_shikigami_count()
         hand_count_after = self._lineup_hand_card_match_count(name)
         target_occupied_after = self._board_set_has_shikigami(set_index)
@@ -584,11 +615,12 @@ class ChessHandOperationsMixin:
             not target_occupied_before and target_occupied_after
         )
 
-        # 与御魂装备采用同一确认逻辑：比较完整手牌区中同名卡数量，
-        # 数量减少即确认本次上阵成功。人数和目标格只保留为诊断信息。
+        # 手牌减少或连续两帧确认星级提升，均视为本次上卡成功。
         if succeeded:
-            logger.debug(
+            logger.info(
                 f'Chess shikigami deploy confirmed: {name} -> set {set_index}, '
+                f'reason={success_reason}, hand_stars={hand_stars_before}->{self._lineup_hand_stars(name)}, '
+                f'board_star={board_star_before}->{confirmed_stars[1] if confirmed_stars else None}, '
                 f'board_count={count_before["current"] if count_before else "?"}'
                 f'->{count_after["current"] if count_after else "?"}, '
                 f'hand_count={hand_count_before}->{hand_count_after}, '
@@ -610,6 +642,34 @@ class ChessHandOperationsMixin:
     def _lineup_hand_card_match_count(self, name: str) -> int:
         """Count identities from this screenshot's shared Frame scan."""
         return sum(card['name'] == name for card in self._frame_card_scan('card'))
+
+    def _lineup_hand_stars(self, name: str) -> tuple | None:
+        cards = [card for card in self._frame_card_scan('card') if card['name'] == name]
+        if not cards or any(card.get('star') not in (1, 2, 3) for card in cards):
+            return None
+        return tuple(sorted(card['star'] for card in cards))
+
+    def _board_set_star(self, set_index: int) -> int | None:
+        """独立匹配场上三种星级标志；特殊棋盘或歧义结果不参与确认。"""
+        if self._is_boss_challenge_round():
+            return None
+        x, y, w, h = self._set_jade_area(set_index)
+        image = self.device.image
+        if x < 0 or y < 0 or x+w > image.shape[1] or y+h > image.shape[0]:
+            return None
+        region = image[y:y+h, x:x+w]
+        matches = []
+        for star, rule in enumerate(self.board_occupancy_rules, 1):
+            front = rule.image
+            if front.shape[0] > h or front.shape[1] > w:
+                continue
+            score = float(cv2.minMaxLoc(cv2.matchTemplate(region, front, cv2.TM_CCOEFF_NORMED))[1])
+            if np.isfinite(score) and score >= self.BOARD_OCCUPANCY_TEMPLATE_THRESHOLD:
+                matches.append((score, star))
+        matches.sort(reverse=True)
+        if not matches or (len(matches) > 1 and matches[0][0]-matches[1][0] < .05):
+            return None
+        return matches[0][1]
 
     def _find_best_shikigami_hand_card(
         self,
@@ -1427,6 +1487,47 @@ class ChessHandOperationsMixin:
             logger.debug('Chess hand card templates found no cards')
         return detections
 
+    def _hand_capacity_count(self) -> int:
+        """容量只扫描式神/特殊卡锚点与御魂图片，不识别式神身份。"""
+        image = self.device.image
+        candidates = []
+        for frame, kind in ((self.F_HAND_CARD, 'card'), (self.F_FETTER_BADGE, 'emblem')):
+            x, y, w, h = frame.roi_back
+            # 只扫描手牌顶部及下方，排除棋盘上的星级标志。
+            top = max(y, self.HAND_AREA[1])
+            region = image[top:y+h, x:x+w]
+            bx, _, _, _ = frame.badge_references[0]
+            cx, _, cw, _ = frame.roi_ranges[-1 if kind == 'card' else 1]
+            offset = cx + cw/2 - bx
+            if frame.badge_grayscale:
+                region = cv2.cvtColor(region, cv2.COLOR_RGB2GRAY)
+            for front in self.frame_badges[kind]:
+                if frame.badge_grayscale:
+                    front = cv2.cvtColor(front, cv2.COLOR_RGB2GRAY)
+                if region.shape[0] < front.shape[0] or region.shape[1] < front.shape[1]:
+                    continue
+                scores = cv2.matchTemplate(region, front, cv2.TM_CCOEFF_NORMED)
+                ys, xs = np.where(scores >= frame.threshold)
+                candidates.extend((float(scores[py, px]), x+int(px)+offset) for py, px in zip(ys, xs))
+        candidates.extend((item['score'], item['position'][0]) for item in self._soul_hand_cards())
+        # 守护之印不占容量；不依赖当前阵容是否配置守护之印。
+        x, y, w, h = self.HAND_AREA
+        protect = self.hakuzosu_protect_rule.image
+        region = image[y:y+h, x:x+w]
+        protect_x = []
+        if region.shape[0] >= protect.shape[0] and region.shape[1] >= protect.shape[1]:
+            scores = cv2.matchTemplate(region, protect, cv2.TM_CCOEFF_NORMED)
+            _, xs = np.where(scores >= self.hakuzosu_protect_rule.threshold)
+            protect_x = [x+int(px)+protect.shape[1]/2 for px in xs]
+        positions = []
+        for _, center in sorted(candidates, reverse=True):
+            if any(abs(center-x) <= 28 for x in protect_x):
+                continue
+            if not any(abs(center-x) <= 28 for x in positions):
+                positions.append(center)
+        logger.debug(f'Chess hand capacity: count={len(positions)}/10, positions={sorted(positions)}')
+        return len(positions)
+
     def _hand_card_rois(self) -> list[tuple[int, int, int, int]]:
         """兼容只需要卡框的分类流程。"""
         return [item['roi'] for item in self._hand_card_detections()]
@@ -1924,6 +2025,21 @@ class ChessHandOperationsMixin:
         cards = self._recognized_emblem_hand_cards()
         return cards[0] if cards else None
 
+    def _ensure_hand_room_for_recall(self) -> bool:
+        """下阵会占用手牌格；先腾位，并保持当前备阶段与商店关闭状态。"""
+        if self._hand_capacity_count() < 10:
+            return True
+        logger.info('Chess hand full before recall; clear non-lineup cards and equip souls first')
+        self.emergency_cleanup_hand()
+        self.screenshot()
+        if not self._is_preparation_mode() or not self._ensure_shop_closed():
+            return False
+        count = self._hand_capacity_count()
+        if count >= 10:
+            logger.warning(f'Defer Chess recall: hand remains full ({count}/10) after cleanup')
+            return False
+        return True
+
     def _recall_one_system_board_card(
         self,
         preferred_set_index: int | None = None,
@@ -1962,6 +2078,11 @@ class ChessHandOperationsMixin:
         for set_index in positions:
             if set_index in player_positions:
                 continue
+            if not self._board_set_has_shikigami(set_index):
+                continue
+
+            if not self._ensure_hand_room_for_recall():
+                return None
             if not self._board_set_has_shikigami(set_index):
                 continue
 
@@ -2121,6 +2242,10 @@ class ChessHandOperationsMixin:
                     f'Skip Chess recall set {set_index}: '
                     'jade marker is not detected'
                 )
+                continue
+            if not self._ensure_hand_room_for_recall():
+                return False
+            if not self._board_set_has_shikigami(set_index):
                 continue
             source = self._set_position(set_index)
             goldfish_handled = False

@@ -7,6 +7,7 @@ from module.exception import GameStuckError, TaskEnd
 from module.logger import logger
 from tasks.Chess.assets import ChessAssets
 from tasks.Chess.config import Chess
+from tasks.Chess.runtime.activity_watchdog import ChessActivityWatchdog
 from tasks.Chess.runtime.economy import ChessEconomyMixin
 from tasks.Chess.runtime.hand_operations import ChessHandOperationsMixin
 from tasks.Chess.runtime.hyakki_draft import ChessHyakkiDraftMixin
@@ -85,6 +86,10 @@ class ChessLegacyScriptTask(
         return bool(condition())
 
     def run(self):
+        with ChessActivityWatchdog(timeout=300):
+            self._run_chess_task()
+
+    def _run_chess_task(self):
         """按执行次数循环百鬼棋局，并可在鼬乐币刷满时提前结束。"""
         chess_task_config = getattr(self.config, 'chess', None)
         chess_config = getattr(chess_task_config, 'chess_config', None)

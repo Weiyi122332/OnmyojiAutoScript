@@ -250,7 +250,7 @@ class ChessFrameCardsMixin:
                 'star': None if kind == 'store' else self._frame_star(frame.files[index]),
                 'action': None,
             })
-            logger.debug(f'Chess Frame {kind}: name={name}, score={identity_score:.3f}, roi={roi}, text={text}')
+            logger.debug(f'Chess Frame {kind}: name={name}, star={cards[-1]["star"]}, badge={Path(frame.files[index]).name}, score={identity_score:.3f}, roi={roi}, text={text}')
         cache[1][kind] = cards
         return cards
 
