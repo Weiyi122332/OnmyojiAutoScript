@@ -35,13 +35,6 @@
     "description": "商店式神1"
   },
   {
-    "itemName": "shikigami_store",
-    "roiFront": "344,55,925,241",
-    "roiBack": "344,55,925,241",
-    "profile": "Default",
-    "description": ""
-  },
-  {
     "itemName": "grigri_option_1",
     "roiFront": "320,205,90,130",
     "roiBack": "320,205,90,130",
@@ -91,13 +84,6 @@
     "description": "关闭式神详情界面"
   },
   {
-    "itemName": "cancel_waiting",
-    "roiFront": "584,597,111,45",
-    "roiBack": "579,592,121,55",
-    "profile": "Default",
-    "description": "取消匹配等待"
-  },
-  {
     "itemName": "sixrealms_1",
     "roiFront": "238,408,167,140",
     "roiBack": "238,408,167,140",
@@ -117,5 +103,12 @@
     "roiBack": "871,413,167,140",
     "profile": "Default",
     "description": ""
+  },
+  {
+    "itemName": "hyakki_soul_shiki",
+    "roiFront": "0,138,1024,462",
+    "roiBack": "0,138,1024,462",
+    "profile": "Default",
+    "description": "百鬼式神御魂选取框"
   }
 ]

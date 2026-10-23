@@ -1,0 +1,118 @@
+{
+  "source_revision": "a5b8f7aa",
+  "public_revision": "47a3a3bc6173e6560ab8cc3658d3e55bc2c80287",
+  "rules": [
+    {
+      "module": "tasks.Component.GeneralBattle.assets",
+      "owner": "GeneralBattleAssets",
+      "symbol": "I_EXIT_ENSURE",
+      "asset": "I_SHARED_EXIT_ENSURE",
+      "source": "tasks/Component/GeneralBattle/gb/gb_exit_ensure.png",
+      "sha256": "3a10676e1c189e84a9615b04dae6d6ffc97a342d3400a3bb8b78059fe5c7448c"
+    },
+    {
+      "module": "tasks.GameUi.assets",
+      "owner": "GameUiAssets",
+      "symbol": "I_ACTIVITY_SKIP",
+      "asset": "I_SHARED_ACTIVITY_SKIP",
+      "source": "tasks/GameUi/page/page_activity_skip.png",
+      "sha256": "9f03e323c48a191eb8321b9e142cc6f089e55a481c2f79b6d7a1ae97f5c30649"
+    },
+    {
+      "module": "tasks.GameUi.assets",
+      "owner": "GameUiAssets",
+      "symbol": "I_CHECK_MAIN",
+      "asset": "I_SHARED_CHECK_MAIN",
+      "source": "tasks/GameUi/page_checks/page_check_main.png",
+      "sha256": "123b75280ac23e828a9b50c92dc92237c83d5f984b32d3e6a6a4ea288fd9e4ca"
+    },
+    {
+      "module": "tasks.GameUi.assets",
+      "owner": "GameUiAssets",
+      "symbol": "I_CLOSE_RED",
+      "asset": "I_SHARED_CLOSE_RED",
+      "source": "tasks/GameUi/page/page_close_red.png",
+      "sha256": "1e85a9c14c5b0660b7cc79c416eaba6c413ff37bc81c6701db208f748eff3ed5"
+    },
+    {
+      "module": "tasks.GlobalGame.assets",
+      "owner": "GlobalGameAssets",
+      "symbol": "I_G_ACCEPT",
+      "asset": "I_SHARED_G_ACCEPT",
+      "source": "tasks/GlobalGame/gg/gg_g_accept.png",
+      "sha256": "5e3f1b9e5a39c7997d8833688f499d97a9e4d89ded1d120f63d3539fabca31d5"
+    },
+    {
+      "module": "tasks.GlobalGame.assets",
+      "owner": "GlobalGameAssets",
+      "symbol": "I_G_CAT_FOOD",
+      "asset": "I_SHARED_G_CAT_FOOD",
+      "source": "tasks/GlobalGame/gg/gg_g_cat_food.png",
+      "sha256": "02b1cb7822522b8243fa64f34651e94641642ca8badcf98527593749bf39b9a8"
+    },
+    {
+      "module": "tasks.GlobalGame.assets",
+      "owner": "GlobalGameAssets",
+      "symbol": "I_G_DOG_FOOD",
+      "asset": "I_SHARED_G_DOG_FOOD",
+      "source": "tasks/GlobalGame/gg/gg_g_dog_food.png",
+      "sha256": "983c6a8aa837340b540a99fff3869b2839f0d59a0d90bf76b05778e5462ae513"
+    },
+    {
+      "module": "tasks.GlobalGame.assets",
+      "owner": "GlobalGameAssets",
+      "symbol": "I_G_JADE",
+      "asset": "I_SHARED_G_JADE",
+      "source": "tasks/GlobalGame/gg/gg_g_jade.png",
+      "sha256": "0c8f9c503513f297abbbafe70b5519c876df34496391549ad8ec201a3bf2f89a"
+    },
+    {
+      "module": "tasks.GlobalGame.assets",
+      "owner": "GlobalGameAssets",
+      "symbol": "I_G_REJECT",
+      "asset": "I_SHARED_G_REJECT",
+      "source": "tasks/GlobalGame/gg/gg_g_reject.png",
+      "sha256": "e78109137a4d62346f2438fd256508e870d351619f965add8e7b31ecc031a6d8"
+    },
+    {
+      "module": "tasks.GlobalGame.assets",
+      "owner": "GlobalGameAssets",
+      "symbol": "I_NETWORK_ABNORMAL",
+      "asset": "I_SHARED_NETWORK_ABNORMAL",
+      "source": "tasks/GlobalGame/gg/gg_network_abnormal.png",
+      "sha256": "298d319915d2337d71bf881a9f3c97523e03d0f3d99f7f0ca71b93796f5d8ca1"
+    },
+    {
+      "module": "tasks.GlobalGame.assets",
+      "owner": "GlobalGameAssets",
+      "symbol": "I_NETWORK_ERROR",
+      "asset": "I_SHARED_NETWORK_ERROR",
+      "source": "tasks/GlobalGame/gg/gg_network_error.png",
+      "sha256": "b789f49e8522400ebc97fea7c89654ec5ccf8abf439d97d86f7453477b8804f3"
+    },
+    {
+      "module": "tasks.GlobalGame.assets",
+      "owner": "GlobalGameAssets",
+      "symbol": "I_UI_CONFIRM",
+      "asset": "I_SHARED_UI_CONFIRM",
+      "source": "tasks/GlobalGame/ui/ui_confirm.png",
+      "sha256": "c7d865931f146a8323bd9e9e4af7b1f448fdaad8294f619f1f8cb9b49e5afa3b"
+    },
+    {
+      "module": "tasks.GlobalGame.assets",
+      "owner": "GlobalGameAssets",
+      "symbol": "I_UI_REWARD",
+      "asset": "I_SHARED_UI_REWARD",
+      "source": "tasks/GlobalGame/ui/ui_ui_reward.png",
+      "sha256": "d80b5ff9e81ef92b85d4443f5f2e87db005f2a6290a1fd1fac998bee6030b48c"
+    },
+    {
+      "module": "tasks.GlobalGame.assets",
+      "owner": "GlobalGameAssets",
+      "symbol": "I_CLIENT_CLEAR",
+      "asset": "I_SHARED_CLIENT_CLEAR",
+      "source": "tasks/GlobalGame/gg/gg_client_clear.png",
+      "sha256": "7f953565708eaa5924511fb3ada59b5bb7052b7d9dd59c2b412f86c270865412"
+    }
+  ]
+}

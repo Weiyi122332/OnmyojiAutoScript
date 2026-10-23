@@ -9,9 +9,11 @@ from tasks.Chess.assets import ChessAssets
 from tasks.Chess.config import Chess
 from tasks.Chess.runtime.economy import ChessEconomyMixin
 from tasks.Chess.runtime.hand_operations import ChessHandOperationsMixin
+from tasks.Chess.runtime.hyakki_draft import ChessHyakkiDraftMixin
 from tasks.Chess.runtime.recognition import ChessRecognitionMixin
 from tasks.Chess.runtime.round_state import ChessRoundStateMixin
 from tasks.Chess.runtime.settings import ChessRuntimeSettings
+from tasks.Chess.runtime.shared_ui import ChessNetworkRecoveryRequired, ChessSharedUiMixin
 from tasks.Chess.runtime.state_loop import ChessStateLoopMixin
 from tasks.Component.GeneralBattle.general_battle import GeneralBattle
 from tasks.GameUi.game_ui import GameUi
@@ -19,6 +21,8 @@ from tasks.GameUi.page import page_chess
 
 
 class ChessLegacyScriptTask(
+    ChessSharedUiMixin,
+    ChessHyakkiDraftMixin,
     ChessRecognitionMixin,
     ChessHandOperationsMixin,
     ChessRoundStateMixin,
@@ -32,15 +36,50 @@ class ChessLegacyScriptTask(
 
     conf: Chess = None
 
+    def ui_click_until_disappear(self, click, interval: float = 1, *,
+                                 click_target=None, visible=None, guard=None,
+                                 timeout: float | None = None, confirm_frames: int = 1,
+                                 max_clicks: int | None = None):
+        """仅在棋局内兼容新版购买所需的点击次数上限。"""
+        if max_clicks is None:
+            return super().ui_click_until_disappear(
+                click, interval, click_target=click_target, visible=visible,
+                guard=guard, timeout=timeout, confirm_frames=confirm_frames,
+            )
+        appear_and_clicked = False
+        click_count = 0
+        missing = 0
+        deadline = time.monotonic() + timeout if timeout is not None else None
+        while deadline is None or time.monotonic() < deadline:
+            self.screenshot()
+            if guard is not None and not guard():
+                return False
+            present = visible() if visible is not None else self.appear(click)
+            if not present:
+                missing += 1
+                if missing >= confirm_frames:
+                    return appear_and_clicked
+                continue
+            missing = 0
+            if click_count >= max_clicks:
+                return False
+            if click_target is not None:
+                clicked = self.click(click_target, interval=interval)
+            else:
+                clicked = self.appear_then_click(click, interval=interval)
+            if clicked:
+                appear_and_clicked = True
+                click_count += 1
+        return False
+
     def _wait_chess_action_state(self, condition) -> bool:
-        """在单次动作后限时轮询目标图标状态。"""
+        """限时确认动作结果；截图节奏交给设备层，不额外固定等待。"""
         deadline = time.monotonic() + self.ACTION_ICON_WAIT_TIMEOUT
         while time.monotonic() < deadline:
             self.device.stuck_record_clear()
             self.screenshot()
             if condition():
                 return True
-            time.sleep(self.FAST_OPERATION_INTERVAL)
         self.device.stuck_record_clear()
         self.screenshot()
         return bool(condition())
@@ -466,45 +505,12 @@ class ChessLegacyScriptTask(
         return self._read_chess_mode() == '战'
 
     def _handle_passive_stage(self, mode: str) -> bool:
-        """战、鬼、待阶段只等待，不主动改变商店状态。"""
+        """战和待阶段等待；鬼阶段执行试行投掷。"""
+        if mode == '鬼':
+            self._handle_hyakki_draft()
         return mode in ('战', '鬼', '待')
 
-    def _handle_battle_economy(self) -> str:
-        """卖卡完成后，在战阶段续跑一个尚未完成的经济原子动作。"""
-        if self._read_chess_mode() != '战':
-            return 'blocked'
-        if not getattr(self, '_economy_pending', False):
-            return 'complete'
-        logger.debug(
-            'Chess battle economy continuation: '
-            f'state={self._economy_step_state}'
-        )
-        return self._run_economy_atomic_batch(battle_mode=True)
 
-    def _handle_round_end(self) -> bool:
-        """在下一次可用的备阶段补做系统卡回收、上阵和御魂。"""
-        if not getattr(self, '_formation_pending', False):
-            return True
-        if not self._is_preparation_mode():
-            return False
-
-        logger.debug('Chess pending system-card recall')
-        if not self._ensure_shop_closed():
-            return False
-        if not self.recall_all_board_cards():
-            return False
-        time.sleep(self.ACTION_SETTLE_INTERVAL)
-        self.screenshot()
-        if not self._is_preparation_mode():
-            return False
-        # 回收之后先恢复阵容，再允许经济操作。
-        logger.debug('Chess immediate redeploy after pending recall')
-        if not self._handle_preparation():
-            return False
-
-        self._formation_pending = False
-        logger.debug('Chess pending formation recovery completed')
-        return True
 
     def _refresh_round_state_screenshot(self) -> bool:
         """刷新回目状态截图；选符咒出现时必须优先处理完毕。"""
@@ -715,10 +721,13 @@ class ChessLegacyScriptTask(
             time.sleep(self.SLOW_POLL_INTERVAL)
 
     def _is_in_chess_game(self) -> bool:
-        """以阵容入口或问号图标确认当前处于百鬼棋局对局内。"""
+        """以阵容入口、问号或特殊回合标志确认当前处于对局内。"""
         return (
             self.appear(self.I_OPEN_LINEUP)
             or self.appear(self.I_QUESTION_CHECK)
+            or self._special_chess_mode() is not None
+            or self._stage_marker_visible(self.I_STAGE_ORCHI)
+            or self._stage_marker_visible(self.I_STAGE_DEMON)
         )
 
     def _close_chess_lobby_abnormal_page(self) -> bool:
@@ -1043,3 +1052,24 @@ class ChessLegacyScriptTask(
 
 class ScriptTask(ChessStateLoopMixin, ChessLegacyScriptTask):
     """正式 Chess 入口：状态驱动回合循环复用原有执行动作。"""
+
+    def run(self):
+        reconnected = False
+        while True:
+            try:
+                return super().run()
+            except ChessNetworkRecoveryRequired as error:
+                if not error.reconnect or reconnected:
+                    raise
+                # 先退出当前局的调用栈；重连后重新执行启动恢复，丢弃旧回目状态。
+                self._reconnect_chess_network()
+                reconnected = True
+                # 局号保持递增，避免旧回合的缓存键在新局中再次命中。
+                self.chess_state = type(self.chess_state)(game_number=self.chess_state.game_number)
+                self.chess_events.reset()
+                for name in ('_chess_ui_hits', '_hyakki_turn', '_hyakki_player_row',
+                             '_hyakki_status_at', '_hyakki_skip_reason', '_hyakki_skip_at',
+                             '_board_marker_disabled_round', '_chess_share_advancing',
+                             '_logged_chess_mode'):
+                    self.__dict__.pop(name, None)
+                getattr(self, 'interval_timer', {}).clear()

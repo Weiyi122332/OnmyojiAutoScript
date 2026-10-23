@@ -152,6 +152,7 @@
         "threshold": 0.8,
         "type": "image"
       }
-    ]
+    ],
+    "badgeGrayscale": true
   }
 ]

@@ -15,8 +15,12 @@ from module.image.runtime import ImageRuntime
 from tasks.base_task import BaseTask
 from tasks.Chess.assets import ChessAssets
 from tasks.Chess.config import Chess, ChessConfig
+from tasks.Chess.runtime.hyakki_draft import HyakkiTurn, throw_point
+from tasks.Chess.runtime.state import ChessGameState
 from tasks.Chess.script_task import ScriptTask
 from tasks.Chess.strategy.lineup import LINEUP_REGISTRY
+from tasks.Chess.strategy.shikigami_catalog import NON_SHOP_SHIKIGAMI
+from tasks.GameUi.assets import GameUiAssets
 from tasks.GameUi.chess_battle import ChessBattleNavigationMixin
 from tasks.GameUi.default_pages import page_chess_battle, page_chess_result
 from tasks.GlobalGame.assets import GlobalGameAssets
@@ -24,7 +28,7 @@ from tasks.GlobalGame.assets import GlobalGameAssets
 
 class ChessSeasonConfigTest(unittest.TestCase):
     def test_only_new_season_lineups_are_offered(self):
-        self.assertEqual(set(LINEUP_REGISTRY), {'qijiaoshan', 'haiguo'})
+        self.assertEqual(set(LINEUP_REGISTRY), {'pinganjing', 'qijiaoshan', 'haiguo', 'minghuo'})
         self.assertEqual(ChessConfig().lineup_bond.value, '七角山')
 
     def test_old_season_instances_keep_constraints_and_cron(self):
@@ -39,6 +43,10 @@ class ChessSeasonConfigTest(unittest.TestCase):
                 self.assertTrue(config.chess_config.rank_protection)
                 self.assertEqual(config.scheduler.cron, '0 6 * * *')
 
+    def test_hyakki_option_defaults_on_and_can_be_disabled(self):
+        self.assertTrue(ChessConfig().hyakki_draft_enabled)
+        self.assertFalse(ChessConfig(hyakki_draft_enabled=False).hyakki_draft_enabled)
+
     def test_new_resource_indexes_and_all_portraits_are_loadable(self):
         reader = ScriptTask.__new__(ScriptTask)
         for kind in ('card', 'store'):
@@ -52,6 +60,27 @@ class ChessSeasonConfigTest(unittest.TestCase):
                          set(reader.frame_emblem_portraits))
         for badges in reader.frame_badges.values():
             self.assertTrue(all(image.size for image in badges))
+
+    def test_non_shop_identity_and_preferred_soul_resources_are_accounted_for(self):
+        reader = ScriptTask.__new__(ScriptTask)
+        cards = reader.frame_card_library['cards']
+        self.assertEqual(set(cards['card']) - set(cards['store']), NON_SHOP_SHIKIGAMI)
+        preferred = {
+            soul
+            for lineup in LINEUP_REGISTRY.values()
+            for shikigami in lineup['strategy']['shikigami'].values()
+            for soul in shikigami.get('preferred_souls', ())
+        }
+        self.assertTrue(preferred <= set(reader.hyakki_soul_fronts))
+
+    def test_every_local_png_decodes(self):
+        root = Path(__file__).resolve().parents[1] / 'tasks/Chess'
+        images = list(root.rglob('*.png'))
+        self.assertTrue(images)
+        for file in images:
+            with self.subTest(file=file.relative_to(root)):
+                image = cv2.imdecode(np.fromfile(file, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
+                self.assertIsNotNone(image)
 
 
 class ChessFrameIntegrationTest(unittest.TestCase):
@@ -119,6 +148,24 @@ class ChessFrameIntegrationTest(unittest.TestCase):
 
 
 class ChessFlowIntegrationTest(unittest.TestCase):
+    def test_missing_global_red_cross_uses_the_chess_copy(self):
+        task = ScriptTask.__new__(ScriptTask)
+        task.appear_then_click = Mock(return_value=True)
+        with patch.object(BaseTask, '_burst', return_value=False), \
+                patch.object(GameUiAssets, 'I_CLOSE_RED', None, create=True):
+            self.assertTrue(task._burst())
+        task.appear_then_click.assert_called_once_with(task._chess_close_red, interval=0.8)
+        self.assertNotEqual(task._chess_close_red.file, task.I_CLOSE_RED.file)
+
+    def test_red_cross_keeps_using_the_chess_copy_if_global_rule_is_added(self):
+        task = ScriptTask.__new__(ScriptTask)
+        task.appear_then_click = Mock(return_value=True)
+        global_rule = object()
+        with patch.object(BaseTask, '_burst', return_value=False), \
+                patch.object(GameUiAssets, 'I_CLOSE_RED', global_rule, create=True):
+            self.assertTrue(task._burst())
+        task.appear_then_click.assert_called_once_with(task._chess_close_red, interval=0.8)
+
     def test_sixrealms_page_is_recognized_without_taking_over_generic_rewards(self):
         scene = SimpleNamespace(appear=lambda rule: rule is ChessAssets.I_SELECT_SIXREALMS)
         self.assertTrue(page_chess_battle.recognizer.evaluate(scene))
@@ -155,6 +202,110 @@ class ChessFlowIntegrationTest(unittest.TestCase):
         ))
         self.assertEqual(task.screenshot.call_count, 5)
         self.assertEqual(task.click.call_count, 2)
+
+    def test_purchase_stops_after_three_clicks_when_target_remains(self):
+        task = ScriptTask.__new__(ScriptTask)
+        task.screenshot = Mock()
+        task.click = Mock(return_value=True)
+        self.assertFalse(task.ui_click_until_disappear(
+            ChessAssets.C_SHIKIGAMI_1, click_target=ChessAssets.C_SHIKIGAMI_1,
+            visible=lambda: True, interval=0, timeout=1, confirm_frames=2, max_clicks=3,
+        ))
+        self.assertEqual(task.click.call_count, 3)
+
+    def test_purchase_can_confirm_after_the_third_click(self):
+        task = ScriptTask.__new__(ScriptTask)
+        task.screenshot = Mock()
+        task.click = Mock(return_value=True)
+        self.assertTrue(task.ui_click_until_disappear(
+            ChessAssets.C_SHIKIGAMI_1, click_target=ChessAssets.C_SHIKIGAMI_1,
+            visible=Mock(side_effect=[True, True, True, False, False]),
+            interval=0, timeout=1, confirm_frames=2, max_clicks=3,
+        ))
+        self.assertEqual(task.click.call_count, 3)
+
+    def _shop_task(self, purchase_succeeds):
+        task = ScriptTask.__new__(ScriptTask)
+        task._recognize_shop_slot = Mock(return_value={'source': 'image', 'score': 1.0})
+        task._is_purchase_allowed = Mock(return_value=True)
+        task._can_afford_shop_shikigami = Mock(return_value=True)
+        task.appear = Mock(return_value=False)
+        task.ui_click_until_disappear = Mock(return_value=purchase_succeeds)
+        task.device = SimpleNamespace(click_record_remove=Mock())
+        return task
+
+    def test_confirmed_purchase_clears_the_slots_click_history(self):
+        task = self._shop_task(True)
+        self.assertTrue(task._buy_shop_slot(1, ChessAssets.C_SHIKIGAMI_1, 'hakurou'))
+        task.device.click_record_remove.assert_called_once_with(ChessAssets.C_SHIKIGAMI_1)
+        self.assertEqual(task.ui_click_until_disappear.call_args.kwargs['max_clicks'], 3)
+
+    def test_blocked_purchase_cancels_after_two_cleanup_retries(self):
+        task = self._shop_task(False)
+        task._free_one_hand_slot_for_purchase = Mock(side_effect=[
+            {'type': 'other'}, {'type': 'lineup'},
+        ])
+        self.assertFalse(task._buy_shop_slot(1, ChessAssets.C_SHIKIGAMI_1, 'hakurou'))
+        self.assertEqual(task.ui_click_until_disappear.call_count, 3)
+        self.assertEqual(task._free_one_hand_slot_for_purchase.call_count, 2)
+        task.device.click_record_remove.assert_not_called()
+
+
+class ChessSpecialRoundTest(unittest.TestCase):
+    def test_hyakki_wait_restarts_after_ambiguous_lock_and_limits_throws(self):
+        turn = HyakkiTurn((1, 2), wait_seconds=6)
+        self.assertFalse(turn.ready(.9, 0))
+        self.assertFalse(turn.ready(.1, 1))
+        self.assertFalse(turn.ready(.1, 6))
+        self.assertFalse(turn.ready(None, 7))
+        self.assertFalse(turn.ready(.1, 8))
+        self.assertTrue(turn.ready(.1, 14))
+        self.assertFalse(turn.ready(.9, 15))
+        self.assertIsNone(turn.unlocked_at)
+        turn.throws = 2
+        self.assertFalse(turn.ready(.1, 30))
+
+    def test_nonpreferred_hyakki_targets_wait_for_all_player_locks(self):
+        task = ScriptTask.__new__(ScriptTask)
+        task._hyakki_all_locks_gone = Mock(return_value=False)
+        task._hyakki_skip = Mock()
+        preferred = {'name': 'zheng', 'center': (200, 200)}
+        other = {'name': 'po_shi', 'center': (300, 200)}
+        self.assertEqual(task._hyakki_target_pool([preferred, other], {'zheng'}), [preferred])
+        self.assertEqual(task._hyakki_target_pool([other], {'zheng'}), [])
+        task._hyakki_all_locks_gone.return_value = True
+        self.assertEqual(task._hyakki_target_pool([other], {'zheng'}), [other])
+
+    def test_moving_hyakki_target_cannot_produce_an_out_of_bounds_click(self):
+        previous = {'center': (200, 200)}
+        latest = {'center': (180, 200)}
+        self.assertEqual(throw_point(previous, latest, .5, .1, (0, 138, 1024, 462)),
+                         (174, 350))
+        self.assertIsNone(throw_point(previous, {'center': (180, 590)}, .5, .1,
+                                     (0, 138, 1024, 462)))
+
+    def test_gold_stage_marker_is_active_but_gray_preview_is_not(self):
+        task = ScriptTask.__new__(ScriptTask)
+        rule = ChessAssets.I_STAGE_HYAKKI
+        x, y, w, h = rule.roi_back
+        template = rule.image
+        th, tw = template.shape[:2]
+        image = np.zeros((720, 1280, 3), dtype=np.uint8)
+        image[y:y+th, x:x+tw] = template
+        task.device = SimpleNamespace(image=image)
+        self.assertTrue(task._stage_marker_visible(rule))
+        image[y:y+th, x:x+tw] = cv2.cvtColor(
+            cv2.cvtColor(template, cv2.COLOR_RGB2GRAY), cv2.COLOR_GRAY2RGB)
+        self.assertFalse(task._stage_marker_visible(rule))
+
+    def test_golden_copy_uses_verified_one_cost_cards_and_actual_positions(self):
+        task = ScriptTask.__new__(ScriptTask)
+        task.select_lineup_strategy('qijiaoshan')
+        task.chess_state = ChessGameState()
+        task._board_actual_positions = {'hakurou': 9}
+        self.assertEqual(task._golden_copy_targets({'hakurou', 'keisei_chihime'}),
+                         [('hakurou', 9)])
+        self.assertEqual(task._golden_copy_targets(set()), [])
 
 
 if __name__ == '__main__':

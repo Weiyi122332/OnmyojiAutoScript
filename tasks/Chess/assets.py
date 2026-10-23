@@ -23,8 +23,6 @@ class ChessAssets:
 	C_SHIKIGAMI_2 = RuleClick(roi_front=(911,61,167,140), roi_back=(911,61,167,140), name="shikigami_2")
 	# 商店式神1
 	C_SHIKIGAMI_1 = RuleClick(roi_front=(1098,61,167,140), roi_back=(1098,61,167,140), name="shikigami_1")
-	#
-	C_SHIKIGAMI_STORE = RuleClick(roi_front=(344,55,925,241), roi_back=(344,55,925,241), name="shikigami_store")
 	# 左侧符咒选项卡面
 	C_GRIGRI_OPTION_1 = RuleClick(roi_front=(320,205,90,130), roi_back=(320,205,90,130), name="grigri_option_1")
 	# 中间符咒选项卡面
@@ -39,14 +37,14 @@ class ChessAssets:
 	C_GRIGRI_REFRESH_3 = RuleClick(roi_front=(862,599,122,40), roi_back=(862,599,122,40), name="grigri_refresh_3")
 	# 关闭式神详情界面
 	C_CLICK_CLOSE_SPECIFICS_AREA = RuleClick(roi_front=(193,95,91,430), roi_back=(193,95,91,430), name="click_close_specifics_area")
-	# 取消匹配等待
-	C_CANCEL_WAITING = RuleClick(roi_front=(584,597,111,45), roi_back=(579,592,121,55), name="cancel_waiting")
 	#
 	C_SIXREALMS_1 = RuleClick(roi_front=(238,408,167,140), roi_back=(238,408,167,140), name="sixrealms_1")
 	#
 	C_SIXREALMS_2 = RuleClick(roi_front=(558,403,167,140), roi_back=(558,403,167,140), name="sixrealms_2")
 	#
 	C_SIXREALMS_3 = RuleClick(roi_front=(871,413,167,140), roi_back=(871,413,167,140), name="sixrealms_3")
+	# 百鬼式神御魂选取框
+	C_HYAKKI_SOUL_SHIKI = RuleClick(roi_front=(0,138,1024,462), roi_back=(0,138,1024,462), name="hyakki_soul_shiki")
 
 
 	# Image Rule Assets
@@ -102,19 +100,17 @@ class ChessAssets:
 	I_SHARE = RuleImage(roi_front=(1159,579,65,66), roi_back=(1147,568,85,86), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_share.png")
 	# 选择六道场地
 	I_SELECT_SIXREALMS = RuleImage(roi_front=(550,2,181,34), roi_back=(542,0,200,45), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_select_sixrealms.png")
+	# 百鬼等待
+	I_HYAKKI_WAIT = RuleImage(roi_front=(1162,78,21,21), roi_back=(1136,39,80,665), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_hyakki_wait.png")
+	# 百鬼阶段
+	I_STAGE_HYAKKI = RuleImage(roi_front=(606,2,31,29), roi_back=(499,0,268,31), threshold=0.9, method="Template matching", profile="High", file="./tasks/Chess/c/c_stage_hyakki.png")
+	# 大蛇阶段
+	I_STAGE_ORCHI = RuleImage(roi_front=(708,0,31,29), roi_back=(499,0,268,31), threshold=0.9, method="Template matching", profile="High", file="./tasks/Chess/c/c_stage_orchi.png")
+	# 逢魔阶段
+	I_STAGE_DEMON = RuleImage(roi_front=(708,0,31,29), roi_back=(499,0,268,31), threshold=0.9, method="Template matching", profile="High", file="./tasks/Chess/c/c_stage_demon.png")
 
 
 	# Ocr Rule Assets
-	# 商店式神名称5
-	O_SHIKIGAMI_GOLD_5 = RuleOcr(roi=(481,266,38,24), area=(481,266,38,24), mode="Digit", method="Default", keyword="", name="shikigami_gold_5")
-	# 商店式神名称4
-	O_SHIKIGAMI_GOLD_4 = RuleOcr(roi=(668,266,38,24), area=(668,266,38,24), mode="Digit", method="Default", keyword="", name="shikigami_gold_4")
-	# 商店式神名称3
-	O_SHIKIGAMI_GOLD_3 = RuleOcr(roi=(855,266,38,24), area=(855,266,38,24), mode="Digit", method="Default", keyword="", name="shikigami_gold_3")
-	# 商店式神名称2
-	O_SHIKIGAMI_GOLD_2 = RuleOcr(roi=(1042,266,38,24), area=(1042,266,38,24), mode="Digit", method="Default", keyword="", name="shikigami_gold_2")
-	# 商店式神名称1
-	O_SHIKIGAMI_GOLD_1 = RuleOcr(roi=(1229,266,38,24), area=(1229,266,38,24), mode="Digit", method="Default", keyword="", name="shikigami_gold_1")
 	# 当前等级
 	O_LEVEL = RuleOcr(roi=(131,680,47,30), area=(131,680,47,30), mode="Single", method="Default", keyword="", name="level")
 	# 当前回目
@@ -128,43 +124,19 @@ class ChessAssets:
 	#
 	O_CHESS_MODE_2 = RuleOcr(roi=(706,2,32,28), area=(706,2,32,28), mode="Single", method="Default", keyword="", name="chess_mode_2")
 	#
-	O_BADGE_AREA = RuleOcr(roi=(181,650,945,46), area=(181,650,945,46), mode="Single", method="Default", keyword="", name="badge_area")
-	#
-	O_COIN = RuleOcr(roi=(141,659,87,25), area=(141,659,87,25), mode="DigitCounter", method="Default", keyword="", name="coin")
+	O_COIN = RuleOcr(roi=(395,660,87,25), area=(395,660,87,25), mode="DigitCounter", method="Default", keyword="", name="coin")
 	#
 	O_NOW_TIME = RuleOcr(roi=(768,0,32,28), area=(768,0,32,28), mode="Single", method="Default", keyword="", name="now_time")
 	#
-	O_SHIKIGAMI_SKILL_1 = RuleOcr(roi=(1120,165,94,94), area=(1120,165,94,94), mode="Single", method="Default", keyword="", name="shikigami_skill_1")
-	#
-	O_SHIKIGAMI_SKILL_2 = RuleOcr(roi=(933,165,94,94), area=(933,165,94,94), mode="Single", method="Default", keyword="", name="shikigami_skill_2")
-	#
-	O_SHIKIGAMI_SKILL_3 = RuleOcr(roi=(746,165,94,94), area=(746,165,94,94), mode="Single", method="Default", keyword="", name="shikigami_skill_3")
-	#
-	O_SHIKIGAMI_SKILL_4 = RuleOcr(roi=(559,165,94,94), area=(559,165,94,94), mode="Single", method="Default", keyword="", name="shikigami_skill_4")
-	#
-	O_SHIKIGAMI_SKILL_5 = RuleOcr(roi=(372,165,94,94), area=(372,165,94,94), mode="Single", method="Default", keyword="", name="shikigami_skill_5")
-	#
 	O_RANK = RuleOcr(roi=(443,193,417,204), area=(443,193,417,204), mode="Single", method="Default", keyword="", name="rank")
-	# 式神详情页名称
-	O_SHIKIGAMI_SPECIFICS_NAME = RuleOcr(roi=(997,101,193,36), area=(997,101,193,36), mode="Single", method="Default", keyword="", name="shikigami_specifics_name")
-	#
-	O_SHIKIGAMI_NAME_1 = RuleOcr(roi=(1097,261,117,33), area=(1097,261,117,33), mode="Single", method="Default", keyword="", name="shikigami_name_1")
-	#
-	O_SHIKIGAMI_NAME_2 = RuleOcr(roi=(910,261,117,33), area=(910,261,117,33), mode="Single", method="Default", keyword="", name="shikigami_name_2")
-	#
-	O_SHIKIGAMI_NAME_3 = RuleOcr(roi=(723,261,117,33), area=(723,261,117,33), mode="Single", method="Default", keyword="", name="shikigami_name_3")
-	#
-	O_SHIKIGAMI_NAME_4 = RuleOcr(roi=(536,261,117,33), area=(536,261,117,33), mode="Single", method="Default", keyword="", name="shikigami_name_4")
-	#
-	O_SHIKIGAMI_NAME_5 = RuleOcr(roi=(349,261,117,33), area=(349,261,117,33), mode="Single", method="Default", keyword="", name="shikigami_name_5")
 	#
 	O_GRIGRI_OPTION_NAME_1 = RuleOcr(roi=(269,370,191,45), area=(269,370,191,45), mode="Single", method="Default", keyword="", name="grigri_option_name_1")
 	#
 	O_GRIGRI_OPTION_NAME_2 = RuleOcr(roi=(548,370,191,45), area=(548,370,191,45), mode="Single", method="Default", keyword="", name="grigri_option_name_2")
 	#
 	O_GRIGRI_OPTION_NAME_3 = RuleOcr(roi=(825,370,191,45), area=(825,370,191,45), mode="Single", method="Default", keyword="", name="grigri_option_name_3")
-	#
-	O_FREE_REFRESH_COUNT = RuleOcr(roi=(1183,392,38,24), area=(1183,392,38,24), mode="Digit", method="Default", keyword="", name="free_refresh_count")
+	# 名字出现位置
+	O_NAME_RANGE = RuleOcr(roi=(1060,41,166,623), area=(1060,41,166,623), mode="Full", method="Default", keyword="", name="name_range")
 
 
 	# Image Rule Assets
@@ -172,5 +144,36 @@ class ChessAssets:
 	I_HAND_CARD = F_HAND_CARD  # compatibility
 	F_STORE_CARD = RuleFrame(name='store_card', roi_badge=(1042, 267, 21, 23), roi_range=[(908, 261, 134, 32), (931, 224, 134, 32), (931, 194, 134, 32), (931, 162, 134, 32), (944, 81, 97, 71), (905, 57, 175, 237)], roi_back=(341, 54, 929, 242), threshold=0.8, method='Template matching', profile='High', badgefile=['./tasks/Chess/resource/store/store_card_badge_gold.png'], range=[Ocr(mode='Single', method='Default', keyword=''), Ocr(mode='Single', method='Default', keyword=''), Ocr(mode='Single', method='Default', keyword=''), Ocr(mode='Single', method='Default', keyword=''), Image(method='Template matching', threshold=0.8), Click()])
 	I_STORE_CARD = F_STORE_CARD  # compatibility
-	F_FETTER_BADGE = RuleFrame(name='fetter_badge', roi_badge=(574, 548, 65, 20), roi_range=[(564, 665, 79, 23), (562, 551, 86, 137), (578, 589, 53, 48)], roi_back=(166, 439, 970, 281), threshold=0.8, method='Template matching', profile='High', badgefile=['./tasks/Chess/resource/fetter/fetter_badge_badge_1.png'], range=[Ocr(mode='Single', method='Default', keyword=''), Click(), Image(method='Template matching', threshold=0.8)])
+	F_FETTER_BADGE = RuleFrame(name='fetter_badge', roi_badge=(574, 548, 65, 20), roi_range=[(564, 665, 79, 23), (562, 551, 86, 137), (578, 589, 53, 48)], roi_back=(166, 439, 970, 281), threshold=0.8, method='Template matching', profile='High', badgefile=['./tasks/Chess/resource/fetter/fetter_badge_badge_1.png'], badge_grayscale=True, range=[Ocr(mode='Single', method='Default', keyword=''), Click(), Image(method='Template matching', threshold=0.8)])
 	I_FETTER_BADGE = F_FETTER_BADGE  # compatibility
+
+
+	# Image Rule Assets
+	# 棋局专用兼容：GeneralBattleAssets.I_EXIT_ENSURE
+	I_SHARED_EXIT_ENSURE = RuleImage(roi_front=(699,414,107,46), roi_back=(662,364,250,121), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gb_exit_ensure.png")
+	# 棋局专用兼容：GameUiAssets.I_ACTIVITY_SKIP
+	I_SHARED_ACTIVITY_SKIP = RuleImage(roi_front=(1159,37,51,22), roi_back=(1141,27,86,43), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/page_activity_skip.png")
+	# 棋局专用兼容：GameUiAssets.I_CHECK_MAIN
+	I_SHARED_CHECK_MAIN = RuleImage(roi_front=(807,108,76,45), roi_back=(47,88,1046,102), threshold=0.95, method="Template matching", file="./tasks/Chess/shared_ui/page_check_main.png")
+	# 棋局专用兼容：GameUiAssets.I_CLOSE_RED
+	I_SHARED_CLOSE_RED = RuleImage(roi_front=(1169,60,33,25), roi_back=(1077,19,151,144), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/page_close_red.png")
+	# 棋局专用兼容：GlobalGameAssets.I_G_ACCEPT
+	I_SHARED_G_ACCEPT = RuleImage(roi_front=(830,407,56,46), roi_back=(798,369,117,110), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_g_accept.png")
+	# 棋局专用兼容：GlobalGameAssets.I_G_CAT_FOOD
+	I_SHARED_G_CAT_FOOD = RuleImage(roi_front=(565,463,59,65), roi_back=(543,421,205,176), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_g_cat_food.png")
+	# 棋局专用兼容：GlobalGameAssets.I_G_DOG_FOOD
+	I_SHARED_G_DOG_FOOD = RuleImage(roi_front=(565,464,60,63), roi_back=(543,421,205,176), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_g_dog_food.png")
+	# 棋局专用兼容：GlobalGameAssets.I_G_JADE
+	I_SHARED_G_JADE = RuleImage(roi_front=(661,466,43,46), roi_back=(543,421,205,176), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_g_jade.png")
+	# 棋局专用兼容：GlobalGameAssets.I_G_REJECT
+	I_SHARED_G_REJECT = RuleImage(roi_front=(832,508,53,51), roi_back=(808,480,108,101), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_g_reject.png")
+	# 棋局专用兼容：GlobalGameAssets.I_NETWORK_ABNORMAL
+	I_SHARED_NETWORK_ABNORMAL = RuleImage(roi_front=(588,335,211,57), roi_back=(583,330,221,67), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_network_abnormal.png")
+	# 棋局专用兼容：GlobalGameAssets.I_NETWORK_ERROR
+	I_SHARED_NETWORK_ERROR = RuleImage(roi_front=(436,258,406,198), roi_back=(431,253,416,208), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_network_error.png")
+	# 棋局专用兼容：GlobalGameAssets.I_UI_CONFIRM
+	I_SHARED_UI_CONFIRM = RuleImage(roi_front=(667,417,169,47), roi_back=(547,368,322,122), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/ui_confirm.png")
+	# 棋局专用兼容：GlobalGameAssets.I_UI_REWARD
+	I_SHARED_UI_REWARD = RuleImage(roi_front=(521,212,237,66), roi_back=(361,47,556,286), threshold=0.73, method="Template matching", file="./tasks/Chess/shared_ui/ui_ui_reward.png")
+	# 棋局专用兼容：GlobalGameAssets.I_CLIENT_CLEAR
+	I_SHARED_CLIENT_CLEAR = RuleImage(roi_front=(599,383,85,42), roi_back=(594,378,95,52), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/shared_ui/gg_client_clear.png")
