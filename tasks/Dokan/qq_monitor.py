@@ -34,20 +34,6 @@ def is_query_time(settings, now):
     return current >= start or current < end
 
 
-def next_query_time(settings, now):
-    """Return the next permitted status check for an unconfirmed dojo."""
-    now = now.astimezone(CHINA_TZ)
-    if is_query_time(settings, now):
-        candidate = now + timedelta(seconds=settings.qq_poll_interval)
-        if is_query_time(settings, candidate):
-            return candidate
-    start = settings.qq_query_start_time
-    candidate = now.replace(hour=start.hour, minute=start.minute, second=start.second, microsecond=0)
-    if candidate <= now:
-        candidate += timedelta(days=1)
-    return candidate
-
-
 def fingerprint(settings):
     values = ['welfare-plugin-v1', settings.welfare_plugin_url.strip().rstrip('/'),
               hashlib.sha256(settings.welfare_plugin_token.encode()).hexdigest()]
@@ -77,7 +63,7 @@ def fetch_welfare_status(session, settings, now):
 
 
 class QQDokanState:
-    """Persist the daily permission and consumption state; no messages or credentials."""
+    """Cache today's opening and automatic trigger use; no messages or credentials."""
 
     def __init__(self, profile, path=STATE_PATH):
         self.profile = profile
@@ -209,6 +195,6 @@ class DokanQQMonitor:
                     if error != self._last_error or time.monotonic() - self._last_error_at >= 60:
                         logger.warning(f'福利寮状态检查失败（{error}），按检测间隔重试')
                         self._last_error, self._last_error_at = error, time.monotonic()
-                    # A failed request cannot open the gate or consume the pending trigger.
+                    # A failed request cannot create or consume an automatic trigger.
                 next_poll = time.monotonic() + interval
                 self._stop.wait(min(1, interval))

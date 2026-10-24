@@ -41,7 +41,7 @@ from module.ocr.rpc import (
 from module.script import ScriptRuntimeController, ScriptRuntimeDecision
 from tasks.Restart.server_update import delay_pending_tasks_for_server_update, is_server_update_window
 from module.server.log_service import build_error_log_dir_name
-from tasks.Dokan.qq_monitor import DokanQQMonitor, next_query_time
+from tasks.Dokan.qq_monitor import DokanQQMonitor, fingerprint, local_now
 
 _log_switch_lock = threading.Lock()#线程锁
 
@@ -56,7 +56,7 @@ class Script:
         self.gui_update_task: Callable = None  # 回调函数, gui进程注册当每次config更新任务的时候更新gui的信息
         self.config_name = config_name
         self.dokan_qq_monitor = DokanQQMonitor(config_name)
-        self._dokan_waiting_for_opening = False
+        self._dokan_consumed_trigger = None
         # Skip first restart
         self.is_first_task = True
         # Failure count of tasks
@@ -334,20 +334,11 @@ class Script:
             #         logger.info(f"[{self.config_name}] exited. Reason: Update")
             #         exit(0)
 
-            monitor = getattr(self, 'dokan_qq_monitor', None)
             settings = self.config.model.dokan.qq_message_config
-            if settings.qq_message_enable and self.config.model.dokan.scheduler.enable \
-                    and monitor is not None and (monitor.ready.is_set()
-                        or getattr(self, '_dokan_waiting_for_opening', None) is False):
-                allowed, pending = monitor.state.flags(settings)
-                # Confirmation can expire at Beijing midnight during a long idle
-                # wait. Reselect before an old schedule can preheat the emulator.
-                if not allowed and getattr(self, '_dokan_waiting_for_opening', None) is False:
-                    return False
+            if self._dokan_trigger_pending():
                 update_until = self.runtime.server_update_wait_until
                 waiting_for_update = update_until is not None and datetime.now() < update_until
-                if not waiting_for_update and self._antiban_wake_time(datetime.now()) is None \
-                        and pending:
+                if not waiting_for_update and self._antiban_wake_time(datetime.now()) is None:
                     return False
             if datetime.now() > future:
                 return True
@@ -466,47 +457,59 @@ class Script:
                 wake = max(wake, self._rest_until) if wake else self._rest_until
         return wake
 
-    def _select_dokan_qq_task(self, task):
-        """Only QQ-enabled dojos wait for permission or gain priority at task boundaries."""
-        self._dokan_waiting_for_opening = False
+    def _dokan_trigger_pending(self) -> bool:
+        """Read a signaled opening without changing normal task or idle behavior."""
         monitor = getattr(self, 'dokan_qq_monitor', None)
         dokan = self.config.model.dokan
         settings = dokan.qq_message_config
-        if monitor is None or not settings.qq_message_enable or not dokan.scheduler.enable:
+        if monitor is None or not settings.qq_message_enable or not dokan.scheduler.enable \
+                or not monitor.ready.is_set():
+            return False
+        trigger_key = (local_now().date(), fingerprint(settings))
+        if getattr(self, '_dokan_consumed_trigger', None) == trigger_key:
+            monitor.ready.clear()
+            return False
+        try:
+            pending = monitor.state.flags(settings)[1]
+        except Exception as exc:
+            logger.warning(f'福利寮触发状态读取失败（{type(exc).__name__}），继续原有调度')
+            pending = False
+        if not pending:
+            monitor.ready.clear()
+        return pending
+
+    def _consume_dokan_trigger(self) -> None:
+        monitor = self.dokan_qq_monitor
+        settings = self.config.model.dokan.qq_message_config
+        # Keep this process from repeating a trigger if its cache cannot be written.
+        self._dokan_consumed_trigger = (local_now().date(), fingerprint(settings))
+        try:
+            monitor.state.consume(settings)
+        except Exception as exc:
+            logger.warning(f'福利寮触发记录保存失败（{type(exc).__name__}），继续执行道馆')
+        finally:
+            monitor.ready.clear()
+
+    def _select_dokan_qq_task(self, task):
+        """Add priority only for a confirmed opening; otherwise retain normal scheduling."""
+        if not self._dokan_trigger_pending():
             return task
-        allowed, pending = monitor.state.flags(settings)
+        dokan = self.config.model.dokan
         now = datetime.now()
         weekend = dokan.dokan_config.monday_to_thursday and now.weekday() >= 4
-        if pending and weekend:
-            monitor.state.consume(settings)
-            monitor.ready.clear()
-        elif pending:
-            if task.command == 'Restart' and task.next_run <= now:
-                return task
-            task = Function('dokan', dokan.model_dump())
-            # 早于调度快照，确保自动拉起的道馆进入前端的运行中列表。
-            snapshot_time = min(now, getattr(self.config, 'scheduler_update_dt', now))
-            task.next_run = snapshot_time - timedelta(microseconds=1)
-            self.config.pending_task = [task] + [item for item in self.config.pending_task
-                                                if item.command != 'Dokan']
-            self.config.waiting_task = [item for item in self.config.waiting_task if item.command != 'Dokan']
+        if weekend:
+            self._consume_dokan_trigger()
             return task
-        if allowed:
+        if task.command == 'Restart' and task.next_run <= now:
             return task
-        self._dokan_waiting_for_opening = True
-        # Withhold execution until today's opening is confirmed, but retain a
-        # waiting entry so saving configuration never makes an enabled dojo vanish.
-        self.config.pending_task = [item for item in self.config.pending_task if item.command != 'Dokan']
+        task = Function('dokan', dokan.model_dump())
+        # 早于调度快照，确保自动拉起的道馆进入前端的运行中列表。
+        snapshot_time = min(now, getattr(self.config, 'scheduler_update_dt', now))
+        task.next_run = snapshot_time - timedelta(microseconds=1)
+        self.config.pending_task = [task] + [item for item in self.config.pending_task
+                                            if item.command != 'Dokan']
         self.config.waiting_task = [item for item in self.config.waiting_task if item.command != 'Dokan']
-        eligible = (self.config.pending_task or self.config.waiting_task)
-        selected = eligible[0] if eligible else None
-        waiting = Function('dokan', dokan.model_dump())
-        waiting.next_run = next_query_time(settings, now).astimezone().replace(tzinfo=None)
-        self.config.waiting_task.append(waiting)
-        self.config.waiting_task.sort(key=lambda item: item.next_run)
-        logger.info(f'Dokan waits for today\'s welfare opening confirmation without game actions; '
-                    f'next plugin check at {waiting.next_run:%Y-%m-%d %H:%M:%S}')
-        return selected or waiting
+        return task
 
     def _publish_dokan_schedule(self, running: bool) -> None:
         if not self.state_queue:
@@ -539,13 +542,6 @@ class Script:
                     continue
                 return task.command
             self._reset_continuous_task_rest(log_idle=True)
-            if self._dokan_waiting_for_opening:
-                # The plugin check is not a game task. Wait for confirmation,
-                # configuration changes or another task's deadline without
-                # initializing, navigating, closing or preheating the emulator.
-                self.wait_until(task.next_run)
-                del_cached_property(self, "config")
-                continue
             # 根据策略执行等待逻辑
             decision = self.runtime.handle_wait_during_idle(task.next_run)
             if decision == ScriptRuntimeDecision.RESCHEDULE:
@@ -702,9 +698,8 @@ class Script:
                 continue
 
             # Run
-            if task == 'Dokan' and self.config.model.dokan.qq_message_config.qq_message_enable:
-                self.dokan_qq_monitor.state.consume(self.config.model.dokan.qq_message_config)
-                self.dokan_qq_monitor.ready.clear()
+            if task == 'Dokan' and self._dokan_trigger_pending():
+                self._consume_dokan_trigger()
             logger.info(f'Scheduler: Start task `{task}`')
             self.device.stuck_record_clear()
             self.device.click_record_clear()

@@ -27,10 +27,9 @@ from tasks.Component.Login.service import LoginService
 from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.Component.config_base import Time
 from tasks.Dokan.assets import DokanAssets
-from tasks.Dokan.config import Dokan, QQMessageConfig
+from tasks.Dokan.config import Dokan
 from tasks.Dokan.list_scroll import choose_wheel_count, scroll_dokan_list
 from tasks.Dokan.reward_recognition import count_blue_tickets_in_png
-from tasks.Dokan.qq_monitor import QQDokanState
 import tasks.Dokan.page as pages
 from tasks.GameUi.game_ui import GameUi
 
@@ -337,11 +336,6 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
     def run(self):
         self.before_run()
         self.conf = self.config.model.dokan
-        qq_settings = getattr(self.conf, 'qq_message_config', QQMessageConfig())
-        if qq_settings.qq_message_enable and not QQDokanState(self.config.config_name).flags(qq_settings)[0]:
-            logger.info('尚未确认今天开启福利寮，等待下次检测')
-            self.set_next_run(task='Dokan', target=datetime.now() + timedelta(seconds=qq_settings.qq_poll_interval))
-            raise TaskEnd
         if self.conf.dokan_config.monday_to_thursday and datetime.now().weekday() >= 4:
             logger.warning("weekend, exit")
             self.next_run(True)
