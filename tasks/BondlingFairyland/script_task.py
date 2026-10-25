@@ -10,7 +10,7 @@ from datetime import datetime
 from datetime import timedelta, time
 from module.base.timer import Timer
 from module.base.protect import random_sleep
-from module.exception import TaskEnd
+from module.exception import ScriptError, TaskEnd
 from module.logger import logger
 from tasks.BondlingFairyland.assets import BondlingFairylandAssets
 from tasks.BondlingFairyland.config import BondlingMode, BondlingClass, BondlingSwitchSoul, BondlingConfig, UserStatus
@@ -193,6 +193,12 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
             case _:
                 logger.error(f'Unknown user status: {cong.bondling_config.user_status}')
 
+    def _create_private_bond_team(self):
+        if not self.ensure_private():
+            raise ScriptError('契灵建房失败：未能确认不公开，取消创建房间')
+        logger.info('Bondling private confirmed, create team')
+        return self.create_ensure(ensure_rules=[self.I_CREATE_TEAM])
+
     def run_leader(self):
         self.prepare_battle_cooperation('BondlingFairyland')
         """  点击 求援， 组队模式  """
@@ -217,9 +223,7 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
                     if self.appear_then_click(self.I_UI_CONFIRM, interval=1):
                         continue
                     if self.appear(self.I_CREATE_TEAM, interval=1):
-                        self.appear_then_click(self.I_CREATE_TEAM, interval=2)
-                        if not self.appear(self.I_GI_IN_ROOM):
-                            self.ensure_private(room_mark=self.I_GI_IN_ROOM)
+                        self._create_private_bond_team()
                         continue
                     # 求援
                     if self.appear(self.I_BALL_AREA, interval=1):

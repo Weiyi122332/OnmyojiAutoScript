@@ -277,6 +277,10 @@ tasks/AutoCheckinBigGod/frida-server-17.6.2-android-x86_64
 oas.bat
 /data/frog_oas/
 /data/cooperation/
+# User-defined Chess lineups; builtin lineup_strategy.json stays tracked.
+/tasks/Chess/strategy/custom_lineups.json
+/tasks/Chess/strategy/custom_lineups.v1.bak.json
+/tasks/Chess/strategy/custom_lineups.tmp
 
 # Local group access credentials and SSH host cache
 **/git_ssh.key
@@ -301,3 +305,6 @@ oas.bat
 /tasks/GameUi/MINIMAL_RESOURCE_CLEANUP.json
 /tasks/GameUi/page_asset_ownership.json
 /tasks/GameUi/page_checks/*.md
+
+# Locks for local lineup editor writes
+/tasks/Chess/strategy/*.lock

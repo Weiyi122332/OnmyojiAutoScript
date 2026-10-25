@@ -28,6 +28,8 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
 
     battle_win_count = 0
     battle_lose_count = 0
+    # 名士分段视为普通斗技分数 > 3000；3001仅作比较下界，不代表实测分数。
+    CELEB_SCORE_LOWER_BOUND = 3001
     current_score = 0
     current_celeb_star = 0
     current_normal_honor = 0
@@ -128,6 +130,11 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
                 logger.info(
                     'O_D_CELEB detected 名士, but celeb battle switch is disabled'
                 )
+                if not self.practice_mode:
+                    # 名士已经超过普通斗技最高目标3000分；不打名士时
+                    # 本周普通目标已完成，不能回落到次日调度。
+                    self._weekly_goal_reached = True
+                    logger.info('Duel normal score goal reached by entering celeb rank; schedule next Monday')
                 return False
             logger.info('O_D_CELEB detected 名士 and celeb battle switch is enabled')
             if (
@@ -666,6 +673,7 @@ class ScriptTask(GameUi, GeneralBattle, SwitchSoul, DuelAssets, SwitchOnmyoji):
         logger.info(f'Duel type OCR: {celeb_text or "<empty>"}, is celeb:{self.is_celeb}')
 
         if self.is_celeb:
+            self.current_score = self.CELEB_SCORE_LOWER_BOUND
             star_text = ''.join(char for char in celeb_text if char.isdigit())
             self.current_celeb_star = int(star_text) if star_text else 0
             self.update_celeb_honors()
