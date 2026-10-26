@@ -299,3 +299,9 @@ OAS-需求*.json
 /module/gui/qml_rcc.py
 /module/team_flow/mqtt_test.py
 /tasks/Hyakkiyakou/utils/exp_test.py
+
+# Local Chess lineup editor data and locks
+/tasks/Chess/strategy/custom_lineups.json
+/tasks/Chess/strategy/custom_lineups.v1.bak.json
+/tasks/Chess/strategy/custom_lineups.tmp
+/tasks/Chess/strategy/*.lock

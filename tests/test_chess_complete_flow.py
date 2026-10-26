@@ -238,6 +238,9 @@ class ChessRecoveryFlowTest(unittest.TestCase):
         task.chess_state.board_lineup_names.add('hakurou')
         task._hyakki_turn = SimpleNamespace(key=(3, 2), throws=2)
         task._board_marker_disabled_round = (3, 2)
+        task._boss_challenge_round_key = (3, 2)
+        task._board_frame_cache = ('old-frame', [])
+        task._pending_goldfish_probe = {'before': {1}}
         task._chess_ui_hits = {1: ('old-frame', object())}
         task._reconnect_chess_network = Mock()
         with patch.object(ChessLegacyScriptTask, 'run', side_effect=[
@@ -251,6 +254,9 @@ class ChessRecoveryFlowTest(unittest.TestCase):
         self.assertNotIn('_chess_ui_hits', task.__dict__)
         self.assertNotIn('_hyakki_turn', task.__dict__)
         self.assertNotIn('_board_marker_disabled_round', task.__dict__)
+        self.assertNotIn('_boss_challenge_round_key', task.__dict__)
+        self.assertNotIn('_board_frame_cache', task.__dict__)
+        self.assertNotIn('_pending_goldfish_probe', task.__dict__)
         task.chess_events.reset.assert_called_once()
 
     def test_repeated_disconnects_cannot_loop_without_restart_limit(self):

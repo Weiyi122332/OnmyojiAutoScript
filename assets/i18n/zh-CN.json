@@ -417,5 +417,7 @@
   "welfare_plugin_url_help": "填写完整地址，例如 http://服务器:2537/welfare-dojo/today。端口使用福利寮检测插件中配置的http_port。",
   "welfare_plugin_token": "插件访问令牌",
   "welfare_plugin_token_help": "填写福利寮检测插件配置中的api_token。",
-  "hyakki_draft_enabled": "百鬼优先所需御魂"
+  "hyakki_draft_enabled": "百鬼优先所需御魂",
+  "custom_lineup": "自定义阵容标识",
+  "custom_lineup_help": "在棋局阵容工具中保存并应用的阵容标识"
 }

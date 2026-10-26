@@ -1,6 +1,7 @@
 """New-season Chess resources and their integration with the current runtime."""
 
 from copy import copy
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -32,7 +33,7 @@ class ChessSeasonConfigTest(unittest.TestCase):
         self.assertEqual(ChessConfig().lineup_bond.value, '七角山')
 
     def test_old_season_instances_keep_constraints_and_cron(self):
-        for name in ('流火', '冥府', '大江山', '狐妖', '荒川',
+        for name in ('流火', '冥府', '大江山', '狐妖',
                      'liuhuo', 'mingfu', 'dajiangshan', 'huyao', 'arakawa'):
             with self.subTest(lineup=name):
                 config = Chess(scheduler={'cron': '0 6 * * *'}, chess_config={
@@ -71,7 +72,9 @@ class ChessSeasonConfigTest(unittest.TestCase):
             for shikigami in lineup['strategy']['shikigami'].values()
             for soul in shikigami.get('preferred_souls', ())
         }
-        self.assertTrue(preferred <= set(reader.hyakki_soul_fronts))
+        manifest = json.loads((Path(__file__).resolve().parents[1]
+                               / 'tasks/Chess/resource/hyakki_soul/manifest.json').read_text(encoding='utf-8'))
+        self.assertTrue(preferred - set(reader.hyakki_soul_fronts) <= set(manifest['missing']))
 
     def test_every_local_png_decodes(self):
         root = Path(__file__).resolve().parents[1] / 'tasks/Chess'

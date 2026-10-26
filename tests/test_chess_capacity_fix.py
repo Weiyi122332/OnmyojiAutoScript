@@ -28,6 +28,7 @@ class ChessCapacityFixTest(unittest.TestCase):
         task._is_preparation_mode = Mock(return_value=True)
         task._is_boss_challenge_round = Mock(return_value=False)
         task._ensure_shop_closed = Mock(return_value=True)
+        task._set_position = Mock(return_value=(877, 398))
         task._board_set_has_shikigami = Mock(side_effect=lambda index: index == 11)
         task._hand_capacity_count = Mock(return_value=10)
         task.emergency_cleanup_hand = Mock(return_value=None)
@@ -57,7 +58,7 @@ class ChessCapacityFixTest(unittest.TestCase):
 
     def test_recall_only_drags_after_cleanup_frees_space(self):
         task = self.task()
-        task._hand_capacity_count.side_effect = [10, 9]
+        task._hand_capacity_count.side_effect = [10, 9, 9]
         order = []
         task.emergency_cleanup_hand.side_effect = lambda: order.append('cleanup')
         with patch(DRAG, side_effect=lambda *a, **k: order.append('drag')):
@@ -129,6 +130,7 @@ class ChessStarConfirmationTest(unittest.TestCase):
         task.select_lineup_strategy('haiguo')
         task.device = Mock()
         task._ensure_shop_closed = Mock(return_value=True)
+        task._set_position = Mock(return_value=(461, 505))
         task._read_shikigami_count = Mock(return_value={'current': 3, 'total': 3})
         task._lineup_hand_card_match_count = Mock(return_value=1)
         task._lineup_hand_stars = Mock(side_effect=hand_stars)

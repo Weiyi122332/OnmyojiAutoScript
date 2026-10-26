@@ -93,12 +93,7 @@ class ChessLegacyScriptTask(
         """按执行次数循环百鬼棋局，并可在鼬乐币刷满时提前结束。"""
         chess_task_config = getattr(self.config, 'chess', None)
         chess_config = getattr(chess_task_config, 'chess_config', None)
-        selected_lineup = getattr(
-            chess_config,
-            'lineup_bond',
-            self.DEFAULT_LINEUP_KEY,
-        )
-        strategy = self.select_lineup_strategy(selected_lineup)
+        strategy = self.select_lineup_strategy(self._configured_lineup_key())
 
         # 启动恢复会主动退出遗留对局；正常循环只保留保段位退两局。
         self._recover_interrupted_chess_game()
@@ -992,6 +987,7 @@ class ChessLegacyScriptTask(
 
     def _start_chess_game(self) -> None:
         """从棋局大厅开战，确认进入局内后直接开始回合流程。"""
+        self.select_lineup_strategy(self._configured_lineup_key(reload=True))
         logger.debug('Chess game start')
         # 式神本局属性：(守护之印, 御魂1, 御魂2)。
         # 守护之印不占普通御魂槽，三个属性均允许为空。
@@ -1000,6 +996,10 @@ class ChessLegacyScriptTask(
         self._board_actual_positions = {}
         self._player_deployed_positions = set()
         self._arakawa_goldfish_current_position = None
+        self._pending_goldfish_probe = None
+        self._goldfish_relocation_pending = False
+        self.__dict__.pop('_board_frame_cache', None)
+        self.__dict__.pop('_boss_challenge_round_key', None)
         self._board_special_units = {}
         self._last_game_rank = None
         self._reset_economy_state()
@@ -1074,7 +1074,9 @@ class ScriptTask(ChessStateLoopMixin, ChessLegacyScriptTask):
                 self.chess_events.reset()
                 for name in ('_chess_ui_hits', '_hyakki_turn', '_hyakki_player_row',
                              '_hyakki_status_at', '_hyakki_skip_reason', '_hyakki_skip_at',
-                             '_board_marker_disabled_round', '_chess_share_advancing',
+                             '_board_marker_disabled_round', '_boss_challenge_round_key',
+                             '_board_frame_cache', '_pending_goldfish_probe',
+                             '_goldfish_relocation_pending', '_chess_share_advancing',
                              '_logged_chess_mode'):
                     self.__dict__.pop(name, None)
                 getattr(self, 'interval_timer', {}).clear()

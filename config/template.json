@@ -1788,6 +1788,7 @@
     },
     "chess_config": {
       "hyakki_draft_enabled": true,
+      "custom_lineup": "",
       "lineup_bond": "七角山",
       "rank_protection": false,
       "run_count": 1,
