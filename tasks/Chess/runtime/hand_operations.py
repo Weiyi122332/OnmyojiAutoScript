@@ -5,6 +5,7 @@
 import random
 import time
 from collections import Counter
+from contextlib import contextmanager
 
 import cv2
 import numpy as np
@@ -25,6 +26,16 @@ from tasks.Chess.strategy.shikigami_catalog import (
 
 class ChessHandOperationsMixin:
     """Internal mixin; use through ``ScriptTask`` only."""
+
+    @contextmanager
+    def _allow_chess_details(self):
+        """需要读取详情的动作显式豁免全局关页，异常时也恢复。"""
+        depth = getattr(self, '_chess_details_depth', 0)
+        self._chess_details_depth = depth + 1
+        try:
+            yield
+        finally:
+            self._chess_details_depth = depth
 
     def _shikigami_attributes(
         self,
@@ -352,83 +363,70 @@ class ChessHandOperationsMixin:
                 if self.ARAKAWA_BOND_NAME in SHIKIGAMI_BONDS_BY_ROMAJI.get(name, ())
                 or '荒川纹章' in self._shikigami_attributes(name)[1:]}
 
-    def _goldfish_formation_baseline(self, next_name, emblem=False):
-        """只在下一次上阵/纹章装备会形成二荒川时保存占位快照。"""
-        active = self._active_arakawa_names()
-        if (getattr(self, '_arakawa_goldfish_current_position', None) is not None
-                or len(active) != 1 or next_name in active
-                or self._arakawa_goldfish_target_position() is None):
-            return None
-        if not emblem and next_name not in self._lineup_arakawa_names():
-            return None
-        slots = self._board_frame_scan()
-        if not slots:
-            return None
-        return {'before': {index for index, slot in enumerate(slots, 1) if slot['occupied']},
-                'deployed_position': None if emblem else self.shikigami_deploy_positions[next_name]}
-
     def _inspect_arakawa_goldfish(self, set_index: int) -> bool:
-        """打开新增占位的详情，用金鱼专属标志确认身份。"""
+        """打开系统站位的详情，用金鱼专属标志确认身份。"""
         if not self._is_preparation_mode():
             return False
         x, y = self._set_position(set_index)
         rule = RuleClick(roi_front=(x-8, y-8, 16, 16), roi_back=(x-8, y-8, 16, 16),
                          name=f'chess_inspect_arakawa_goldfish_set_{set_index}')
-        for _ in range(self.ACTION_ICON_MAX_ATTEMPTS):
-            if not self._is_preparation_mode():
-                return False
-            self.device.click_record_remove(rule)
-            self.click(rule)
-            if not self._wait_chess_action_state(lambda: self.appear(self.I_SHIKIGAMI_SPECIFICS)):
-                continue
-            identified = self._wait_chess_action_state(lambda: self.appear(self.I_CHECK_GOLDFISH))
+        try:
+            with self._allow_chess_details():
+                self.device.click_record_remove(rule)
+                self.click(rule)
+                if not self._wait_chess_action_state(lambda: self.appear(self.I_SHIKIGAMI_SPECIFICS)):
+                    return False
+                identified = self._wait_chess_action_state(lambda: self.appear(self.I_CHECK_GOLDFISH))
+                logger.info(f'Chess Arakawa unit identified: set={set_index}, goldfish={identified}')
+                return identified
+        finally:
             self.close_shikigami_specifics_if_open()
-            logger.info(f'Chess new Arakawa unit identified: set={set_index}, goldfish={identified}')
-            return identified
-        return False
 
     def _detect_pending_arakawa_goldfish(self) -> bool:
-        if (getattr(self, '_goldfish_relocation_pending', False)
-                and getattr(self, '_arakawa_goldfish_current_position', None) is not None):
-            return self._move_arakawa_goldfish(self._arakawa_goldfish_current_position)
-        pending = getattr(self, '_pending_goldfish_probe', None)
-        if not pending or len(self._active_arakawa_names()) < 2:
+        """按系统落位顺序查找金鱼，不依赖上阵前后人数差分。"""
+        current = getattr(self, '_arakawa_goldfish_current_position', None)
+        if current is not None:
+            if getattr(self, '_goldfish_relocation_pending', False):
+                return self._move_arakawa_goldfish(current)
             return False
-        candidates = []
-        def new_position_visible():
-            nonlocal candidates
+        if (len(self._active_arakawa_names()) < 2
+                or self._arakawa_goldfish_target_position() is None
+                or not self._is_preparation_mode()):
+            return False
+        slots = self._board_frame_scan()
+        if not slots:
+            return False
+        protected = set(getattr(self, '_player_deployed_positions', set()))
+        protected.update(getattr(self, '_board_actual_positions', {}).get(
+            name, self.shikigami_deploy_positions.get(name))
+            for name in getattr(self, '_board_lineup_names', set()))
+        for position in self.BOARD_RECALL_POSITIONS:
+            if position in protected or not slots[position - 1]['occupied']:
+                continue
             if not self._is_preparation_mode():
-                return True
-            slots = self._board_frame_scan()
-            if not slots:
                 return False
-            occupied = {index for index, slot in enumerate(slots, 1) if slot['occupied']}
-            target = pending['deployed_position']
-            expected = int(target is not None and target not in pending['before'])
-            if len(occupied) <= len(pending['before']) + expected:
-                return False
-            known = {getattr(self, '_board_actual_positions', {}).get(name, position)
-                     for name, position in self.shikigami_deploy_positions.items()
-                     if name in getattr(self, '_board_lineup_names', set())}
-            candidates = sorted(occupied - pending['before'] - known)
-            return bool(candidates)
-        self._wait_chess_action_state(new_position_visible)
-        if not self._is_preparation_mode():
-            return False
-        for position in candidates:
             if not self._inspect_arakawa_goldfish(position):
                 continue
             self._record_arakawa_goldfish_position(position, identified=True)
-            self._pending_goldfish_probe = None
             self._move_arakawa_goldfish(position)
             return True
-        logger.debug('Chess Arakawa goldfish not confirmed yet; retain probe for next preparation')
         return False
 
     def _handle_goldfish_after_board_action_failure(self, set_index, action):
-        """下阵失败仅处理已登记的金鱼，不再盲点未知式神详情。"""
-        if (getattr(self, '_arakawa_goldfish_current_position', None) != int(set_index)
-                or not self._is_preparation_mode()):
+        """系统位下阵失败时核实金鱼身份，确认后才移动。"""
+        set_index = int(set_index)
+        if not self._is_preparation_mode():
+            return False
+        current = getattr(self, '_arakawa_goldfish_current_position', None)
+        if current is None:
+            if (set_index not in self.BOARD_RECALL_POSITIONS
+                    or set_index in getattr(self, '_player_deployed_positions', set())
+                    or len(self._active_arakawa_names()) < 2
+                    or self._arakawa_goldfish_target_position() is None
+                    or not self._inspect_arakawa_goldfish(set_index)):
+                return False
+            self._record_arakawa_goldfish_position(set_index, identified=True)
+        elif current != set_index:
             return False
         return self._move_arakawa_goldfish(set_index)
 
@@ -601,6 +599,9 @@ class ChessHandOperationsMixin:
                            and actual_position == set_index)
         board_star_before = self._board_set_star(set_index) if same_board_unit else None
         target_occupied_before = self._board_set_has_shikigami(set_index)
+        if target_occupied_before is None:
+            logger.warning('Abort Chess deployment: board detection unavailable')
+            return False
         target_position = self._set_position(set_index)
         logger.debug(
             f'Deploy Chess shikigami {name} to set {set_index}, '
@@ -1420,7 +1421,6 @@ class ChessHandOperationsMixin:
                 )
                 break
 
-            goldfish_baseline = self._goldfish_formation_baseline(candidate['name'])
             if not self.deploy_shikigami_hand_card(
                 candidate['name'],
                 candidate['position'],
@@ -1460,9 +1460,7 @@ class ChessHandOperationsMixin:
                 'Mark Chess player-deployed position: '
                 f'set={set_index}, name={candidate["name"]}'
             )
-            if goldfish_baseline is not None:
-                self._pending_goldfish_probe = goldfish_baseline
-                self._detect_pending_arakawa_goldfish()
+            self._detect_pending_arakawa_goldfish()
             if candidate['name'] == self.HAKUZOSU_NAME:
                 self.equip_hakuzosu_protect_after_deploy(deployed_names)
         else:
@@ -2013,8 +2011,6 @@ class ChessHandOperationsMixin:
                     f'检测到{card["name"]}(纹章)，'
                     f'尝试移动到{set_index}号位({target_name})'
                 )
-                goldfish_baseline = (self._goldfish_formation_baseline(target_name, emblem=True)
-                                     if card['name'] == '荒川纹章' else None)
                 if not self._equip_soul_card(
                     source=card['position'],
                     set_index=set_index,
@@ -2051,8 +2047,7 @@ class ChessHandOperationsMixin:
                         f'{card["name"]} -> {target_name}'
                     )
                     break
-                if goldfish_baseline is not None:
-                    self._pending_goldfish_probe = goldfish_baseline
+                if card['name'] == '荒川纹章':
                     self._detect_pending_arakawa_goldfish()
                 equipped.append(card['name'])
                 succeeded = True
@@ -2198,7 +2193,7 @@ class ChessHandOperationsMixin:
                     source_still_occupied = self._board_set_has_shikigami(
                         set_index
                     )
-                    if not source_still_occupied:
+                    if source_still_occupied is False:
                         logger.info(
                             'Chess failed recall source cleared after moving '
                             f'goldfish: set={set_index}'
@@ -2344,7 +2339,7 @@ class ChessHandOperationsMixin:
                         set_index
                     )
                     if (
-                        not source_still_occupied
+                        source_still_occupied is False
                         or set_index
                         == self._arakawa_goldfish_target_position()
                     ):

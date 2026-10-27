@@ -74,7 +74,7 @@ class ChessLineupPersistenceTest(unittest.TestCase):
 
     def test_legacy_haiguo_uses_available_builtin_and_preserves_saved_custom(self):
         with patch.object(custom, 'read_lineups', return_value={}):
-            self.assertEqual(ChessConfig(lineup_bond='海国').custom_lineup, 'builtin:haiguo')
+            self.assertEqual(ChessConfig(lineup_bond='海国').custom_lineup, 'builtin:huangchuan')
         with patch.object(custom, 'read_lineups', return_value={'haiguo': {}}):
             self.assertEqual(ChessConfig(lineup_bond='海国').custom_lineup, 'custom:haiguo')
         self.assertEqual(ChessConfig(lineup_bond='荒川').lineup_bond.value, '荒川')
@@ -97,8 +97,8 @@ class ChessLineupPersistenceTest(unittest.TestCase):
             self.assertTrue(config.script_set_arg('Chess', 'chess_config', 'lineup_bond', 'builtin:haiguo'))
         save.assert_called_once()
         values = {item['name']: item for item in config.script_task('Chess')['chess_config']}
-        self.assertIn('内置 · 荒川 [haiguo]', values['lineup_bond']['enumEnum'])
-        self.assertEqual(values['lineup_bond']['value'], '内置 · 荒川 [haiguo]')
+        self.assertIn('内置 · 荒川 [huangchuan]', values['lineup_bond']['enumEnum'])
+        self.assertEqual(values['lineup_bond']['value'], '内置 · 荒川 [huangchuan]')
         self.assertNotIn('custom_lineup', values)
 
     def test_running_lineup_snapshot_is_stable_until_next_selection(self):
@@ -169,6 +169,17 @@ class ChessLineupRouterTest(unittest.IsolatedAsyncioTestCase):
         response = await self.client.delete(self.url + '/api/lineups/builtin/sample')
         self.assertEqual(response.status_code, 409)
         self.assertIn('demo', response.json()['detail'])
+
+    async def test_active_arakawa_is_protected_for_old_and_new_config_identities(self):
+        custom.save_lineup(document('huangchuan'), self.builtin)
+        for selected in (
+                {'lineup_bond': '自定义阵容', 'custom_lineup': 'builtin:haiguo'},
+                {'lineup_bond': '海国'}, {'lineup_bond': '荒川'}):
+            with self.subTest(selected=selected):
+                self.config.write_text(json.dumps({'chess': {'chess_config': selected}}), encoding='utf-8')
+                response = await self.client.delete(self.url + '/api/lineups/builtin/huangchuan')
+                self.assertEqual(response.status_code, 409)
+                self.assertIn('demo', response.json()['detail'])
 
     async def test_apply_uses_existing_config_model_and_only_selects_lineup(self):
         model = ConfigModel(chess={'chess_config': {'run_count': 3}})

@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 import numpy as np
 
 from module.exception import GameStuckError
+from module.atom.click import RuleClick
 from tasks.Chess.config import ChessConfig
 from tasks.Chess.runtime.activity_watchdog import ChessActivityWatchdog, ChessInactiveError
 from tasks.Chess.runtime.hyakki_draft import HyakkiTurn
@@ -16,6 +17,7 @@ from tasks.Chess.script_task import ScriptTask
 
 
 DRAG = 'tasks.Chess.runtime.hand_operations.Press_and_Drag'
+SHOP_CLICK = RuleClick((100, 100, 20, 20), (100, 100, 20, 20), name='test_shop_slot')
 
 
 class ChessCapacityFixTest(unittest.TestCase):
@@ -100,6 +102,8 @@ class ChessCapacityFixTest(unittest.TestCase):
         task._recognize_shop_slot = Mock(return_value={'source': 'frame', 'score': 1})
         task._is_purchase_allowed = Mock(return_value=True)
         task._can_afford_shop_shikigami = Mock(return_value=True)
+        task._lineup_hand_card_match_count = Mock(return_value=0)
+        task._confirm_shop_purchase = Mock(return_value=True)
         task._free_one_hand_slot_for_purchase = Mock(return_value={'type': 'emergency_cleanup'})
         task.ui_click_until_disappear = Mock(return_value=True)
         return task
@@ -110,7 +114,7 @@ class ChessCapacityFixTest(unittest.TestCase):
         order = []
         task._free_one_hand_slot_for_purchase.side_effect = lambda **_: order.append('cleanup') or {'type': 'emergency_cleanup'}
         task.ui_click_until_disappear.side_effect = lambda *a, **k: order.append('buy') or True
-        self.assertTrue(task._buy_shop_slot(1, task.C_SHIKIGAMI_1, 'hakurou'))
+        self.assertTrue(task._buy_shop_slot(1, SHOP_CLICK, 'hakurou'))
         self.assertEqual(order, ['cleanup', 'buy'])
 
     def test_purchase_is_bounded_if_hand_remains_full_after_cleanup(self):
@@ -118,7 +122,7 @@ class ChessCapacityFixTest(unittest.TestCase):
         task._free_one_hand_slot_for_purchase.side_effect = [
             {'type': 'emergency_cleanup'}, {'type': 'lineup'},
         ]
-        self.assertFalse(task._buy_shop_slot(1, task.C_SHIKIGAMI_1, 'hakurou'))
+        self.assertFalse(task._buy_shop_slot(1, SHOP_CLICK, 'hakurou'))
         self.assertEqual(task._free_one_hand_slot_for_purchase.call_count, 2)
         task.ui_click_until_disappear.assert_not_called()
 
@@ -127,7 +131,7 @@ class ChessStarConfirmationTest(unittest.TestCase):
     def task(self, hand_stars, board_stars=None):
         task = ScriptTask.__new__(ScriptTask)
         task.chess_state = ChessGameState()
-        task.select_lineup_strategy('haiguo')
+        task.select_lineup_strategy('huangchuan')
         task.device = Mock()
         task._ensure_shop_closed = Mock(return_value=True)
         task._set_position = Mock(return_value=(461, 505))

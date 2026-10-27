@@ -13,16 +13,6 @@ class ChessAssets:
 
 
 	# Click Rule Assets
-	# 商店式神5
-	C_SHIKIGAMI_5 = RuleClick(roi_front=(350,61,167,140), roi_back=(350,61,167,140), name="shikigami_5")
-	# 商店式神4
-	C_SHIKIGAMI_4 = RuleClick(roi_front=(537,61,167,140), roi_back=(537,61,167,140), name="shikigami_4")
-	# 商店式神3
-	C_SHIKIGAMI_3 = RuleClick(roi_front=(724,61,167,140), roi_back=(724,61,167,140), name="shikigami_3")
-	# 商店式神2
-	C_SHIKIGAMI_2 = RuleClick(roi_front=(911,61,167,140), roi_back=(911,61,167,140), name="shikigami_2")
-	# 商店式神1
-	C_SHIKIGAMI_1 = RuleClick(roi_front=(1098,61,167,140), roi_back=(1098,61,167,140), name="shikigami_1")
 	# 左侧符咒选项卡面
 	C_GRIGRI_OPTION_1 = RuleClick(roi_front=(320,205,90,130), roi_back=(320,205,90,130), name="grigri_option_1")
 	# 中间符咒选项卡面
@@ -73,7 +63,7 @@ class ChessAssets:
 	#
 	I_SKIP = RuleImage(roi_front=(1148,39,77,22), roi_back=(1143,34,87,32), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_skip.png")
 	#
-	I_SHIKIGAMI_SPECIFICS = RuleImage(roi_front=(939,223,310,32), roi_back=(939,223,310,32), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_shikigami_specifics.png")
+	I_SHIKIGAMI_SPECIFICS = RuleImage(roi_front=(939,251,131,31), roi_back=(929,204,331,109), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_shikigami_specifics.png")
 	#
 	I_CHECK_MARKET = RuleImage(roi_front=(1206,319,35,31), roi_back=(1201,314,45,41), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_check_market.png")
 	#
@@ -88,8 +78,8 @@ class ChessAssets:
 	I_GRIGRI_SILVER = RuleImage(roi_front=(584,142,122,40), roi_back=(579,137,132,50), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_grigri_silver.png")
 	#
 	I_GRIGRI_COPPER = RuleImage(roi_front=(584,142,122,40), roi_back=(579,137,132,50), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_grigri_copper.png")
-	#
-	I_CHECK_GOLDFISH = RuleImage(roi_front=(924,291,192,49), roi_back=(919,286,202,59), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_check_goldfish.png")
+	# 荒川金鱼标志
+	I_CHECK_GOLDFISH = RuleImage(roi_front=(924,291,192,49), roi_back=(918,266,352,125), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_check_goldfish.png")
 	#
 	I_BACK_RED = RuleImage(roi_front=(977,67,41,46), roi_back=(972,62,51,56), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_back_red.png")
 	#
@@ -108,6 +98,8 @@ class ChessAssets:
 	I_STAGE_ORCHI = RuleImage(roi_front=(708,0,31,29), roi_back=(499,0,268,31), threshold=0.9, method="Template matching", profile="High", file="./tasks/Chess/c/c_stage_orchi.png")
 	# 逢魔阶段
 	I_STAGE_DEMON = RuleImage(roi_front=(708,0,31,29), roi_back=(499,0,268,31), threshold=0.9, method="Template matching", profile="High", file="./tasks/Chess/c/c_stage_demon.png")
+	# 小怪阶段
+	I_STAGE_SNAKE = RuleImage(roi_front=(624,1,31,29), roi_back=(499,0,268,31), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_stage_snake.png")
 
 
 	# Ocr Rule Assets

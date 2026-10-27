@@ -18,14 +18,8 @@ class ChessEconomyMixin:
     """Internal mixin; use through ``ScriptTask`` only."""
 
     def _shop_slots(self) -> list[tuple[int, RuleClick]]:
-        """返回商店五个卡面点击区；编号按原资源定义从右向左。"""
-        return [
-            (
-                index,
-                getattr(self, f'C_SHIKIGAMI_{index}'),
-            )
-            for index in range(1, 6)
-        ]
+        """返回商店 Frame range6 点击区；编号从右向左。"""
+        return self._frame_shop_slots()
 
     def _is_shop_open(self) -> bool:
         """使用刷新按钮判断商店是否展开；禁止在此读取价格 OCR。
@@ -382,13 +376,37 @@ class ChessEconomyMixin:
         return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 
+    def _confirm_shop_purchase(self, slot_index, click_rule, matched_name, hand_before):
+        """同一帧同时满足商店目标消失和同名手牌增加，连续两帧确认。"""
+        deadline = time.monotonic() + 2.0
+        confirmed = 0
+        hand_after = hand_before
+        while time.monotonic() < deadline:
+            self.screenshot()
+            if (not self._is_purchase_allowed() or self.appear(self.I_SELECT_GRIGRI)
+                    or not self._is_shop_open()):
+                return False
+            shop_gone = self._recognize_shop_slot(
+                slot_index, click_rule, expected_name=matched_name,
+            ) is None
+            hand_after = self._lineup_hand_card_match_count(matched_name)
+            confirmed = confirmed + 1 if shop_gone and hand_after > hand_before else 0
+            if confirmed >= 2:
+                logger.info(f'Chess purchase confirmed both ways: slot={slot_index}, '
+                            f'name={matched_name}, hand={hand_before}->{hand_after}')
+                return True
+            time.sleep(0.1)
+        logger.warning(f'Chess purchase not confirmed both ways: slot={slot_index}, '
+                       f'name={matched_name}, hand={hand_before}->{hand_after}')
+        return False
+
     def _buy_shop_slot(
         self,
         slot_index: int,
         click_rule: RuleClick,
         matched_name: str,
     ) -> bool:
-        """持续点击目标商店格，直到原头像不再出现在该格。"""
+        """购买需同时确认商店目标消失和同名手牌数量增加。"""
         known_price = SHIKIGAMI_BY_ROMAJI[matched_name].cost
         deadline = time.monotonic() + self.SHOP_BUY_TIMEOUT
         current_match = self._recognize_shop_slot(
@@ -432,6 +450,7 @@ class ChessEconomyMixin:
                 if sell_lineup or recovery.get('type') == 'lineup':
                     lineup_sale_done = True
                 continue
+            hand_before = self._lineup_hand_card_match_count(matched_name)
             attempts += 1
             logger.info(
                 f'Buy Chess card: '
@@ -450,12 +469,16 @@ class ChessEconomyMixin:
                 interval=0.3,
                 timeout=min(2.0, max(0.0, deadline-time.monotonic())),
                 confirm_frames=2,
-                max_clicks=3,
+                # 外层 attempts 累计清理前后的点击额度，内层不得再连点三次。
+                max_clicks=1,
             )
             if clicked_and_gone:
-                # 已确认购买完成，旧卡的点击不应计入此格下一张卡。
-                self.device.click_record_remove(click_rule)
-                return True
+                confirmed = self._confirm_shop_purchase(
+                    slot_index, click_rule, matched_name, hand_before,
+                )
+                if confirmed:
+                    self.device.click_record_remove(click_rule)
+                return confirmed
             if not self._is_purchase_allowed() or self.appear(self.I_SELECT_GRIGRI):
                 return False
             current_match = self._recognize_shop_slot(
@@ -465,6 +488,12 @@ class ChessEconomyMixin:
             )
             if current_match is None:
                 # Timeout or pre-click disappearance did not pass two-frame confirmation.
+                return False
+            if attempts >= 3:
+                logger.warning(
+                    f'Cancel Chess purchase {matched_name}: cumulative click limit '
+                    f'reached ({attempts}/3), slot={slot_index}'
+                )
                 return False
             if current_match is not None:
                 if not self._is_purchase_allowed():
@@ -516,11 +545,7 @@ class ChessEconomyMixin:
                     )
 
         if current_match is None:
-            logger.debug(
-                'Chess shop purchase succeeded by identity disappearance: '
-                f'slot={slot_index}, name={matched_name}, attempts={attempts}'
-            )
-            return True
+            return False
 
         logger.warning(
             f'Chess shop purchase timed out: slot={slot_index}, '
@@ -626,8 +651,8 @@ class ChessEconomyMixin:
                 continue
             else:
                 logger.warning(
-                    'Chess target purchase was not confirmed by avatar '
-                    'disappearance; '
+                    'Chess target purchase was not confirmed by both shop '
+                    'disappearance and matching hand-card increase; '
                     f'slot={target["slot_index"]}, '
                     f'name={target["matched_name"]}; '
                     'stop this shop cycle before any refresh'

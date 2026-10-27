@@ -25,6 +25,8 @@ class ChessBoardFrameTest(unittest.TestCase):
         task.chess_state = ChessGameState(game_number=1)
         task._current_round_no = 9 if boss else 5
         task._is_boss_challenge_round = Mock(return_value=boss)
+        task._read_chess_mode = Mock(return_value='备')
+        task._shop_refresh_marker_visible = Mock(return_value=False)
         task.F_BOARD_OCCUPANCY = copy(ChessAssets.F_BOARD_OCCUPANCY)
         task.F_BOSS_BOARD_OCCUPANCY = copy(ChessAssets.F_BOSS_BOARD_OCCUPANCY)
         frame = task.F_BOSS_BOARD_OCCUPANCY if boss else task.F_BOARD_OCCUPANCY
@@ -59,7 +61,7 @@ class ChessBoardFrameTest(unittest.TestCase):
 
     def test_missing_anchor_does_not_confirm_empty_board_or_successful_recall(self):
         task, _ = self.task(anchor=False)
-        self.assertFalse(task._board_set_has_shikigami(6))
+        self.assertIsNone(task._board_set_has_shikigami(6))
         self.assertFalse(task._board_set_is_empty(6))
         self.assertIsNone(task._board_set_star(6))
         with self.assertRaisesRegex(GameStuckError, 'anchor not found'):
@@ -78,7 +80,7 @@ class ChessGoldfishAndEquipmentTest(unittest.TestCase):
     def task(self):
         task = ScriptTask.__new__(ScriptTask)
         task.chess_state = ChessGameState(game_number=1)
-        task.select_lineup_strategy('builtin:haiguo')
+        task.select_lineup_strategy('builtin:huangchuan')
         return task
 
     def test_preferred_emblem_reserves_a_slot_before_soul_equipping(self):

@@ -996,7 +996,6 @@ class ChessLegacyScriptTask(
         self._board_actual_positions = {}
         self._player_deployed_positions = set()
         self._arakawa_goldfish_current_position = None
-        self._pending_goldfish_probe = None
         self._goldfish_relocation_pending = False
         self.__dict__.pop('_board_frame_cache', None)
         self.__dict__.pop('_boss_challenge_round_key', None)

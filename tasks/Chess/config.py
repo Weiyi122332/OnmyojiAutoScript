@@ -19,10 +19,12 @@ class ChessConfig(ConfigBase):
                 from tasks.Chess.strategy.custom_lineups import read_lineups
                 value = dict(value)
                 value['lineup_bond'] = '自定义阵容'
-                # The reference ships haiguo as the builtin Arakawa lineup;
-                # retain a saved custom variant when one actually exists.
+                # Retain an existing custom variant; the builtin key was renamed.
                 value['custom_lineup'] = ('custom:haiguo' if 'haiguo' in read_lineups()
-                                          else 'builtin:haiguo')
+                                          else 'builtin:huangchuan')
+            elif value.get('custom_lineup') == 'builtin:haiguo':
+                value = dict(value)
+                value['custom_lineup'] = 'builtin:huangchuan'
         return value
 
     hyakki_draft_enabled: bool = Field(
@@ -117,6 +119,8 @@ class Chess(ConfigBase):
                 identity = ('builtin:' if match[1] == '内置' else 'custom:') + match[2]
         if identity is None:
             return None
+        if identity == 'builtin:haiguo':
+            identity = 'builtin:huangchuan'
         if identity not in choices.values():
             return False
         self.chess_config = ChessConfig.model_validate({

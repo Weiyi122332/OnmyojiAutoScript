@@ -121,6 +121,11 @@ class ChessSharedUiMixin:
         if self.appear_then_click(self._chess_close_red, interval=0.8):
             logger.info('Chess: close floating window with red cross')
             return True
+        if (not getattr(self, '_chess_details_depth', 0)
+                and self.appear(self.I_SHIKIGAMI_SPECIFICS)):
+            if self.click(self.C_CLICK_CLOSE_SPECIFICS_AREA, interval=0.8):
+                logger.info('Chess: globally close unexpected shikigami details')
+            return True
         return False
 
     def _handle_network(self):

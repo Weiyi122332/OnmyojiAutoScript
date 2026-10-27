@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 
 from module.atom.frame import Click, Image, RuleFrame
+from module.atom.click import RuleClick
 from module.image.runtime import ImageRuntime
 from tasks.base_task import BaseTask
 from tasks.Chess.assets import ChessAssets
@@ -26,10 +27,12 @@ from tasks.GameUi.chess_battle import ChessBattleNavigationMixin
 from tasks.GameUi.default_pages import page_chess_battle, page_chess_result
 from tasks.GlobalGame.assets import GlobalGameAssets
 
+SHOP_CLICK = RuleClick((100, 100, 20, 20), (100, 100, 20, 20), name='test_shop_slot')
+
 
 class ChessSeasonConfigTest(unittest.TestCase):
     def test_only_new_season_lineups_are_offered(self):
-        self.assertEqual(set(LINEUP_REGISTRY), {'pinganjing', 'qijiaoshan', 'haiguo', 'minghuo'})
+        self.assertEqual(set(LINEUP_REGISTRY), {'pinganjing', 'qijiaoshan', 'huangchuan', 'minghuo'})
         self.assertEqual(ChessConfig().lineup_bond.value, '七角山')
 
     def test_old_season_instances_keep_constraints_and_cron(self):
@@ -191,7 +194,7 @@ class ChessFlowIntegrationTest(unittest.TestCase):
         task = ScriptTask.__new__(ScriptTask)
         task._recognize_shop_slot = Mock(return_value=None)
         task.click = Mock()
-        self.assertFalse(task._buy_shop_slot(1, ChessAssets.C_SHIKIGAMI_1, 'hakurou'))
+        self.assertFalse(task._buy_shop_slot(1, SHOP_CLICK, 'hakurou'))
         task.click.assert_not_called()
 
     def test_purchase_confirmation_ignores_a_single_disappearing_frame(self):
@@ -200,7 +203,7 @@ class ChessFlowIntegrationTest(unittest.TestCase):
         task.click = Mock(return_value=True)
         visible = Mock(side_effect=[True, False, True, False, False])
         self.assertTrue(task.ui_click_until_disappear(
-            ChessAssets.C_SHIKIGAMI_1, click_target=ChessAssets.C_SHIKIGAMI_1,
+            SHOP_CLICK, click_target=SHOP_CLICK,
             visible=visible, interval=0, timeout=1, confirm_frames=2,
         ))
         self.assertEqual(task.screenshot.call_count, 5)
@@ -211,7 +214,7 @@ class ChessFlowIntegrationTest(unittest.TestCase):
         task.screenshot = Mock()
         task.click = Mock(return_value=True)
         self.assertFalse(task.ui_click_until_disappear(
-            ChessAssets.C_SHIKIGAMI_1, click_target=ChessAssets.C_SHIKIGAMI_1,
+            SHOP_CLICK, click_target=SHOP_CLICK,
             visible=lambda: True, interval=0, timeout=1, confirm_frames=2, max_clicks=3,
         ))
         self.assertEqual(task.click.call_count, 3)
@@ -221,7 +224,7 @@ class ChessFlowIntegrationTest(unittest.TestCase):
         task.screenshot = Mock()
         task.click = Mock(return_value=True)
         self.assertTrue(task.ui_click_until_disappear(
-            ChessAssets.C_SHIKIGAMI_1, click_target=ChessAssets.C_SHIKIGAMI_1,
+            SHOP_CLICK, click_target=SHOP_CLICK,
             visible=Mock(side_effect=[True, True, True, False, False]),
             interval=0, timeout=1, confirm_frames=2, max_clicks=3,
         ))
@@ -233,6 +236,8 @@ class ChessFlowIntegrationTest(unittest.TestCase):
         task._is_purchase_allowed = Mock(return_value=True)
         task._can_afford_shop_shikigami = Mock(return_value=True)
         task._hand_capacity_count = Mock(return_value=0)
+        task._lineup_hand_card_match_count = Mock(return_value=0)
+        task._confirm_shop_purchase = Mock(return_value=purchase_succeeds)
         task.appear = Mock(return_value=False)
         task.ui_click_until_disappear = Mock(return_value=purchase_succeeds)
         task.device = SimpleNamespace(click_record_remove=Mock())
@@ -240,16 +245,16 @@ class ChessFlowIntegrationTest(unittest.TestCase):
 
     def test_confirmed_purchase_clears_the_slots_click_history(self):
         task = self._shop_task(True)
-        self.assertTrue(task._buy_shop_slot(1, ChessAssets.C_SHIKIGAMI_1, 'hakurou'))
-        task.device.click_record_remove.assert_called_once_with(ChessAssets.C_SHIKIGAMI_1)
-        self.assertEqual(task.ui_click_until_disappear.call_args.kwargs['max_clicks'], 3)
+        self.assertTrue(task._buy_shop_slot(1, SHOP_CLICK, 'hakurou'))
+        task.device.click_record_remove.assert_called_once_with(SHOP_CLICK)
+        self.assertEqual(task.ui_click_until_disappear.call_args.kwargs['max_clicks'], 1)
 
     def test_blocked_purchase_cancels_after_two_cleanup_retries(self):
         task = self._shop_task(False)
         task._free_one_hand_slot_for_purchase = Mock(side_effect=[
             {'type': 'other'}, {'type': 'lineup'},
         ])
-        self.assertFalse(task._buy_shop_slot(1, ChessAssets.C_SHIKIGAMI_1, 'hakurou'))
+        self.assertFalse(task._buy_shop_slot(1, SHOP_CLICK, 'hakurou'))
         self.assertEqual(task.ui_click_until_disappear.call_count, 3)
         self.assertEqual(task._free_one_hand_slot_for_purchase.call_count, 2)
         task.device.click_record_remove.assert_not_called()

@@ -61,7 +61,7 @@ async def promote(data: CustomLineup):
 
 @chesslineup_app.delete('/api/lineups/{source}/{key}')
 async def remove(source: Literal['builtin', 'custom'], key: str):
-    from tasks.Chess.strategy.lineup import LEGACY_LINEUP_NAMES
+    from tasks.Chess.strategy.lineup import resolve_lineup_key
     references = []
     for path in (ROOT / 'config').glob('*.json'):
         if path.stem == 'template':
@@ -71,13 +71,14 @@ async def remove(source: Literal['builtin', 'custom'], key: str):
         selected = chess.get('chess_config', {})
         bond = selected.get('lineup_bond', '七角山' if chess.get('scheduler', {}).get('enable') else None)
         active_key = selected.get('custom_lineup', '')
-        if bond in ('海国', 'haiguo') or active_key == 'builtin:haiguo':
-            reference = 'custom:haiguo'
+        if bond in ('海国', 'haiguo'):
+            reference = 'custom:haiguo' if 'haiguo' in read_lineups() else 'builtin:huangchuan'
+        elif active_key == 'builtin:haiguo':
+            reference = 'builtin:huangchuan'
         elif bond == '自定义阵容':
             reference = active_key if active_key.startswith(('builtin:', 'custom:')) else 'custom:' + active_key
         else:
-            reference = 'builtin:' + next((name for name, label in LEGACY_LINEUP_NAMES.items()
-                                           if bond in (name, label)), str(bond or ''))
+            reference = 'builtin:' + (resolve_lineup_key(bond) if bond is not None else '')
         if reference == f'{source}:{key}':
             references.append(path.stem)
     if references:

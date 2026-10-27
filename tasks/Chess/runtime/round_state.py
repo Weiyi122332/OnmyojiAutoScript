@@ -479,18 +479,18 @@ class ChessRoundStateMixin:
             return True
         return getattr(self, '_boss_challenge_round_key', None) == key
 
-    def _board_set_has_shikigami(self, set_index: int) -> bool:
+    def _board_set_has_shikigami(self, set_index: int) -> bool | None:
         """按当前普通或首领棋盘的 Frame 判断占位。"""
         return self._board_set_has_shikigami_visual(set_index)
 
-    def _board_set_has_shikigami_visual(self, set_index: int) -> bool:
+    def _board_set_has_shikigami_visual(self, set_index: int) -> bool | None:
         """按表情开关定位的 Frame 判断指定站位是否有人。"""
 
         index = int(set_index)
         if not 1 <= index <= 12:
             raise ValueError(f'Chess board set position is not configured: {set_index}')
         slots = self._board_frame_scan()
-        return bool(slots and slots[index - 1]['occupied'])
+        return bool(slots[index - 1]['occupied']) if slots else None
 
     def _board_set_is_empty(self, set_index: int) -> bool:
         """普通或首领 Frame 确认原站位为空，锚点缺失不算下阵成功。"""
@@ -505,6 +505,10 @@ class ChessRoundStateMixin:
         next_round_no: int | None = None,
     ) -> list[str]:
         """百鬼夜行结束后移除已不在原站位上的式神上阵记录。"""
+        slots = self._board_frame_scan()
+        if not slots:
+            logger.debug('Skip Chess lineup reconciliation: board detection unavailable')
+            return []
         deployed_names = set(
             getattr(self, '_board_lineup_names', set())
         )
@@ -522,7 +526,7 @@ class ChessRoundStateMixin:
             )
             if set_index is None:
                 continue
-            if self._board_set_has_shikigami_visual(int(set_index)):
+            if slots[int(set_index) - 1]['occupied']:
                 continue
             deployed_names.discard(name)
             actual_positions.pop(name, None)
@@ -542,12 +546,15 @@ class ChessRoundStateMixin:
         )
         return removed
 
-    def _read_board_position_count(self) -> dict:
+    def _read_board_position_count(self) -> dict | None:
         """统计 12 个站位勾玉区域中检测到图标的位置数量。"""
+        slots = self._board_frame_scan()
+        if not slots:
+            return None
         occupied_positions = [
             set_index
-            for set_index in range(1, 13)
-            if self._board_set_has_shikigami(set_index)
+            for set_index, slot in enumerate(slots, 1)
+            if slot['occupied']
         ]
         count = len(occupied_positions)
         raw = ','.join(str(index) for index in occupied_positions)

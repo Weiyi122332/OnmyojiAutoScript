@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 
 from module.atom.image import RuleImage
+from module.atom.click import RuleClick
 from module.logger import logger
 from tasks.Chess.assets import ChessAssets
 from tasks.Chess.strategy.shikigami_catalog import normalize_bond_ocr_text, bond_key, SHIKIGAMI_BONDS_BY_ROMAJI
@@ -29,6 +30,11 @@ def frame_layout(name):
 
 
 def layout_bytes(rule):
+    # Annotator may explicitly save the default false on older layouts.
+    # This does not alter recognition or the generated portrait references.
+    rule = dict(rule)
+    if rule.get('badgeGrayscale') is False:
+        rule.pop('badgeGrayscale')
     return json.dumps(rule, ensure_ascii=False, sort_keys=True).encode('utf-8')
 
 EMBLEM_ROOT = ROOT / 'fetter/portraits'
@@ -40,6 +46,16 @@ class ChessFrameCardsMixin:
 
     def _board_frame_scan(self):
         """用表情开关定位，一帧读取十二个站位的勾玉及星级。"""
+        if self._read_chess_mode() != '备':
+            return []
+        if (self._shop_refresh_marker_visible()
+                or getattr(self, '_shop_assumed_open', False)):
+            if not self._ensure_shop_closed():
+                logger.debug('Chess board Frame unavailable: shop could not be closed')
+                return []
+            self.screenshot()
+            if self._read_chess_mode() != '备' or self._shop_refresh_marker_visible():
+                return []
         image = self.device.image
         boss = self._is_boss_challenge_round()
         key = (getattr(self.device, 'image_frame_id', None), id(image), boss)
@@ -272,6 +288,12 @@ class ChessFrameCardsMixin:
                 name, identity_score = self._frame_card_identity(kind, result[-2], text)
             roi = result[-1]
             cx, cy, cw, ch = roi
+            click_rule = None
+            if kind == 'store':
+                _, range_targets = local.range_targets(image.shape, allow_missing_image=True)
+                click_rule = range_targets[5]
+                column = self._frame_shop_column(cx + cw / 2)
+                click_rule.name = f'CHESS_STORE_SLOT_{5-column}_RANGE_6'
             reference = self.frame_card_library['cards'][kind].get(name, {})
             cards.append({
                 'type': 'shikigami' if name else 'unknown', 'name': name,
@@ -282,6 +304,7 @@ class ChessFrameCardsMixin:
                 'bonds': SHIKIGAMI_BONDS_BY_ROMAJI.get(name, ()) if name else tuple(normalize_bond_ocr_text(t) for t in text[-3:] if normalize_bond_ocr_text(t)),
                 'raw_text': text, 'raw_name': text[0] if kind == 'store' else '',
                 'star': None if kind == 'store' else self._frame_star(frame.files[index]),
+                'click_rule': click_rule,
                 'action': None,
             })
             logger.debug(f'Chess Frame {kind}: name={name}, star={cards[-1]["star"]}, badge={Path(frame.files[index]).name}, score={identity_score:.3f}, roi={roi}, text={text}')
@@ -297,6 +320,34 @@ class ChessFrameCardsMixin:
         matches = [card for card in self._frame_card_scan('card') + self._frame_card_scan('emblem')
                    if x <= card['position'][0] < x+w and y <= card['position'][1] < y+h]
         return max(matches, key=lambda card: card['score']) if matches else None
+
+    @staticmethod
+    def _frame_shop_column(x):
+        left, _, width, _ = ChessAssets.F_STORE_CARD.roi_back
+        return min(4, max(0, int((x-left) / (width/5))))
+
+    def _frame_shop_slots(self):
+        """用商店 Frame range6 点击；空位保留由 Frame 搜索区划分的刷新采样区。"""
+        frame = ChessAssets.F_STORE_CARD
+        left, _, width, _ = frame.roi_back
+        _, y, _, height = frame.roi_ranges[5]
+        slots = {}
+        for column in range(5):
+            start = round(left + width*column/5)
+            end = round(left + width*(column+1)/5)
+            area = (start, y, end-start, height)
+            index = 5-column
+            slots[index] = RuleClick(roi_front=area, roi_back=area,
+                                    name=f'CHESS_STORE_SLOT_{index}_RANGE_6', profile=frame.profile)
+        candidates = {}
+        for card in self._frame_card_scan('store'):
+            column = self._frame_shop_column(card['position'][0])
+            previous = candidates.get(column)
+            if previous is None or card['badge_score'] > previous['badge_score']:
+                candidates[column] = card
+        for column, card in candidates.items():
+            slots[5-column] = card['click_rule']
+        return sorted(slots.items())
 
     def _frame_shop_in_slot(self, click_rule, expected_name=None):
         slot_key = tuple(click_rule.roi_back)
