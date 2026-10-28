@@ -27,6 +27,7 @@ from tasks.WantedQuests.explore import WQExplore, ExploreWantedBoss
 class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
     WQ_LIST_MAX_SCROLLS = 4
     WQ_LIST_EDGE_MARGIN = 80
+    WQ_CARD_COUNT = 4
 
     # 追踪界面(显示"前往"按钮的界面,左上角位置,神秘任务不好使)显示以下名称时,任务不再执行
     unwanted_boss_name_list: list = []
@@ -147,7 +148,7 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         timeout_timer = Timer(5).start()
         while not timeout_timer.reached():
             self.screenshot()
-            if self.appear(self.I_TRACE_TRUE):
+            if self.appear(self.I_WQ_TRACE_ONE_CHECK_OPENED):
                 return True
             self.click(self.O_WQ_TEXT_ALL, interval=1.2)
         return False
@@ -205,7 +206,7 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
 
         # 存在协作任务则邀请
         self.screenshot()
-        if self.appear(self.I_WQ_INVITE_1) or self.appear(self.I_WQ_INVITE_2) or self.appear(self.I_WQ_INVITE_3):
+        if any(self.appear(button) for button in self.cooperation_buttons()):
             if self.need_invite_vip():
                 self.all_cooperation_invite()
             else:
@@ -237,7 +238,7 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
                 self.ui_click_until_disappear(self.I_UI_BACK_RED)
                 return False
 
-        if not (self.appear(self.I_WQ_INVITE_1) or self.appear(self.I_WQ_INVITE_2) or self.appear(self.I_WQ_INVITE_3)):
+        if not any(self.appear(button) for button in self.cooperation_buttons()):
             logger.info("there is no cooperation quest")
             return False
 
@@ -288,7 +289,9 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
             self.ui_click(self.I_TRACE_TRUE, self.I_TRACE_FALSE)
             return False
         # 跳过不想打的
-        monster_name = self.O_WQ_MONSTER_TYPE.detect_text(self.device.image)
+        monster_name = self._wq_monster_name(
+            self.O_WQ_MONSTER_TYPE.detect_text(self.device.image)
+        )
         if monster_name in self.unwanted_boss_name_list:
             logger.warning(f'unwanted {monster_name}')
             self.ui_click(self.I_TRACE_TRUE, self.I_TRACE_FALSE)
@@ -365,7 +368,7 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         """
         wq_type_txt = type_rule.ocr(self.device.image)
         # 适配老逻辑, 将式神碎片改为挑战
-        wq_type_txt = '挑战' if wq_type_txt == '式神' else wq_type_txt
+        wq_type_txt = '挑战' if wq_type_txt in ('式神', '式神碎片') else wq_type_txt
         if wq_type_txt == '' or not WQType.contains(wq_type_txt):
             logger.warning(f'Unknown wq type: {wq_type_txt}')
             return None
@@ -376,6 +379,8 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
             return None
         wq_info_txt = info_rule.ocr(self.device.image)
         wq_info_txt = wq_info_txt.replace('：', ':').replace('（', '(').replace('）', ')')
+        # 新版标签宽度随玩法变化，整行识别后去掉标签，避免截断章节名称。
+        wq_info_txt = re.sub(r'^(?:式神碎片|式神|挑战|探索|秘闻|妖气)\s*', '', wq_info_txt)
         match = re.search(r"(.+?)\s*\(?[数教]量[:：]\s*(\d+)", wq_info_txt)
         if not match:
             logger.warning(f'Unknown wq info: {wq_info_txt}')
@@ -464,9 +469,21 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         """
 
         logger.hr('Invite friends')
-        self.invite_random(self.I_WQ_INVITE_1)
-        self.invite_random(self.I_WQ_INVITE_2)
-        self.invite_random(self.I_WQ_INVITE_3)
+        for button in self.cooperation_buttons():
+            self.invite_random(button)
+
+    def cooperation_buttons(self) -> tuple[RuleImage, ...]:
+        """新版悬赏面板最多四张卡片，逐卡检查协作入口。"""
+        return tuple(
+            getattr(self, f'I_WQ_INVITE_{index}')
+            for index in range(1, self.WQ_CARD_COUNT + 1)
+        )
+
+    @staticmethod
+    def _wq_monster_name(text: str) -> str:
+        """新版标题包含任务说明，去掉说明后再检查跳过妖怪名单。"""
+        text = ''.join(text.split())
+        return re.sub(r'^.*?击败(?:\d+个?)?', '', text)
 
     def all_cooperation_invite(self, name_all: str = None):
         """
@@ -476,7 +493,7 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
 
         """
         self.screenshot()
-        if not self.appear(self.I_WQ_INVITE_1):
+        if not any(self.appear(button) for button in self.cooperation_buttons()):
             return False
 
         ret = self.get_cooperation_info()
@@ -574,11 +591,10 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         """
         self.screenshot()
         retList = []
-        i = 0
-        for index in range(3):
+        for index in range(self.WQ_CARD_COUNT):
             btn = self.__getattribute__("I_WQ_INVITE_" + str(index + 1))
             if not self.appear(btn):
-                break
+                continue
             if self.appear(self.__getattribute__("I_WQ_COOPERATION_TYPE_JADE_" + str(index + 1))):
                 retList.append({'type': CooperationType.Jade, 'inviteBtn': btn})
                 continue

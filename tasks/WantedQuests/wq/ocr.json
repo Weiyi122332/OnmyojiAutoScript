@@ -10,8 +10,8 @@
   },
   {
     "itemName": "wq_type_1",
-    "roiFront": "544,248,55,36",
-    "roiBack": "544,248,55,36",
+    "roiFront": "635,282,63,39",
+    "roiBack": "635,282,63,39",
     "mode": "Single",
     "method": "Default",
     "keyword": "",
@@ -19,8 +19,8 @@
   },
   {
     "itemName": "wq_type_2",
-    "roiFront": "544,321,55,30",
-    "roiBack": "544,321,55,30",
+    "roiFront": "635,358,63,39",
+    "roiBack": "635,358,63,39",
     "mode": "Single",
     "method": "Default",
     "keyword": "",
@@ -28,8 +28,8 @@
   },
   {
     "itemName": "wq_type_3",
-    "roiFront": "544,392,54,30",
-    "roiBack": "544,392,54,30",
+    "roiFront": "635,434,63,39",
+    "roiBack": "635,434,63,39",
     "mode": "Single",
     "method": "Default",
     "keyword": "",
@@ -37,8 +37,8 @@
   },
   {
     "itemName": "wq_type_4",
-    "roiFront": "545,462,52,32",
-    "roiBack": "545,462,52,32",
+    "roiFront": "635,510,63,39",
+    "roiBack": "635,510,63,39",
     "mode": "Single",
     "method": "Default",
     "keyword": "",
@@ -46,8 +46,8 @@
   },
   {
     "itemName": "wq_info_1",
-    "roiFront": "609,246,309,45",
-    "roiBack": "609,246,309,45",
+    "roiFront": "635,282,408,40",
+    "roiBack": "635,282,408,40",
     "mode": "Single",
     "method": "Default",
     "keyword": "",
@@ -55,8 +55,8 @@
   },
   {
     "itemName": "wq_info_2",
-    "roiFront": "612,318,298,41",
-    "roiBack": "612,318,298,41",
+    "roiFront": "635,358,408,40",
+    "roiBack": "635,358,408,40",
     "mode": "Single",
     "method": "Default",
     "keyword": "",
@@ -64,8 +64,8 @@
   },
   {
     "itemName": "wq_info_3",
-    "roiFront": "612,386,305,44",
-    "roiBack": "612,386,305,44",
+    "roiFront": "635,434,408,40",
+    "roiBack": "635,434,408,40",
     "mode": "Single",
     "method": "Default",
     "keyword": "",
@@ -73,8 +73,8 @@
   },
   {
     "itemName": "wq_info_4",
-    "roiFront": "613,456,315,44",
-    "roiBack": "613,456,315,44",
+    "roiFront": "635,510,408,40",
+    "roiBack": "635,510,408,40",
     "mode": "Single",
     "method": "Default",
     "keyword": "",
@@ -82,12 +82,12 @@
   },
   {
     "itemName": "wq_monster_type",
-    "roiFront": "165,215,45,175",
-    "roiBack": "165,215,45,175",
+    "roiFront": "640,161,490,40",
+    "roiBack": "640,161,490,40",
     "mode": "Full",
     "method": "Default",
     "keyword": "",
-    "description": "怪物名称,如酒吞，阎魔等"
+    "description": "新版详情页任务目标标题，解析击败后的妖怪名称"
   },
   {
     "itemName": "wq_text_all",

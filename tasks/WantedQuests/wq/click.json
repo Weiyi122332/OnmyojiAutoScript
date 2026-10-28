@@ -13,8 +13,8 @@
   },
   {
     "itemName": "wq_trace_one_close",
-    "roiFront": "170,30,400,100",
-    "roiBack": "170,30,400,100",
-    "description": "关闭 单个任务追踪界面 所需点击 的  空白区域"
+    "roiFront": "1197,120,15,15",
+    "roiBack": "1197,120,15,15",
+    "description": "关闭新版悬赏详情页"
   }
 ]
