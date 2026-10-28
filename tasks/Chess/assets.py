@@ -154,7 +154,7 @@ class ChessAssets:
 	# 棋局专用兼容：GameUiAssets.I_CLOSE_RED
 	I_SHARED_CLOSE_RED = RuleImage(roi_front=(1169,60,33,25), roi_back=(1077,19,151,144), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/page_close_red.png")
 	# 棋局专用兼容：GlobalGameAssets.I_G_ACCEPT
-	I_SHARED_G_ACCEPT = RuleImage(roi_front=(830,407,56,46), roi_back=(798,369,117,110), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_g_accept.png")
+	I_SHARED_G_ACCEPT = RuleImage(roi_front=(846,476,56,46), roi_back=(814,430,117,110), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/shared_ui/gg_g_accept.png")
 	# 棋局专用兼容：GlobalGameAssets.I_G_CAT_FOOD
 	I_SHARED_G_CAT_FOOD = RuleImage(roi_front=(565,463,59,65), roi_back=(543,421,205,176), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_g_cat_food.png")
 	# 棋局专用兼容：GlobalGameAssets.I_G_DOG_FOOD
@@ -162,7 +162,7 @@ class ChessAssets:
 	# 棋局专用兼容：GlobalGameAssets.I_G_JADE
 	I_SHARED_G_JADE = RuleImage(roi_front=(661,466,43,46), roi_back=(543,421,205,176), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_g_jade.png")
 	# 棋局专用兼容：GlobalGameAssets.I_G_REJECT
-	I_SHARED_G_REJECT = RuleImage(roi_front=(832,508,53,51), roi_back=(808,480,108,101), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_g_reject.png")
+	I_SHARED_G_REJECT = RuleImage(roi_front=(846,562,53,51), roi_back=(819,536,108,101), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/shared_ui/gg_g_reject.png")
 	# 棋局专用兼容：GlobalGameAssets.I_NETWORK_ABNORMAL
 	I_SHARED_NETWORK_ABNORMAL = RuleImage(roi_front=(588,335,211,57), roi_back=(583,330,221,67), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_network_abnormal.png")
 	# 棋局专用兼容：GlobalGameAssets.I_NETWORK_ERROR
@@ -173,3 +173,7 @@ class ChessAssets:
 	I_SHARED_UI_REWARD = RuleImage(roi_front=(521,212,237,66), roi_back=(361,47,556,286), threshold=0.73, method="Template matching", file="./tasks/Chess/shared_ui/ui_ui_reward.png")
 	# 棋局专用兼容：GlobalGameAssets.I_CLIENT_CLEAR
 	I_SHARED_CLIENT_CLEAR = RuleImage(roi_front=(599,383,85,42), roi_back=(594,378,95,52), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/shared_ui/gg_client_clear.png")
+	# 棋局专用兼容：GlobalGameAssets.I_G_IGNORE
+	I_SHARED_G_IGNORE = RuleImage(roi_front=(792,86,21,21), roi_back=(777,65,48,48), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/shared_ui/gg_g_ignore.png")
+	# 棋局专用兼容：GameUiAssets.I_MAIN_SCROLL_CLOSE
+	I_SHARED_MAIN_SCROLL_CLOSE = RuleImage(roi_front=(1181,634,28,39), roi_back=(1162,595,77,112), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/shared_ui/page_main_scroll_close.png")

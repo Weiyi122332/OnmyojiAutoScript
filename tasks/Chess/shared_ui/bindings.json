@@ -1,5 +1,5 @@
 {
-  "source_revision": "a5b8f7aa",
+  "source_revision": "f2b70c87d6dd0d4c0e9b31488825a097935265bc",
   "public_revision": "47a3a3bc6173e6560ab8cc3658d3e55bc2c80287",
   "rules": [
     {
@@ -40,7 +40,7 @@
       "symbol": "I_G_ACCEPT",
       "asset": "I_SHARED_G_ACCEPT",
       "source": "tasks/GlobalGame/gg/gg_g_accept.png",
-      "sha256": "5e3f1b9e5a39c7997d8833688f499d97a9e4d89ded1d120f63d3539fabca31d5"
+      "sha256": "e29d6493f3760cc66a75c4e53a33f149e81c9c8c40cc19c31c30df8590709d54"
     },
     {
       "module": "tasks.GlobalGame.assets",
@@ -72,7 +72,7 @@
       "symbol": "I_G_REJECT",
       "asset": "I_SHARED_G_REJECT",
       "source": "tasks/GlobalGame/gg/gg_g_reject.png",
-      "sha256": "e78109137a4d62346f2438fd256508e870d351619f965add8e7b31ecc031a6d8"
+      "sha256": "0e8f3b862f53dca4ceb0fdcf936fa126af3168b69297deee77046b6a135d2855"
     },
     {
       "module": "tasks.GlobalGame.assets",
@@ -113,6 +113,22 @@
       "asset": "I_SHARED_CLIENT_CLEAR",
       "source": "tasks/GlobalGame/gg/gg_client_clear.png",
       "sha256": "7f953565708eaa5924511fb3ada59b5bb7052b7d9dd59c2b412f86c270865412"
+    },
+    {
+      "module": "tasks.GlobalGame.assets",
+      "owner": "GlobalGameAssets",
+      "symbol": "I_G_IGNORE",
+      "asset": "I_SHARED_G_IGNORE",
+      "source": "tasks/GlobalGame/gg/gg_g_ignore.png",
+      "sha256": "39404ea197bbe27939ecb9948544cc4c66df4bec0d90d03832dcad4a0ea02a90"
+    },
+    {
+      "module": "tasks.GameUi.assets",
+      "owner": "GameUiAssets",
+      "symbol": "I_MAIN_SCROLL_CLOSE",
+      "asset": "I_SHARED_MAIN_SCROLL_CLOSE",
+      "source": "tasks/GameUi/page/page_main_scroll_close.png",
+      "sha256": "8c308834f8c002a029d82892a6cca3b8fee62e60b37cea65b3ee0f1047ef4a24"
     }
   ]
 }

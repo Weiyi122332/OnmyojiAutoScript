@@ -38,11 +38,12 @@
   {
     "itemName": "shared_g_accept",
     "description": "棋局专用兼容：GlobalGameAssets.I_G_ACCEPT",
-    "roiFront": "830,407,56,46",
-    "roiBack": "798,369,117,110",
+    "roiFront": "846,476,56,46",
+    "roiBack": "814,430,117,110",
     "threshold": 0.8,
     "method": "Template matching",
-    "imageName": "gg_g_accept.png"
+    "imageName": "gg_g_accept.png",
+    "profile": "High"
   },
   {
     "itemName": "shared_g_cat_food",
@@ -74,11 +75,12 @@
   {
     "itemName": "shared_g_reject",
     "description": "棋局专用兼容：GlobalGameAssets.I_G_REJECT",
-    "roiFront": "832,508,53,51",
-    "roiBack": "808,480,108,101",
+    "roiFront": "846,562,53,51",
+    "roiBack": "819,536,108,101",
     "threshold": 0.8,
     "method": "Template matching",
-    "imageName": "gg_g_reject.png"
+    "imageName": "gg_g_reject.png",
+    "profile": "High"
   },
   {
     "itemName": "shared_network_abnormal",
@@ -125,5 +127,25 @@
     "threshold": 0.8,
     "profile": "High",
     "description": "棋局专用兼容：GlobalGameAssets.I_CLIENT_CLEAR"
+  },
+  {
+    "itemName": "shared_g_ignore",
+    "roiFront": "792,86,21,21",
+    "roiBack": "777,65,48,48",
+    "threshold": 0.8,
+    "method": "Template matching",
+    "imageName": "gg_g_ignore.png",
+    "profile": "High",
+    "description": "棋局专用兼容：GlobalGameAssets.I_G_IGNORE"
+  },
+  {
+    "itemName": "shared_main_scroll_close",
+    "imageName": "page_main_scroll_close.png",
+    "roiFront": "1181,634,28,39",
+    "roiBack": "1162,595,77,112",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "棋局专用兼容：GameUiAssets.I_MAIN_SCROLL_CLOSE"
   }
 ]

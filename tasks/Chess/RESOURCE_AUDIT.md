@@ -1,10 +1,10 @@
 # 百鬼棋局资源与全局依赖核对
 
-核对日期：2026-10-27。来源目录：`D:/OnmyojiAutoScript-xylolit-mu`，版本 `9674276d`；目标项目：`D:/OAS/OnmyojiAutoScript`。
+核对日期：2026-10-28。来源目录：`D:/OnmyojiAutoScript-xylolit-mu`，版本 `f2b70c87`（棋局本体最新 `e78d4cc0`）；目标项目：`D:/OAS/OnmyojiAutoScript`。
 
 ## 公开仓库复核
 
-2026-10-23 曾核对作者公开仓库 [xylolit-mu/OnmyojiAutoScript](https://github.com/xylolit-mu/OnmyojiAutoScript)，当时默认 `self` 分支为 `47a3a3bc6173e6560ab8cc3658d3e55bc2c80287`（2026-10-22）。按 Git blob 比较，该公开快照的全部 456 个棋局文件与本地来源的 `a5b8f7aa` 基线一致，59 条共用规则涉及的 62 个图片及规则类文件也一致。本次同步以本地参考仓库 `9674276d` 为准。
+2026-10-23 曾核对作者公开仓库 [xylolit-mu/OnmyojiAutoScript](https://github.com/xylolit-mu/OnmyojiAutoScript)，当时默认 `self` 分支为 `47a3a3bc6173e6560ab8cc3658d3e55bc2c80287`（2026-10-22）。按 Git blob 比较，该公开快照的全部 456 个棋局文件与本地来源的 `a5b8f7aa` 基线一致，59 条共用规则涉及的 62 个图片及规则类文件也一致。本次同步以本地参考仓库 `f2b70c87` 为准。
 
 - [全局浮窗红叉](https://github.com/xylolit-mu/OnmyojiAutoScript/blob/47a3a3bc6173e6560ab8cc3658d3e55bc2c80287/tasks/GameUi/page/page_close_red.png)确实存在于公开库；完整流程移植时已作为棋局专用副本加入。
 - [百鬼投掷资源清单](https://github.com/xylolit-mu/OnmyojiAutoScript/blob/47a3a3bc6173e6560ab8cc3658d3e55bc2c80287/tasks/Chess/resource/hyakki_soul/manifest.json)仍明确缺少狂骨和地藏像。公开库已有的同名图片位于普通手牌御魂目录，不能直接作为投掷阶段模板。
@@ -12,7 +12,7 @@
 
 ## 完整流程移植结果
 
-本次按“保留现有脚本功能”的要求，将 14 项存在差异或缺失的公共识别复制到 `tasks/Chess/shared_ui`，由 `runtime/shared_ui.py` 在棋局实例内部使用。公共规则定义、公共页面图、其他任务和调度器没有修改。
+本次按“保留现有脚本功能”的要求，将 16 项存在差异或缺失的公共识别复制到 `tasks/Chess/shared_ui`，由 `runtime/shared_ui.py` 在棋局实例内部使用。公共规则定义、公共页面图、其他任务和调度器没有修改。
 
 - 来源模板优先，当前模板作为回退；按原始规则的对象身份映射，避免规则同名时互相覆盖。每个棋局实例拥有独立的来源规则对象。
 - 共用页面图仍通过原 `GameUi` 进入庭院、町中、娱乐和棋局；模板选择同时覆盖页面识别、按钮点击及批量匹配缓存。点击使用当前帧实际命中的模板坐标，跨帧不沿用旧命中记录。
@@ -42,12 +42,21 @@
 - 本次参考提交另有契灵协同收尾及公共协作完成协议改动，没有棋局调用依赖，未移植。
 - 棋局 97 项测试通过，包含新增的购买确认、真实 Frame 点击区域、累计三次点击、详情页豁免、棋盘未知状态与阵容迁移回归检查；尚未进行模拟器完整对局验证。
 
+## 2026-10-28 同步记录（e78d4cc0 / f2b70c87）
+
+- 完整合并 `e78d4cc0` 的三处阶段保护：每次系统卡下阵前检查备阶段，拖拽确认期间允许阶段结束立即中断，返回上阵流程后再次检查阶段。战斗开始不确认下阵成功、不继续拖卡、不清空原有上阵登记。
+- 连同参考快照 `f2b70c87` 的共用协作接受、拒绝、忽略图片与坐标一起移植；补齐原本未映射的忽略按钮，并沿截图→公共邀请处理→实际命中坐标点击验证全部五种邀请策略。
+- 全流程复核还发现庭院卷轴按钮图片有差异，增加棋局专用模板并验证庭院导航。公共识别和其他任务保留当前实现，棋局优先来源模板、当前模板回退。
+- RuleFrame 的 19 个方法、FrameResult 的 3 个方法、FrameExtractor、BaseTask.runframe 和图像服务 Frame 匹配入口逐项与参考库一致，无框架缺项；706 处可静态核对的棋局 self 调用签名兼容。
+- 核对全部 426 张来源棋局图片和 16 张公共副本，以及头像、纹章、符咒索引与布局指纹；当前 442 张图片均可解码。原库仍缺少狂骨、地藏像两张百鬼投掷专用模板，未用普通手牌图片替代。
+- 新增 7 项阶段切换、真实邀请识别及导航回归测试；棋局 104 项、当前开发工作区全套 581 项测试通过。相关改动仅涉及棋局及其回归测试；本次参考快照中的悬赏任务新功能不属于棋局移植范围。
+
 ## 范围和结论
 
 - 移植范围为 `tasks/Chess` 的新版本代码、规则、模板、`config/template.json` 的棋局配置项及对应测试；中文翻译仅涉及 `hyakki_draft_enabled`。
 - 检查棋局直接引用、字符串生成的阶段标志、Frame 相对区域及索引、动态扫描的头像/符咒/御魂目录，并向外追踪共用棋局退出、导航入口、公共奖励处理、未知页面恢复和邀请处理。来源的网络恢复规则另列为公共框架能力。
-- 共核对 440 张棋局 PNG，均存在且可解码，含 426 张任务图片和 14 张共用模板副本；64 个手牌身份、63 个商店身份、19 个纹章/复制术身份、200 张符咒图、20 种普通手牌御魂及 18 种百鬼投掷御魂有实际文件。
-- 共核对 59 条外部共用规则的公共定义：38 条完全一致，7 条仅目录迁移且图片及识别参数相同，13 条图片或识别参数不同，1 条缺失。下文保留全部公共定义的对比；这 14 项差异已经在棋局内部适配。
+- 共核对 442 张棋局 PNG，均存在且可解码，含与来源逐张一致的 426 张任务图片和 16 张共用模板副本；64 个手牌身份、63 个商店身份、19 个纹章/复制术身份、200 张符咒图、20 种普通手牌御魂及 18 种百鬼投掷御魂有实际文件。
+- 合并来源与当前项目的调用链，核对 61 项公共定义：36 项完全一致，7 项仅目录迁移，15 项图片或参数不同，1 项仅在来源存在，另 2 项仅在当前项目存在。15 项差异与来源红叉均使用棋局副本；当前活动跳过映射到来源跳过模板，一键返回保留当前项目实现。
 - “存在差异”表示公共定义与来源版本不同，不能据此认定当前全局规则在实机上失效。棋局适配使用独立副本，公共定义继续供其他任务使用。
 
 ## 完整棋局流程
@@ -78,7 +87,7 @@
 | `resource/board` | 4 | 三种棋盘勾玉及新增表情锚点模板可读取；普通/首领 Frame 配套 |
 | `resource/soul` | 20 | 普通手牌御魂模板可读取 |
 | `resource/hyakki_soul` | 18 | 百鬼投掷模板可读取；仍缺下述两种 |
-| `shared_ui` | 14 | 退出、奖励、庭院、红叉、协作、跳过及网络识别副本，文件指纹与来源一致 |
+| `shared_ui` | 16 | 退出、奖励、庭院、红叉、协作、跳过及网络识别副本，文件指纹与来源一致 |
 
 ### 来源本身缺少的投掷模板
 
@@ -104,7 +113,8 @@
 | `GlobalGameAssets.I_UI_REWARD` | 通用奖励模板和搜索范围不同；来源搜索范围更大，影响棋局奖励/分享/排名衔接时的识别覆盖。 |
 | `GameUiAssets.I_CHECK_MAIN` | 庭院模板和搜索范围不同；来源还将图片移到 `page_checks`。不能按“只是改目录”忽略这项。 |
 | `GlobalGameAssets.I_UI_CONFIRM` | 公共确认按钮的图片及裁剪不同，可能在未知页恢复中使用；来源文件名 `ui_confirm.png`，当前 `ui_ui_confirm.png`。 |
-| `GlobalGameAssets.I_G_ACCEPT / I_G_REJECT` | 协作接受/拒绝模板图片不同；棋局截图仍调用公共邀请处理。 |
+| `GlobalGameAssets.I_G_ACCEPT / I_G_REJECT / I_G_IGNORE` | 新版协作接受、拒绝、忽略模板及坐标不同；三者均在棋局截图及公共邀请调用链中使用独立副本。 |
+| `GameUiAssets.I_MAIN_SCROLL_CLOSE` | 庭院卷轴按钮图片不同；棋局导航使用来源副本，保留当前模板回退。 |
 | `GlobalGameAssets.I_G_JADE / I_G_CAT_FOOD / I_G_DOG_FOOD` | 模板相同，来源扩大了搜索区域；影响仅勾协/勾粮协模式的判定范围。 |
 | `GameUiAssets.I_ACTIVITY_SKIP` | 模板图片不同；属于未知页关闭兜底。棋局将当前列表中的活动跳过规则映射到来源副本，识别不到时仍尝试当前规则；公共列表不变。 |
 | `GlobalGameAssets.I_NETWORK_ABNORMAL / I_NETWORK_ERROR` | 图片和裁剪参数不同；棋局使用来源副本和当前规则复核，接入等待、断线重连及既有异常重启机制；其他任务的截图策略不变。 |
@@ -133,10 +143,10 @@
 - 当前：该类未定义此规则。
 - 来源：`tasks/GameUi/page/page_close_red.png`；裁剪 `[1169, 60, 33, 25]`；搜索 `[1077, 19, 151, 144]`；阈值 `0.8`。
 
-#### GlobalGameAssets.I_G_ACCEPT（图片不同）
+#### GlobalGameAssets.I_G_ACCEPT（图片及参数不同）
 
 - 当前：`tasks/GlobalGame/gg/gg_g_accept.png`；裁剪 `[830, 407, 56, 46]`；搜索 `[798, 369, 117, 110]`；阈值 `0.8`。
-- 来源：`tasks/GlobalGame/gg/gg_g_accept.png`；裁剪 `[830, 407, 56, 46]`；搜索 `[798, 369, 117, 110]`；阈值 `0.8`。
+- 来源：`tasks/GlobalGame/gg/gg_g_accept.png`；裁剪 `[846, 476, 56, 46]`；搜索 `[814, 430, 117, 110]`；阈值 `0.8`。
 
 #### GlobalGameAssets.I_G_CAT_FOOD（参数不同）
 
@@ -153,10 +163,10 @@
 - 当前：`tasks/GlobalGame/gg/gg_g_jade.png`；裁剪 `[661, 466, 43, 46]`；搜索 `[661, 466, 43, 46]`；阈值 `0.8`。
 - 来源：`tasks/GlobalGame/gg/gg_g_jade.png`；裁剪 `[661, 466, 43, 46]`；搜索 `[543, 421, 205, 176]`；阈值 `0.8`。
 
-#### GlobalGameAssets.I_G_REJECT（图片不同）
+#### GlobalGameAssets.I_G_REJECT（图片及参数不同）
 
 - 当前：`tasks/GlobalGame/gg/gg_g_reject.png`；裁剪 `[832, 508, 53, 51]`；搜索 `[808, 480, 108, 101]`；阈值 `0.8`。
-- 来源：`tasks/GlobalGame/gg/gg_g_reject.png`；裁剪 `[832, 508, 53, 51]`；搜索 `[808, 480, 108, 101]`；阈值 `0.8`。
+- 来源：`tasks/GlobalGame/gg/gg_g_reject.png`；裁剪 `[846, 562, 53, 51]`；搜索 `[819, 536, 108, 101]`；阈值 `0.8`。
 
 #### GlobalGameAssets.I_NETWORK_ABNORMAL（图片及参数不同）
 
@@ -184,9 +194,15 @@
 - 来源：`tasks/GlobalGame/gg/gg_client_clear.png`；裁剪 `[599, 383, 85, 42]`；搜索 `[594, 378, 95, 52]`；阈值 `0.8`。
 - 棋局重连服务采用来源副本，识别不到时尝试当前规则；登录标志 `RestartAssets.I_LOGIN_8` 的图片和识别参数与来源一致，可直接复用。
 
-## 全部 59 条共用规则
+## 全部 61 项共用规则
 
-“目录调整，内容相同”已比较实际解码像素及识别参数；不会仅因来源路径不同而误报缺图。来源列用于定位作者的文件，当前列说明本项目实际文件。
+以下为来源和当前调用链的合并清单。公共定义保留原样；差异项由棋局专用副本适配。
+
+### `tasks.ActivityShikigami.assets.ActivityShikigamiAssets`
+
+| 规则 | 对比 | 当前文件 | 来源文件 | 调用路径 |
+| --- | --- | --- | --- | --- |
+| `I_SKIP_BUTTON` | 来源无此项，棋局映射来源跳过模板 | `tasks/ActivityShikigami/as/page/as_skip_button.png` | 无此规则 | 公共导航恢复/未知页关闭 |
 
 ### `tasks.Component.GeneralBattle.assets.GeneralBattleAssets`
 
@@ -196,7 +212,7 @@
 | `C_RANDOM_LEFT` | 一致 | 无图片 | 无图片 | 棋局退出/结算、登录/庭院/町中/娱乐/棋局导航 |
 | `C_RANDOM_RIGHT` | 一致 | 无图片 | 无图片 | 登录/庭院/町中/娱乐/棋局导航 |
 | `C_RANDOM_TOP` | 一致 | 无图片 | 无图片 | 登录/庭院/町中/娱乐/棋局导航 |
-| `I_EXIT_ENSURE` | 图片及参数不同 | `tasks/Component/GeneralBattle/gb/gb_exit_ensure.png` | `tasks/Component/GeneralBattle/gb/gb_exit_ensure.png` | 棋局退出/结算 |
+| `I_EXIT_ENSURE` | 图片及参数不同 | `tasks/Component/GeneralBattle/gb/gb_exit_ensure.png` | `tasks/Component/GeneralBattle/gb/gb_exit_ensure.png` | 棋局直接调用、棋局退出/结算 |
 | `I_GB_SKIN_CONFIRM` | 一致 | `tasks/Component/GeneralBattle/gb/gb_gb_skin_confirm.png` | `tasks/Component/GeneralBattle/gb/gb_gb_skin_confirm.png` | 登录/庭院/町中/娱乐/棋局导航 |
 | `I_OVER_GHOST` | 一致 | `tasks/Component/GeneralBattle/gb/gb_over_ghost.png` | `tasks/Component/GeneralBattle/gb/gb_over_ghost.png` | 登录/庭院/町中/娱乐/棋局导航 |
 | `I_REWARD` | 一致 | `tasks/Component/GeneralBattle/gb/gb_reward.png` | `tasks/Component/GeneralBattle/gb/gb_reward.png` | 登录/庭院/町中/娱乐/棋局导航 |
@@ -226,7 +242,7 @@
 
 | 规则 | 对比 | 当前文件 | 来源文件 | 调用路径 |
 | --- | --- | --- | --- | --- |
-| `I_ACTIVITY_SKIP` | 图片不同 | `tasks/GameUi/page/page_activity_skip.png` | `tasks/GameUi/page/page_activity_skip.png` | 公共导航恢复/未知页关闭 |
+| `I_ACTIVITY_SKIP` | 图片不同 | `tasks/GameUi/page/page_activity_skip.png` | `tasks/GameUi/page/page_activity_skip.png` | 公共导航恢复/未知页关闭、棋局直接调用 |
 | `I_AD_CLOSE_RED` | 一致 | `tasks/GameUi/additional/additional_ad_close_red.png` | `tasks/GameUi/additional/additional_ad_close_red.png` | 登录/庭院/町中/娱乐/棋局导航 |
 | `I_BACK_BROWN` | 一致 | `tasks/GameUi/page/page_back_brown.png` | `tasks/GameUi/page/page_back_brown.png` | 登录/庭院/町中/娱乐/棋局导航 |
 | `I_BACK_DAILY` | 一致 | `tasks/GameUi/page/page_back_daily.png` | `tasks/GameUi/page/page_back_daily.png` | 公共导航恢复/未知页关闭 |
@@ -235,16 +251,18 @@
 | `I_CHECK_CHESS_RANK` | 目录调整，内容相同 | `tasks/GameUi/page/page_check_chess_rank.png` | `tasks/GameUi/page_checks/page_check_chess_rank.png` | 棋局直接调用、棋局退出/结算、登录/庭院/町中/娱乐/棋局导航 |
 | `I_CHECK_ENTERTAINMENT` | 目录调整，内容相同 | `tasks/GameUi/page/page_check_entertainment.png` | `tasks/GameUi/page_checks/page_check_entertainment.png` | 登录/庭院/町中/娱乐/棋局导航 |
 | `I_CHECK_LINEUP_HELPER` | 目录调整，内容相同 | `tasks/GameUi/page/page_check_lineup_helper.png` | `tasks/GameUi/page_checks/page_check_lineup_helper.png` | 登录/庭院/町中/娱乐/棋局导航 |
-| `I_CHECK_MAIN` | 图片及参数不同 | `tasks/GameUi/page/page_check_main.png` | `tasks/GameUi/page_checks/page_check_main.png` | 登录/庭院/町中/娱乐/棋局导航 |
+| `I_CHECK_MAIN` | 图片及参数不同 | `tasks/GameUi/page/page_check_main.png` | `tasks/GameUi/page_checks/page_check_main.png` | 棋局直接调用、登录/庭院/町中/娱乐/棋局导航 |
 | `I_CHECK_MAIN_SET` | 目录调整，内容相同 | `tasks/GameUi/page/page_check_main_set.png` | `tasks/GameUi/page_checks/page_check_main_set.png` | 登录/庭院/町中/娱乐/棋局导航 |
 | `I_CHECK_TOWN` | 目录调整，内容相同 | `tasks/GameUi/page/page_check_town.png` | `tasks/GameUi/page_checks/page_check_town.png` | 登录/庭院/町中/娱乐/棋局导航 |
 | `I_CHESS_EXIT` | 一致 | `tasks/GameUi/page/page_chess_exit.png` | `tasks/GameUi/page/page_chess_exit.png` | 棋局退出/结算 |
 | `I_CHESS_EXIT_TO_LOBBY` | 一致 | `tasks/GameUi/page/page_chess_exit_to_lobby.png` | `tasks/GameUi/page/page_chess_exit_to_lobby.png` | 棋局直接调用、棋局退出/结算、登录/庭院/町中/娱乐/棋局导航 |
 | `I_CHESS_EXIT_TO_LOBBY_2` | 一致 | `tasks/GameUi/page/page_chess_exit_to_lobby_2.png` | `tasks/GameUi/page/page_chess_exit_to_lobby_2.png` | 棋局直接调用、棋局退出/结算、登录/庭院/町中/娱乐/棋局导航 |
 | `I_CHESS_RANK_GOTO_LOBBY` | 一致 | `tasks/GameUi/page/page_chess_rank_goto_lobby.png` | `tasks/GameUi/page/page_chess_rank_goto_lobby.png` | 棋局退出/结算、登录/庭院/町中/娱乐/棋局导航 |
-| `I_CLOSE_RED` | 缺失 | 缺失 | `tasks/GameUi/page/page_close_red.png` | 棋局直接调用 |
+| `I_CLOSE_RED` | 公共定义缺失，棋局使用来源副本 | 无此规则 | `tasks/GameUi/page/page_close_red.png` | 棋局直接调用 |
 | `I_ENTERTAINMENT_GOTO_CHESS` | 一致 | `tasks/GameUi/page/page_entertainment_goto_chess.png` | `tasks/GameUi/page/page_entertainment_goto_chess.png` | 登录/庭院/町中/娱乐/棋局导航 |
 | `I_MAIN_GOTO_TOWN` | 一致 | `tasks/GameUi/page/page_main_goto_town.png` | `tasks/GameUi/page/page_main_goto_town.png` | 登录/庭院/町中/娱乐/棋局导航 |
+| `I_MAIN_SCROLL_CLOSE` | 图片不同 | `tasks/GameUi/page/page_main_scroll_close.png` | `tasks/GameUi/page/page_main_scroll_close.png` | 公共导航恢复/未知页关闭 |
+| `I_RETURN_MAIN` | 仅当前项目，保留当前实现 | `tasks/GameUi/page/page_return_main.png` | 无此规则 | 公共导航恢复/未知页关闭 |
 | `I_TOWN_GOTO_ENTERTAINMENT` | 一致 | `tasks/GameUi/page/page_town_goto_entertainment.png` | `tasks/GameUi/page/page_town_goto_entertainment.png` | 登录/庭院/町中/娱乐/棋局导航 |
 | `I_TOWN_GOTO_MAIN` | 一致 | `tasks/GameUi/page/page_town_goto_main.png` | `tasks/GameUi/page/page_town_goto_main.png` | 登录/庭院/町中/娱乐/棋局导航 |
 
@@ -253,28 +271,27 @@
 | 规则 | 对比 | 当前文件 | 来源文件 | 调用路径 |
 | --- | --- | --- | --- | --- |
 | `I_CHAT_CLOSE_BUTTON` | 一致 | `tasks/GlobalGame/gg/gg_chat_close_button.png` | `tasks/GlobalGame/gg/gg_chat_close_button.png` | 公共导航恢复/未知页关闭 |
-| `I_CLIENT_CLEAR` | 图片及参数不同 | `tasks/GlobalGame/gg/gg_client_clear.png` | `tasks/GlobalGame/gg/gg_client_clear.png` | 棋局网络重连/登录 |
-| `I_G_ACCEPT` | 图片不同 | `tasks/GlobalGame/gg/gg_g_accept.png` | `tasks/GlobalGame/gg/gg_g_accept.png` | 公共邀请处理 |
-| `I_G_CAT_FOOD` | 参数不同 | `tasks/GlobalGame/gg/gg_g_cat_food.png` | `tasks/GlobalGame/gg/gg_g_cat_food.png` | 公共邀请处理 |
-| `I_G_DOG_FOOD` | 参数不同 | `tasks/GlobalGame/gg/gg_g_dog_food.png` | `tasks/GlobalGame/gg/gg_g_dog_food.png` | 公共邀请处理 |
-| `I_G_IGNORE` | 一致 | `tasks/GlobalGame/gg/gg_g_ignore.png` | `tasks/GlobalGame/gg/gg_g_ignore.png` | 公共邀请处理 |
-| `I_G_JADE` | 参数不同 | `tasks/GlobalGame/gg/gg_g_jade.png` | `tasks/GlobalGame/gg/gg_g_jade.png` | 公共邀请处理 |
-| `I_G_REJECT` | 图片不同 | `tasks/GlobalGame/gg/gg_g_reject.png` | `tasks/GlobalGame/gg/gg_g_reject.png` | 公共邀请处理 |
-| `I_NETWORK_ABNORMAL` | 图片及参数不同 | `tasks/GlobalGame/gg/gg_network_abnormal.png` | `tasks/GlobalGame/gg/gg_network_abnormal.png` | 来源全局网络恢复（本次未移植） |
-| `I_NETWORK_ERROR` | 图片及参数不同 | `tasks/GlobalGame/gg/gg_network_error.png` | `tasks/GlobalGame/gg/gg_network_error.png` | 来源全局网络恢复（本次未移植） |
+| `I_CLIENT_CLEAR` | 图片及参数不同 | `tasks/GlobalGame/gg/gg_client_clear.png` | `tasks/GlobalGame/gg/gg_client_clear.png` | 棋局直接调用 |
+| `I_G_ACCEPT` | 图片及参数不同 | `tasks/GlobalGame/gg/gg_g_accept.png` | `tasks/GlobalGame/gg/gg_g_accept.png` | 公共邀请处理、棋局直接调用 |
+| `I_G_CAT_FOOD` | 参数不同 | `tasks/GlobalGame/gg/gg_g_cat_food.png` | `tasks/GlobalGame/gg/gg_g_cat_food.png` | 公共邀请处理、棋局直接调用 |
+| `I_G_DOG_FOOD` | 参数不同 | `tasks/GlobalGame/gg/gg_g_dog_food.png` | `tasks/GlobalGame/gg/gg_g_dog_food.png` | 公共邀请处理、棋局直接调用 |
+| `I_G_IGNORE` | 图片及参数不同 | `tasks/GlobalGame/gg/gg_g_ignore.png` | `tasks/GlobalGame/gg/gg_g_ignore.png` | 公共邀请处理、棋局直接调用 |
+| `I_G_JADE` | 参数不同 | `tasks/GlobalGame/gg/gg_g_jade.png` | `tasks/GlobalGame/gg/gg_g_jade.png` | 公共邀请处理、棋局直接调用 |
+| `I_G_REJECT` | 图片及参数不同 | `tasks/GlobalGame/gg/gg_g_reject.png` | `tasks/GlobalGame/gg/gg_g_reject.png` | 公共邀请处理、棋局直接调用 |
+| `I_NETWORK_ABNORMAL` | 图片及参数不同 | `tasks/GlobalGame/gg/gg_network_abnormal.png` | `tasks/GlobalGame/gg/gg_network_abnormal.png` | 棋局网络恢复、棋局直接调用 |
+| `I_NETWORK_ERROR` | 图片及参数不同 | `tasks/GlobalGame/gg/gg_network_error.png` | `tasks/GlobalGame/gg/gg_network_error.png` | 棋局网络恢复、棋局直接调用 |
 | `I_UI_BACK_BLUE` | 一致 | `tasks/GlobalGame/ui/ui_ui_back_blue.png` | `tasks/GlobalGame/ui/ui_ui_back_blue.png` | 公共导航恢复/未知页关闭 |
-| `I_UI_BACK_RED` | 一致 | `tasks/GlobalGame/ui/ui_ui_back_red.png` | `tasks/GlobalGame/ui/ui_ui_back_red.png` | 登录/庭院/町中/娱乐/棋局导航、公共导航恢复/未知页关闭 |
-| `I_UI_BACK_YELLOW` | 一致 | `tasks/GlobalGame/ui/ui_ui_back_yellow.png` | `tasks/GlobalGame/ui/ui_ui_back_yellow.png` | 登录/庭院/町中/娱乐/棋局导航、公共导航恢复/未知页关闭 |
-| `I_UI_CONFIRM` | 图片及参数不同 | `tasks/GlobalGame/ui/ui_ui_confirm.png` | `tasks/GlobalGame/ui/ui_confirm.png` | 公共导航恢复/未知页关闭 |
+| `I_UI_BACK_RED` | 一致 | `tasks/GlobalGame/ui/ui_ui_back_red.png` | `tasks/GlobalGame/ui/ui_ui_back_red.png` | 公共导航恢复/未知页关闭、登录/庭院/町中/娱乐/棋局导航 |
+| `I_UI_BACK_YELLOW` | 一致 | `tasks/GlobalGame/ui/ui_ui_back_yellow.png` | `tasks/GlobalGame/ui/ui_ui_back_yellow.png` | 公共导航恢复/未知页关闭、登录/庭院/町中/娱乐/棋局导航 |
+| `I_UI_CONFIRM` | 图片及参数不同 | `tasks/GlobalGame/ui/ui_ui_confirm.png` | `tasks/GlobalGame/ui/ui_confirm.png` | 公共导航恢复/未知页关闭、棋局直接调用 |
 | `I_UI_CONFIRM_SAMLL` | 一致 | `tasks/GlobalGame/ui/ui_ui_confirm_samll.png` | `tasks/GlobalGame/ui/ui_ui_confirm_samll.png` | 公共导航恢复/未知页关闭 |
-| `I_UI_REWARD` | 图片及参数不同 | `tasks/GlobalGame/ui/ui_ui_reward.png` | `tasks/GlobalGame/ui/ui_ui_reward.png` | 棋局退出/结算、登录/庭院/町中/娱乐/棋局导航 |
+| `I_UI_REWARD` | 图片及参数不同 | `tasks/GlobalGame/ui/ui_ui_reward.png` | `tasks/GlobalGame/ui/ui_ui_reward.png` | 棋局直接调用、棋局退出/结算、登录/庭院/町中/娱乐/棋局导航 |
 
 ### `tasks.Restart.assets.RestartAssets`
 
 | 规则 | 对比 | 当前文件 | 来源文件 | 调用路径 |
 | --- | --- | --- | --- | --- |
 | `I_CANCEL_BATTLE` | 一致 | `tasks/Restart/login/login_cancel_battle.png` | `tasks/Restart/login/login_cancel_battle.png` | 登录/庭院/町中/娱乐/棋局导航 |
-| `I_LOGIN_8` | 一致 | `tasks/Restart/login/login_login_8.png` | `tasks/Restart/login/login_login_8.png` | 棋局网络重连/登录 |
 
 ### `tasks.SixRealms.assets.SixRealmsAssets`
 

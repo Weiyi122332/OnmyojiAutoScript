@@ -1385,6 +1385,9 @@ class ChessHandOperationsMixin:
             recalled_set = self._recall_one_system_board_card(
                 preferred_set_index=set_index,
             )
+            if not self._is_preparation_mode():
+                logger.info('Stop Chess deployment: preparation ended during system-card recall')
+                break
             if recalled_set is not None:
                 # 下阵卡进入手牌后会让整排手牌重新布局。下阵前保存的
                 # candidate.position 已失效，必须基于新截图重新定位同名卡。
@@ -2141,6 +2144,9 @@ class ChessHandOperationsMixin:
             source = self._set_position(set_index)
             goldfish_kept_at_target = False
             for attempt in range(1, self.ACTION_ICON_MAX_ATTEMPTS + 1):
+                if not self._is_preparation_mode():
+                    logger.info('Stop Chess system-card recall: preparation has ended')
+                    return None
                 if self._hand_capacity_count() >= 10:
                     logger.info('Pause Chess system-card recall: hand is full, no room for recalled card')
                     return None
@@ -2161,9 +2167,16 @@ class ChessHandOperationsMixin:
                         f'_ATTEMPT_{attempt}'
                     ),
                 )
-                if self._wait_chess_action_state(
-                    lambda: self._board_set_is_empty(set_index)
-                ):
+                recalled = self._wait_chess_action_state(
+                    lambda: (
+                        not self._is_preparation_mode()
+                        or self._board_set_is_empty(set_index)
+                    )
+                )
+                if not self._is_preparation_mode():
+                    logger.info('Stop Chess system-card recall: preparation ended during drag confirmation')
+                    return None
+                if recalled:
                     tracked_names = set(
                         getattr(self, '_board_lineup_names', set())
                     )

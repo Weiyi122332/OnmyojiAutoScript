@@ -22,6 +22,7 @@ from tasks.Chess.runtime.state import ChessGameState
 from tasks.Chess.script_task import ChessLegacyScriptTask, ScriptTask
 from tasks.Component.GeneralBattle.assets import GeneralBattleAssets
 from tasks.GameUi.default_pages import page_chess, page_main, page_reward
+from tasks.GameUi.assets import GameUiAssets
 from tasks.GameUi.game_ui import GameUi
 from tasks.GlobalGame.assets import GlobalGameAssets
 from tasks.GlobalGame.config_emergency import FriendInvitation
@@ -58,7 +59,7 @@ class ChessScopedRecognitionTest(unittest.TestCase):
     def test_shared_resource_manifest_matches_copied_files(self):
         root = Path(__file__).resolve().parents[1]
         manifest = json.loads((root / 'tasks/Chess/shared_ui/bindings.json').read_text(encoding='utf-8'))
-        self.assertEqual(len(manifest['rules']), 14)
+        self.assertEqual(len(manifest['rules']), 16)
         for entry in manifest['rules']:
             with self.subTest(rule=entry['symbol']):
                 rule = getattr(ChessAssets, entry['asset'])
@@ -76,6 +77,50 @@ class ChessScopedRecognitionTest(unittest.TestCase):
         self.assertEqual((original.file, tuple(original.roi_front), tuple(original.roi_back),
                           original.threshold, original.method), before)
 
+    def test_new_invitation_buttons_match_and_click_their_scoped_regions(self):
+        for name in ('G_ACCEPT', 'G_REJECT', 'G_IGNORE'):
+            with self.subTest(button=name):
+                rule = getattr(ChessAssets, 'I_SHARED_' + name)
+                original = getattr(GlobalGameAssets, 'I_' + name)
+                before = (original.file, tuple(original.roi_front), tuple(original.roi_back))
+                x, y, width, height = rule.roi_front
+                task = self.task_with_image(rule, (x, y))
+                self.assertTrue(task.appear_then_click(original))
+                clicked_x, clicked_y = task.device.click.call_args.args
+                self.assertTrue(x <= clicked_x < x + width)
+                self.assertTrue(y <= clicked_y < y + height)
+                self.assertEqual((original.file, tuple(original.roi_front), tuple(original.roi_back)), before)
+
+    def test_screenshot_invitation_flow_supports_every_policy_with_new_buttons(self):
+        for policy, button in (
+                (FriendInvitation.ACCEPT, 'G_ACCEPT'),
+                (FriendInvitation.REJECT, 'G_REJECT'),
+                (FriendInvitation.IGNORE, 'G_IGNORE'),
+                (FriendInvitation.ONLY_JADE, 'G_IGNORE'),
+                (FriendInvitation.JADE_AND_FOOD, 'G_IGNORE')):
+            with self.subTest(policy=policy):
+                accept = ChessAssets.I_SHARED_G_ACCEPT
+                action = getattr(ChessAssets, 'I_SHARED_' + button)
+                task = self.task_with_image(accept, accept.roi_front[:2])
+                x, y = action.roi_front[:2]
+                height, width = action.image.shape[:2]
+                task.device.image[y:y+height, x:x+width] = action.image
+                task.config = SimpleNamespace(global_game=SimpleNamespace(emergency=SimpleNamespace(
+                    friend_invitation=policy)))
+                task.device.detect_record = ['board']
+                task.device.screenshot = Mock()
+                task.set_next_run = Mock()
+                def close(*args, **kwargs):
+                    task.device.image = np.zeros((720, 1280, 3), dtype=np.uint8)
+                    task.device.image_frame_id = 'invitation-closed'
+                task.device.click.side_effect = close
+                self.assertTrue(task._burst())
+                task.device.click.assert_called_once()
+                self.assertEqual(task.device.click.call_args.kwargs['control_name'],
+                                 getattr(GlobalGameAssets, 'I_' + button).name)
+                self.assertEqual(task.device.detect_record, ['board'])
+                self.assertEqual(task.set_next_run.call_count, int(policy == FriendInvitation.ACCEPT))
+
     def test_legacy_template_remains_a_fallback_and_clicks_its_own_coordinates(self):
         task = self.task_with_image(GlobalGameAssets.I_UI_REWARD, (480, 160))
         self.assertTrue(task.appear(GlobalGameAssets.I_UI_REWARD, threshold=.999))
@@ -83,6 +128,19 @@ class ChessScopedRecognitionTest(unittest.TestCase):
         task.click(GlobalGameAssets.I_UI_REWARD)
         x, y = task.device.click.call_args.kwargs['x'], task.device.click.call_args.kwargs['y']
         self.assertTrue(480 <= x < 720 and 160 <= y < 225)
+
+    def test_chess_navigation_opens_the_courtyard_scroll_with_the_source_template(self):
+        rule = ChessAssets.I_SHARED_MAIN_SCROLL_CLOSE
+        task = self.task_with_image(rule, rule.roi_front[:2])
+        task.screenshot = Mock()
+        def open_scroll(*args, **kwargs):
+            task.device.image = np.zeros((720, 1280, 3), dtype=np.uint8)
+            task.device.image_frame_id = 'scroll-opened'
+        task.device.click.side_effect = open_scroll
+        self.assertTrue(task._ensure_main_scroll_open())
+        task.device.click.assert_called_once()
+        self.assertEqual(task.device.click.call_args.kwargs['control_name'],
+                         GameUiAssets.I_MAIN_SCROLL_CLOSE.name)
 
     def test_a_new_frame_does_not_reuse_the_previous_fallback_click(self):
         task = self.task_with_image(GlobalGameAssets.I_UI_REWARD, (480, 160))
