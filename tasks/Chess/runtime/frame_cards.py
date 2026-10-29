@@ -25,7 +25,7 @@ def read_image(path):
 
 
 def frame_layout(name):
-    rules = json.loads((ROOT/'c_frame.json').read_text(encoding='utf-8'))
+    rules = json.loads((ROOT.parent/'c/c_frame.json').read_text(encoding='utf-8'))
     return next(rule for rule in rules if rule['itemName'] == name)
 
 
@@ -44,7 +44,7 @@ class ChessFrameCardsMixin:
     # Only portrait identity matching uses grayscale; badge/OCR/Frame outputs stay RGB.
     FRAME_PORTRAIT_GRAYSCALE = True
 
-    def _board_frame_scan(self):
+    def _board_frame_scan(self, round_no=None):
         """用表情开关定位，一帧读取十二个站位的勾玉及星级。"""
         if self._read_chess_mode() != '备':
             return []
@@ -56,8 +56,10 @@ class ChessFrameCardsMixin:
             self.screenshot()
             if self._read_chess_mode() != '备' or self._shop_refresh_marker_visible():
                 return []
+        if round_no is not None and self._read_round_number() != round_no:
+            return []
         image = self.device.image
-        boss = self._is_boss_challenge_round()
+        boss = self._is_boss_challenge_round(round_no=round_no)
         key = (getattr(self.device, 'image_frame_id', None), id(image), boss)
         cached = getattr(self, '_board_frame_cache', None)
         if cached is not None and cached[0] == key:
@@ -213,6 +215,15 @@ class ChessFrameCardsMixin:
         bx, by, bw, bh = frame.badge_references[0]
         x, y, w, h = frame.roi_back
         back = image[y:y+h, x:x+w]
+        store_key = None
+        if kind == 'store':
+            # Upgrading changes gold/level, but often leaves every shop pixel
+            # unchanged. Reuse identities only when the entire panel is identical.
+            store_key = (back.shape, hashlib.blake2b(back.tobytes(), digest_size=16).digest())
+            previous = getattr(self, '_unchanged_store_cache', None)
+            if previous is not None and previous[0] == store_key:
+                cache[1][kind] = previous[1]
+                return previous[1]
         if frame.badge_grayscale:
             back = cv2.cvtColor(back, cv2.COLOR_RGB2GRAY)
         candidates = []
@@ -309,6 +320,8 @@ class ChessFrameCardsMixin:
             })
             logger.debug(f'Chess Frame {kind}: name={name}, star={cards[-1]["star"]}, badge={Path(frame.files[index]).name}, score={identity_score:.3f}, roi={roi}, text={text}')
         cache[1][kind] = cards
+        if store_key is not None:
+            self._unchanged_store_cache = (store_key, cards)
         return cards
 
     @staticmethod

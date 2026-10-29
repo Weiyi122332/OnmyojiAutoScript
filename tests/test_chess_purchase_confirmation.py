@@ -20,85 +20,96 @@ from tasks.Chess.script_task import ScriptTask
 class ChessPurchaseConfirmationTest(unittest.TestCase):
     def task(self, scenes):
         task = ScriptTask.__new__(ScriptTask)
-        state = {'step': -1, 'clock': 0.0, 'shop': True, 'scene': scenes[0]}
+        badge = object()
+        state = {'step': -1, 'clock': 0.0, 'shop': True, 'scene': scenes[0], 'badge': badge}
         def screenshot():
             state['step'] += 1
             state['clock'] += .6
             state['scene'] = scenes[min(state['step'], len(scenes)-1)]
         task.screenshot = Mock(side_effect=screenshot)
         task._is_purchase_allowed = Mock(return_value=True)
-        task.appear = Mock(return_value=False)
+        task.appear = Mock(side_effect=lambda rule: state['scene'] if rule is badge else False)
         task._is_shop_open = Mock(side_effect=lambda: state['shop'])
-        task._recognize_shop_slot = Mock(side_effect=lambda *a, **k:
-                                         {'name': 'onikiri'} if state['scene'][0] else None)
-        task._lineup_hand_card_match_count = Mock(side_effect=lambda _: state['scene'][1])
+        task._recognize_shop_slot = Mock(return_value=None)
+        task._lineup_hand_card_match_count = Mock(side_effect=AssertionError('Badge confirmation must not OCR identities'))
         return task, state
 
     def confirm(self, task, state):
-        with patch('tasks.Chess.runtime.economy.time.monotonic', side_effect=lambda: state['clock']), \
-                patch('tasks.Chess.runtime.economy.time.sleep'):
-            return task._confirm_shop_purchase(4, None, 'onikiri', 1)
+        with patch('tasks.Chess.runtime.economy.time.monotonic', side_effect=lambda: state['clock']):
+            return task._confirm_shop_purchase(4, None, 'onikiri', state['badge'])
 
-    def test_success_requires_two_frames_of_shop_disappearance_and_hand_increase(self):
-        task, state = self.task([(True, 1), (False, 2), (False, 2)])
+    def test_purchase_confirms_when_its_gold_badge_disappears(self):
+        task, state = self.task([True, False])
         self.assertTrue(self.confirm(task, state))
-        self.assertEqual(task.screenshot.call_count, 3)
+        self.assertEqual(task.screenshot.call_count, 2)
+        task._lineup_hand_card_match_count.assert_not_called()
 
-    def test_shop_disappearance_alone_is_not_a_purchase(self):
-        task, state = self.task([(False, 1)])
+    def test_remaining_gold_badge_does_not_confirm_a_purchase(self):
+        task, state = self.task([True])
         self.assertFalse(self.confirm(task, state))
 
-    def test_hand_increase_without_shop_disappearance_is_not_a_purchase(self):
-        task, state = self.task([(True, 2)])
+    def test_portrait_disappearance_without_badge_disappearance_does_not_confirm(self):
+        task, state = self.task([True])
+        task._recognize_shop_slot.return_value = None
         self.assertFalse(self.confirm(task, state))
+        task._recognize_shop_slot.assert_not_called()
 
-    def test_one_frame_of_success_is_not_enough(self):
-        task, state = self.task([(False, 2), (True, 2)])
+    def test_phase_change_with_disappearing_badge_does_not_confirm(self):
+        task, state = self.task([False])
+        task._is_purchase_allowed.return_value = False
         self.assertFalse(self.confirm(task, state))
 
     def test_closing_the_shop_does_not_count_as_a_success(self):
-        task, state = self.task([(False, 2)])
+        task, state = self.task([False])
         state['shop'] = False
         self.assertFalse(self.confirm(task, state))
-        task._lineup_hand_card_match_count.assert_not_called()
 
-    def test_purchase_click_budget_remains_three_across_cleanup_retries(self):
+    def buy_task(self):
         task = ScriptTask.__new__(ScriptTask)
         task.chess_state = ChessGameState()
         task.device = Device.__new__(Device)
         task.device.click_record = deque(maxlen=15)
         task._recognize_shop_slot = Mock(return_value={'name': 'onikiri', 'source': 'frame', 'score': 1})
+        task._economy_action_allowed = Mock(return_value=True)
         task._is_purchase_allowed = Mock(return_value=True)
         task._can_afford_shop_shikigami = Mock(return_value=True)
+        task._is_shop_open = Mock(return_value=True)
         task._hand_capacity_count = Mock(return_value=8)
-        task._lineup_hand_card_match_count = Mock(return_value=0)
-        task.appear = Mock(return_value=False)
-        task.screenshot = Mock()
-        task._free_one_hand_slot_for_purchase = Mock(side_effect=[
-            {'type': 'other'}, {'type': 'lineup'}])
+        badge = object()
+        task._shop_purchase_badge = Mock(return_value=badge)
+        task.appear = Mock(side_effect=lambda rule: rule is badge)
+        task._confirm_shop_purchase = Mock(return_value=False)
+        task._free_one_hand_slot_for_purchase = Mock()
         _, targets = ChessAssets.F_STORE_CARD.range_targets((720, 1280, 3), allow_missing_image=True)
-        click_rule = targets[5]
-        def click(rule, **_):
+        click = targets[5]
+        def send(rule, **_):
             task.device.handle_control_check(rule)
             return True
-        task.click = Mock(side_effect=click)
-        self.assertFalse(task._buy_shop_slot(2, click_rule, 'onikiri'))
+        task.click = Mock(side_effect=send)
+        return task, click
+
+    def test_purchase_click_budget_remains_three_across_cleanup_retries(self):
+        task, click = self.buy_task()
+        task._hand_capacity_count.side_effect = [9, 10, 9, 10, 9]
+        task._free_one_hand_slot_for_purchase.side_effect = [{'type': 'other'}, {'type': 'lineup'}]
+        self.assertFalse(task._buy_shop_slot(2, click, 'onikiri'))
         self.assertEqual(task.click.call_count, 3)
         self.assertEqual(task._free_one_hand_slot_for_purchase.call_count, 2)
-        self.assertEqual(len(task.device.click_record), 3)
 
-    def test_failed_bidirectional_confirmation_keeps_click_guard_history(self):
-        task = ScriptTask.__new__(ScriptTask)
-        task._recognize_shop_slot = Mock(return_value={'name': 'onikiri', 'source': 'frame', 'score': 1})
-        task._is_purchase_allowed = Mock(return_value=True)
-        task._can_afford_shop_shikigami = Mock(return_value=True)
-        task._hand_capacity_count = Mock(return_value=8)
-        task._lineup_hand_card_match_count = Mock(return_value=0)
-        task.ui_click_until_disappear = Mock(return_value=True)
-        task._confirm_shop_purchase = Mock(return_value=False)
-        task.device = SimpleNamespace(click_record_remove=Mock())
-        self.assertFalse(task._buy_shop_slot(4, object(), 'onikiri'))
-        task.device.click_record_remove.assert_not_called()
+    def test_missing_badge_before_click_prevents_purchase(self):
+        task, click = self.buy_task()
+        task.appear.return_value = False
+        task.appear.side_effect = None
+        self.assertFalse(task._buy_shop_slot(4, click, 'onikiri'))
+        task.click.assert_not_called()
+        task._confirm_shop_purchase.assert_not_called()
+
+    def test_failed_purchase_with_available_space_does_not_sell_hand_cards(self):
+        task, click = self.buy_task()
+        self.assertFalse(task._buy_shop_slot(4, click, 'onikiri'))
+        self.assertEqual(task.click.call_count, 3)
+        task._free_one_hand_slot_for_purchase.assert_not_called()
+
 
 
 class ChessFrameShopClickTest(unittest.TestCase):
@@ -148,7 +159,8 @@ class ChessDetailsAndBoardAvailabilityTest(unittest.TestCase):
         task = ScriptTask.__new__(ScriptTask)
         task.chess_state = ChessGameState()
         scene = {'details': True}
-        task.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8), screenshot=Mock())
+        task.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8),
+                                      screenshot=Mock(), stuck_record_clear=Mock())
         task._handle_network = Mock()
         task.appear_then_click = Mock(return_value=False)
         task.appear = Mock(side_effect=lambda rule: rule is ChessAssets.I_SHIKIGAMI_SPECIFICS and scene['details'])
@@ -180,10 +192,11 @@ class ChessDetailsAndBoardAvailabilityTest(unittest.TestCase):
         task._set_position = Mock(return_value=(902, 505))
         task.device.click_record_remove = Mock()
         task.close_shikigami_specifics_if_open = Mock()
-        def wait(_):
+        def screenshot():
             self.assertEqual(task._chess_details_depth, 1)
-            return True
-        task._wait_chess_action_state = Mock(side_effect=wait)
+        task.screenshot = Mock(side_effect=screenshot)
+        task.appear = Mock(side_effect=lambda rule: rule in (
+            ChessAssets.I_SHIKIGAMI_SPECIFICS, ChessAssets.I_CHECK_GOLDFISH))
         self.assertTrue(task._inspect_arakawa_goldfish(12))
         self.assertEqual(task._chess_details_depth, 0)
         task.close_shikigami_specifics_if_open.assert_called_once()
@@ -195,10 +208,16 @@ class ChessDetailsAndBoardAvailabilityTest(unittest.TestCase):
         task._board_frame_scan = Mock(return_value=[])
         task._board_lineup_names = {'aoandon'}
         task._board_actual_positions = {'aoandon': 1}
+        task._read_round_number = Mock(return_value=5)
+        task._read_chess_mode = Mock(return_value='备')
+        task._shop_assumed_open = False
+        task._shop_refresh_marker_visible = Mock(return_value=False)
+        task.appear = Mock(return_value=False)
         self.assertIsNone(task._read_board_position_count())
         self.assertIsNone(task._board_set_has_shikigami(1))
         self.assertFalse(task._board_set_is_empty(1))
-        self.assertEqual(task._reconcile_lineup_after_hyakki_round(), [])
+        task._check_preparation_lineup_once(5)
+        self.assertNotIn(5, task.chess_state.preparation_lineup_checked_rounds)
         self.assertEqual(task._board_lineup_names, {'aoandon'})
         self.assertEqual(task._board_actual_positions, {'aoandon': 1})
 

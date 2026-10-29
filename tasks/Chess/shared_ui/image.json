@@ -48,29 +48,32 @@
   {
     "itemName": "shared_g_cat_food",
     "description": "棋局专用兼容：GlobalGameAssets.I_G_CAT_FOOD",
-    "roiFront": "565,463,59,65",
+    "roiFront": "666,499,59,65",
     "roiBack": "543,421,205,176",
     "threshold": 0.8,
     "method": "Template matching",
-    "imageName": "gg_g_cat_food.png"
+    "imageName": "gg_g_cat_food.png",
+    "profile": "High"
   },
   {
     "itemName": "shared_g_dog_food",
     "description": "棋局专用兼容：GlobalGameAssets.I_G_DOG_FOOD",
-    "roiFront": "565,464,60,63",
+    "roiFront": "575,510,63,54",
     "roiBack": "543,421,205,176",
     "threshold": 0.8,
     "method": "Template matching",
-    "imageName": "gg_g_dog_food.png"
+    "imageName": "gg_g_dog_food.png",
+    "profile": "High"
   },
   {
     "itemName": "shared_g_jade",
     "description": "棋局专用兼容：GlobalGameAssets.I_G_JADE",
-    "roiFront": "661,466,43,46",
-    "roiBack": "543,421,205,176",
+    "roiFront": "676,512,43,46",
+    "roiBack": "650,489,94,100",
     "threshold": 0.8,
     "method": "Template matching",
-    "imageName": "gg_g_jade.png"
+    "imageName": "gg_g_jade.png",
+    "profile": "High"
   },
   {
     "itemName": "shared_g_reject",

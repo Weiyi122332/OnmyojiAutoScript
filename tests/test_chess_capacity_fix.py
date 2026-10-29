@@ -28,6 +28,7 @@ class ChessCapacityFixTest(unittest.TestCase):
         task.device = Mock()
         task.screenshot = Mock()
         task._is_preparation_mode = Mock(return_value=True)
+        task._board_action_allowed = Mock(return_value=True)
         task._is_boss_challenge_round = Mock(return_value=False)
         task._ensure_shop_closed = Mock(return_value=True)
         task._set_position = Mock(return_value=(877, 398))
@@ -104,6 +105,11 @@ class ChessCapacityFixTest(unittest.TestCase):
         task._can_afford_shop_shikigami = Mock(return_value=True)
         task._lineup_hand_card_match_count = Mock(return_value=0)
         task._confirm_shop_purchase = Mock(return_value=True)
+        task._economy_action_allowed = Mock(return_value=True)
+        badge = object()
+        task._shop_purchase_badge = Mock(return_value=badge)
+        task.appear = Mock(side_effect=lambda rule: rule is badge)
+        task.click = Mock(return_value=True)
         task._free_one_hand_slot_for_purchase = Mock(return_value={'type': 'emergency_cleanup'})
         task.ui_click_until_disappear = Mock(return_value=True)
         return task
@@ -113,7 +119,7 @@ class ChessCapacityFixTest(unittest.TestCase):
         task._hand_capacity_count.side_effect = [10, 9]
         order = []
         task._free_one_hand_slot_for_purchase.side_effect = lambda **_: order.append('cleanup') or {'type': 'emergency_cleanup'}
-        task.ui_click_until_disappear.side_effect = lambda *a, **k: order.append('buy') or True
+        task.click.side_effect = lambda *a, **k: order.append('buy') or True
         self.assertTrue(task._buy_shop_slot(1, SHOP_CLICK, 'hakurou'))
         self.assertEqual(order, ['cleanup', 'buy'])
 
@@ -134,6 +140,7 @@ class ChessStarConfirmationTest(unittest.TestCase):
         task.select_lineup_strategy('huangchuan')
         task.device = Mock()
         task._ensure_shop_closed = Mock(return_value=True)
+        task._board_action_allowed = Mock(return_value=True)
         task._set_position = Mock(return_value=(461, 505))
         task._read_shikigami_count = Mock(return_value={'current': 3, 'total': 3})
         task._lineup_hand_card_match_count = Mock(return_value=1)

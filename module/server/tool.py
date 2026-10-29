@@ -835,6 +835,42 @@ class AnnotatorManager:
             )
         return normalized
 
+    def _normalize_frame_rules(self, rules):
+        images = self._normalize_image_rules([{**r, 'roiFront': r.get('roiBadge', '')} for r in rules])
+        for output, source in zip(images, rules):
+            output['roiBadge'] = output.pop('roiFront')
+            output['badgeSerial'] = max(0, int(source.get('badgeSerial', 0)))
+            output['badgeGrayscale'] = bool(source.get('badgeGrayscale', False))
+            ranges = source.get('roiRange', '')
+            output['roiRange'] = ([self._parse_roi(str(r)) for r in ranges]
+                                  if isinstance(ranges, list) else self._parse_roi(str(ranges)))
+            if isinstance(ranges, list) and not ranges:
+                raise AnnotatorError('invalid_rule', '至少保留一个操作框', 400)
+            if 'badges' in source:
+                output['badges'] = []
+                for badge in source['badges']:
+                    normalized = self._normalize_image_rules([{**source, **badge, 'roiFront': source['roiBadge']}])[0]
+                    output['badges'].append({'imageName': normalized['imageName']})
+                if not output['badges']:
+                    raise AnnotatorError('invalid_rule', '请先裁剪至少一个 badge 素材', 400)
+            count = len(ranges) if isinstance(ranges, list) else 1
+            from module.atom.frame import normalize_operations
+            try:
+                operations = normalize_operations(source.get('rangeOperations'), count, allow_missing_image=True)
+                for spec in operations:
+                    if spec['type'] == 'image':
+                        name = spec.get('imageName', '')
+                        if not isinstance(name, str) or (name and (
+                            Path(name).is_absolute() or '..' in name.replace('\\', '/').split('/') or ':' in name
+                        )):
+                            raise ValueError('range 图片必须使用当前 JSON 目录内的相对素材路径')
+                        spec.pop('file', None)
+            except (ValueError, TypeError) as error:
+                raise AnnotatorError('invalid_rule', str(error), 400) from error
+            if 'rangeOperations' in source:
+                output['rangeOperations'] = operations
+        return images
+
     def _normalize_ocr_rules(self, rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
         normalized: list[dict[str, Any]] = []
         for index, rule in enumerate(rules):
@@ -1053,7 +1089,7 @@ class AnnotatorManager:
         task_root = AnnotatorManager._resolve_task_root(task_name)
         result = []
         for p in task_root.rglob("*.json"):
-            if p.is_file():
+            if p.is_file() and "test_fixtures" not in p.parts and p.name not in ("page_asset_ownership.json", "MINIMAL_RESOURCE_CLEANUP.json"):
                 result.append(str(p.relative_to(task_root).as_posix()))
         return sorted(result)
 
@@ -1066,9 +1102,11 @@ class AnnotatorManager:
             if item.is_dir():
                 if item.name.startswith("__"):
                     continue
-                directories.append(item.name)
+                if item.name != "test_fixtures":
+                    directories.append(item.name)
             elif item.is_file() and item.suffix.lower() == ".json":
-                json_files.append(item.name)
+                if item.name not in ("page_asset_ownership.json", "MINIMAL_RESOURCE_CLEANUP.json"):
+                    json_files.append(item.name)
 
         base_rel = ""
         if base != TASKS_ROOT:
@@ -1124,6 +1162,8 @@ class AnnotatorManager:
             item = data[0]
             if not isinstance(item, dict):
                 return "unknown"
+            if 'roiBadge' in item and 'roiRange' in item and 'imageName' in item:
+                return 'frame'
             if "imageName" in item:
                 return "image"
             if "keyword" in item:
@@ -1172,7 +1212,9 @@ class AnnotatorManager:
             for item in data:
                 if not isinstance(item, dict):
                     continue
-                if rule_type == "image":
+                if rule_type == 'frame':
+                    rules.append({**item, 'roiBadge': str(item.get('roiBadge', '0,0,100,100')), 'roiRange': item.get('roiRange', '0,0,100,100')})
+                elif rule_type == "image":
                     rules.append(
                         {
                             "itemName": str(item.get("itemName", "")),
@@ -1345,7 +1387,7 @@ class AnnotatorManager:
         session = self._get_session(session_id)
         _, source_path = self._load_session_bgr_image(session, image_id)
 
-        if rule_type == "image":
+        if rule_type in ('image', 'frame'):
             item_name = str(rule.get("itemName", "")).strip() or "unnamed"
             image_name = str(rule.get("imageName", "")).strip()
             if not image_name:
@@ -1363,17 +1405,69 @@ class AnnotatorManager:
             template = self.get_rule_image_file(task_name, json_relpath, image_name)
             from module.atom.image import RuleImage
 
-            target = RuleImage(
-                roi_front=self._parse_roi_tuple(str(rule.get("roiFront", "0,0,100,100"))),
+            from module.atom.frame import RuleFrame
+            target_class = RuleFrame if rule_type == 'frame' else RuleImage
+            if rule_type == 'frame':
+                badges = rule.get('badges') or [{'imageName': image_name, 'roiBadge': rule['roiBadge']}]
+                ranges = rule['roiRange'] if isinstance(rule['roiRange'], list) else [rule['roiRange']]
+                normalized = self._normalize_frame_rules([rule])[0]
+                operations = normalized.get('rangeOperations')
+                if operations:
+                    for spec in operations:
+                        if spec['type'] == 'image':
+                            if not spec.get('imageName'):
+                                raise AnnotatorError('invalid_rule', 'image range 测试需要测试素材；实际运行请向 runframe 传入图片路径', 400)
+                            spec['file'] = str(self.get_rule_image_file(task_name, json_relpath, spec['imageName']))
+                front_args = {'roi_badge': self._parse_roi_tuple(rule['roiBadge']),
+                              'badge_grayscale': normalized.get('badgeGrayscale', False),
+                              'roi_range': [self._parse_roi_tuple(r) for r in ranges],
+                              'operations': operations}
+                template = [str(self.get_rule_image_file(task_name, json_relpath, b['imageName'])) for b in badges]
+            else:
+                front_args = {'roi_front': self._parse_roi_tuple(str(rule.get('roiFront', '0,0,100,100')))}
+            target = target_class(
+                **front_args,
                 roi_back=roi_back,
                 method=method,
                 threshold=threshold,
-                file=str(template),
+                file=template if rule_type == 'frame' else str(template),
                 profile=profile,
             )
-            detail = detect_image_detail(str(source_path), target)
+            if rule_type == 'frame':
+                detail = None
+                for index, (file, roi) in enumerate(zip(target.files, target.badge_references)):
+                    badge = RuleImage(roi, roi_back, method, threshold, file, profile)
+                    badge.grayscale = target.badge_grayscale
+                    candidate = detect_image_detail(str(source_path), badge)
+                    if detail is None or candidate.get('similarity', 0) > detail.get('similarity', 0):
+                        detail = candidate
+                    if candidate.get('matched'):
+                        target.badge_index = index
+                        target._badge_reference = roi
+                        target.roi_front = badge.roi_front
+                        detail = candidate
+                        break
+            else:
+                detail = detect_image_detail(str(source_path), target)
+            frame_rois = ({'roiBadge': self._parse_roi(str(detail['roiFront'])),
+                           'roiRange': ','.join(str(int(round(v))) for v in target.matched_range),
+                           'roiRanges': [','.join(str(int(round(v))) for v in r) for r in target.matched_ranges],
+                           'rangeOperations': target.operations, 'badgeIndex': target.badge_index} if rule_type == 'frame' else {})
+            if rule_type == 'frame':
+                # Preview evaluates image/OCR but never clicks a connected device.
+                frame_rois['rangeResults'] = None
+                if detail.get('matched'):
+                    raw = cv2.imread(str(source_path), cv2.IMREAD_COLOR)
+                    rgb = cv2.cvtColor(raw, cv2.COLOR_BGR2RGB)
+                    values, specs, _ = target.evaluate_ranges(
+                        rgb, image_match=lambda item: detect_image_detail(str(source_path), item).get('matched', False))
+                    frame_rois['rangeResults'] = [
+                        {'index': index + 1, 'type': spec['type'], 'value': json.loads(json.dumps(value, default=str)),
+                         'status': 'click_not_executed' if spec['type'] == 'click' else 'evaluated'}
+                        for index, (spec, value) in enumerate(zip(specs, values))]
             return {
-                "rule_type": "image",
+                **frame_rois,
+                "rule_type": rule_type,
                 "item_name": item_name,
                 "image_name": image_name,
                 "matched": bool(detail.get("matched", False)),
@@ -1497,6 +1591,8 @@ class AnnotatorManager:
 
         if rule_type == "image":
             payload = self._normalize_image_rules(rules) if rules else []
+        elif rule_type == 'frame':
+            payload = self._normalize_frame_rules(rules) if rules else []
         elif rule_type == "ocr":
             payload = self._normalize_ocr_rules(rules) if rules else []
         elif rule_type == "click":

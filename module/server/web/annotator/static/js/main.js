@@ -1,5 +1,7 @@
 (function () {
   const STATIC_PREFIX = "/tool/annotator/static";
+  const ASSET_VERSION = new URL(document.currentScript.src).searchParams.get("v")
+    || "20261028-frame-digit-1";
 
   const widgets = [
     { mountId: "topbarMount", name: "topbar", script: "topbar.js" },
@@ -36,7 +38,9 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = path;
+      const url = new URL(path, window.location.href);
+      url.searchParams.set("v", ASSET_VERSION);
+      script.src = url.href;
       script.async = false;
       script.onload = () => resolve();
       script.onerror = () => reject(new Error(`脚本加载失败: ${path}`));

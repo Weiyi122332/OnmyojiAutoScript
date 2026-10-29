@@ -85,10 +85,12 @@ class ChessGoldfishAndEquipmentTest(unittest.TestCase):
 
     def test_preferred_emblem_reserves_a_slot_before_soul_equipping(self):
         task = self.task()
+        strategy = dict(task.get_lineup_strategy(), secondary_bond='回响')
+        task.get_lineup_strategy = Mock(return_value=strategy)
         task._board_lineup_names = {'arakawa_no_nushi'}
         task._shikigami_attributes = Mock(return_value=(None, 'poshi', None))
         task._set_position = Mock(return_value=(795, 505))
-        self.assertTrue(task._keep_preferred_emblem('回响纹章'))
+        self.assertTrue(task._keep_lineup_emblem('回响纹章'))
         self.assertEqual(task._soul_targets('wangqie', 'attack', {'arakawa_no_nushi'}), [])
         self.assertEqual(task._emblem_targets('回响纹章', {'arakawa_no_nushi'}), [('arakawa_no_nushi', 11)])
         task._shikigami_attributes.return_value = (None, None, None)
@@ -97,6 +99,9 @@ class ChessGoldfishAndEquipmentTest(unittest.TestCase):
     def test_goldfish_move_updates_swapped_unit_and_preserves_non_population_flag(self):
         task = self.task()
         task._is_preparation_mode = Mock(return_value=True)
+        task._board_action_allowed = Mock(return_value=True)
+        task._inspect_arakawa_goldfish = Mock(return_value=True)
+        task.screenshot = Mock()
         task._set_position = Mock(side_effect=lambda index: (index*10, 100))
         task.device = Mock()
         task._board_lineup_names = {'kujira'}

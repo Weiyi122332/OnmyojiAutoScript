@@ -117,6 +117,32 @@ class ChessSharedUiMixin:
             expanded.extend(self._chess_ui_variants.get(id(target), (target,)))
         return super().prepare_appear_cache(expanded)
 
+    def _recover_town_navigation(self, transition):
+        """棋局町中入口失败时，经庭院重新进入，随后由导航器重试。"""
+        current = self.navigator.current_page
+        if (transition.source.key != 'page_town'
+                or transition.destination.key == 'page_main'
+                or current is None or current.key != 'page_town'):
+            return
+        back = next((edge for edge in current.transitions
+                     if edge.destination.key == 'page_main'), None)
+        if back is None:
+            return
+        enter = next((edge for edge in back.destination.transitions
+                      if edge.destination.key == 'page_town'), None)
+        if enter is None:
+            return
+        logger.info('Town entrance unavailable: return to courtyard '
+                    'and re-enter town before retrying image recognition')
+        if self._execute_transition(back):
+            self._execute_transition(enter)
+
+    def _execute_transition(self, transition):
+        completed = super()._execute_transition(transition)
+        if not completed:
+            self._recover_town_navigation(transition)
+        return completed
+
     def _burst(self):
         if super()._burst():
             return True

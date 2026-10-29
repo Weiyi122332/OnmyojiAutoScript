@@ -1,5 +1,5 @@
 {
-  "source_revision": "f2b70c87d6dd0d4c0e9b31488825a097935265bc",
+  "source_revision": "bc5327464fb4476c56d5e4fa7d9d0721f5388be4",
   "public_revision": "47a3a3bc6173e6560ab8cc3658d3e55bc2c80287",
   "rules": [
     {
@@ -56,7 +56,7 @@
       "symbol": "I_G_DOG_FOOD",
       "asset": "I_SHARED_G_DOG_FOOD",
       "source": "tasks/GlobalGame/gg/gg_g_dog_food.png",
-      "sha256": "983c6a8aa837340b540a99fff3869b2839f0d59a0d90bf76b05778e5462ae513"
+      "sha256": "8f88ef1484ea71a56994ffcc0dc8f771e1986c249efebd9ec432db6d9a0eaf58"
     },
     {
       "module": "tasks.GlobalGame.assets",
@@ -64,7 +64,7 @@
       "symbol": "I_G_JADE",
       "asset": "I_SHARED_G_JADE",
       "source": "tasks/GlobalGame/gg/gg_g_jade.png",
-      "sha256": "0c8f9c503513f297abbbafe70b5519c876df34496391549ad8ec201a3bf2f89a"
+      "sha256": "0ac89678950f4baa219b819e5a94440c2dc057bfc7610c9226592f1c5fb871fa"
     },
     {
       "module": "tasks.GlobalGame.assets",

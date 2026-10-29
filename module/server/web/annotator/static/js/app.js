@@ -95,6 +95,11 @@
     imageStage: document.getElementById("imageStage"),
     mainImage: document.getElementById("mainImage"),
     noImagePlaceholder: document.getElementById("noImagePlaceholder"),
+    roiRange: document.getElementById("roiRange"),
+    roiRangeValue: document.getElementById("roiRangeValue"),
+    roiRangeLabel: document.getElementById("roiRangeLabel"),
+    roiFrontLabel: document.getElementById("roiFrontLabel"),
+    testRoiRange: document.getElementById("testRoiRange"),
     roiFront: document.getElementById("roiFront"),
     roiBack: document.getElementById("roiBack"),
     roiFrontValue: document.getElementById("roiFrontValue"),
@@ -674,7 +679,7 @@
   }
 
   function isImagePreviewRule() {
-    return state.ruleType === "image" || isListImageRule();
+    return (state.ruleType === "image" || state.ruleType === "frame") || isListImageRule();
   }
 
   function parseRoi(text) {
@@ -792,14 +797,14 @@
     }
     const xs = points.map(([x]) => x);
     const ys = points.map(([, y]) => y);
-    rule.roiFront = formatRoiFromNumbers(
+    rule[frontKey()] = formatRoiFromNumbers(
       Math.min(...xs),
       Math.min(...ys),
       Math.max(...xs) - Math.min(...xs) + 1,
       Math.max(...ys) - Math.min(...ys) + 1,
     );
-    rule.roiBack = rule.roiFront;
-    el.roiFrontValue.value = rule.roiFront;
+    rule.roiBack = rule[frontKey()];
+    el.roiFrontValue.value = rule[frontKey()];
     el.roiBackValue.value = rule.roiBack;
   }
 
@@ -823,6 +828,7 @@
   function renderPolygonCanvas() {
     const showToolbar = state.ruleType === "scatter";
     const polygonMode = isScatterRule();
+    el.roiRange.classList.toggle("hidden", state.ruleType !== "frame" || !el.mainImage.src);
     el.polygonToolbar.classList.toggle("hidden", !showToolbar);
     el.polygonOverlay.classList.toggle("hidden", !polygonMode);
     el.roiFront.classList.toggle("hidden", polygonMode || !el.mainImage.src);
@@ -1168,6 +1174,14 @@
   }
 
   function renderTestOverlay() {
+    el.imageStage.querySelectorAll(".frame-test-extra-range").forEach(box => box.remove());
+    if (state.testOverlayActive) (state.testRoiRanges || []).slice(1).forEach((range, index) => {
+      const box = document.createElement("div"); box.className = "roi roi-test-range frame-test-extra-range";
+      const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = `Range ${index + 1}`;
+      box.appendChild(tag); el.imageStage.appendChild(box); applyBoxFromRoi(box, range);
+    });
+    el.testRoiRange.classList.toggle("hidden", !state.testOverlayActive || !state.testRoiRange);
+    if (state.testOverlayActive && state.testRoiRange) applyBoxFromRoi(el.testRoiRange, state.testRoiRange);
     if (!state.testOverlayActive || !state.testRoiFront || !state.testRoiBack) {
       el.testRoiFront.classList.add("hidden");
       el.testRoiBack.classList.add("hidden");
@@ -1181,6 +1195,10 @@
 
   function clearTestOverlay() {
     state.testOverlayActive = false;
+    state.testRoiRange = "";
+    state.testRoiRanges = [];
+    el.imageStage.querySelectorAll(".frame-test-extra-range").forEach(box => box.remove());
+    el.testRoiRange.classList.add("hidden");
     state.testRoiFront = "";
     state.testRoiBack = "";
     el.testRoiFront.classList.add("hidden");
@@ -1188,7 +1206,9 @@
     updateTestButtonVisibility();
   }
 
-  function setTestOverlay(front, back) {
+  function setTestOverlay(front, back, range) {
+    state.testRoiRanges = Array.isArray(range) ? range : (range ? [range] : []);
+    state.testRoiRange = String(state.testRoiRanges[0] || "").trim();
     state.testRoiFront = String(front || "").trim();
     state.testRoiBack = String(back || "").trim();
     state.testOverlayActive = Boolean(state.testRoiFront && state.testRoiBack);
@@ -1578,6 +1598,218 @@
     showMessage(`已清空图片，共 ${res.removed_count || 0} 张`, "ok");
   }
 
+  function frameRanges(rule) {
+    if (!Array.isArray(rule.roiRange)) rule.roiRange = [rule.roiRange || "0,0,100,100"];
+    if (!rule.roiRange.length) rule.roiRange.push("0,0,100,100");
+    if (!Array.isArray(rule.rangeOperations)) rule.rangeOperations = [];
+    rule.rangeOperations = rule.roiRange.map((_, i) => rule.rangeOperations[i] || "click");
+    state.frameRangeIndex = Math.min(state.frameRangeIndex || 0, rule.roiRange.length - 1);
+    return rule.roiRange;
+  }
+
+  function frameBadges(rule) {
+    if (!Array.isArray(rule.badges)) {
+      rule.badges = rule.imageName ? [{imageName: rule.imageName}] : [];
+    }
+    rule.badges.forEach(badge => { delete badge.roiBadge; });
+    return rule.badges;
+  }
+
+  function selectedFrameRange(rule) {
+    return frameRanges(rule)[state.frameRangeIndex || 0];
+  }
+
+  function frameOperation(rule, index) {
+    frameRanges(rule);
+    let spec = rule.rangeOperations[index];
+    if (typeof spec === "string") spec = {type: spec};
+    if (!spec || typeof spec !== "object") spec = {type: "click"};
+    rule.rangeOperations[index] = spec;
+    return spec;
+  }
+
+  function frameOperationLabel(rule, index) {
+    return frameOperation(rule, index).type || "click";
+  }
+
+  function frameImageNames(rule) {
+    return [rule.imageName, ...(rule.badges || []).map(b => b.imageName),
+      ...(rule.rangeOperations || []).filter(op => op && op.type === "image").map(op => op.imageName)].filter(Boolean);
+  }
+
+  function renderFrameOperationFields(panel, rule, index) {
+    const spec = frameOperation(rule, index);
+    if (spec.type === "click") return;
+    const fields = document.createElement("div"); fields.className = "frame-operation-fields";
+    const field = (key, labelText, defaultValue, options) => {
+      const label = document.createElement("label"); label.textContent = labelText;
+      const input = document.createElement(options ? "select" : "input");
+      if (options) options.forEach(value => {
+        const option = document.createElement("option"); option.value = value; option.textContent = value; input.appendChild(option);
+      });
+      if (spec[key] == null) spec[key] = defaultValue;
+      input.value = spec[key];
+      if (key === "threshold") { input.type = "number"; input.min = 0; input.max = 1; input.step = 0.01; }
+      input.onchange = () => {
+        spec[key] = key === "threshold" ? Number(input.value) : input.value.trim();
+        markDirty();
+      };
+      label.appendChild(input); fields.appendChild(label);
+    };
+    if (spec.type === "image") {
+      field("imageName", "测试素材（运行由 runframe 传入）", "");
+      field("method", "识别方式", "Template matching", ["Template matching", "Masked template matching", "Multi-scale template matching", "Sift Flann"]);
+      field("threshold", "阈值", 0.8);
+      const crop = document.createElement("button"); crop.type = "button"; crop.textContent = `裁剪 Range ${index + 1} 识别图`;
+      crop.onclick = async () => {
+        try { await saveFrameRangeCrop(rule, index); } catch (error) { showMessage(error.message, "error"); }
+      };
+      fields.appendChild(crop);
+    } else if (spec.type === "ocr") {
+      field("mode", "OCR 模式", "Single", ["Single", "Digit"]);
+      field("method", "预处理", "Default");
+    }
+    panel.appendChild(fields);
+  }
+
+  async function saveFrameRangeCrop(rule, index) {
+    if (!state.currentImageId || !state.sessionId || !state.taskName || !state.jsonRelPath) throw new Error("请先选择图片与规则 JSON");
+    syncRoiToRule();
+    const spec = frameOperation(rule, index);
+    if (spec.type !== "image") throw new Error("该 range 未配置为 image");
+    const base = defaultImageNameForItem(rule.itemName || "frame").replace(/\.png$/i, "");
+    const directory = (rule.imageName || "").replace(/\\/g, "/").split("/").slice(0, -1).join("/");
+    const imageName = `${directory ? directory + "/" : ""}${base}_range_${index + 1}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.png`;
+    const result = await api(`${API_PREFIX}/api/images/crop-save`, {method: "POST", body: JSON.stringify({
+      session_id: state.sessionId, image_id: state.currentImageId, task_name: state.taskName,
+      json_relpath: state.jsonRelPath, image_name: imageName, roi: rule.roiRange[index],
+    })});
+    spec.imageName = imageName;
+    markDirty(); renderFrameCollections();
+    appendOutput("裁剪 range 图片", result); showMessage(`Range ${index + 1} 素材已保存`, "ok");
+  }
+
+  function renderFrameCollections() {
+    let panel = document.getElementById("frameCollections");
+    if (!panel) {
+      panel = document.createElement("div"); panel.id = "frameCollections";
+      panel.className = "frame-collections"; el.ruleFields.appendChild(panel);
+    }
+    const rule = getCurrentRule();
+    panel.classList.toggle("hidden", state.ruleType !== "frame" || !rule);
+    if (state.ruleType !== "frame" || !rule) return;
+    if (el.imageNameWrap) el.imageNameWrap.style.display = "none";
+    panel.replaceChildren();
+    const title = document.createElement("strong"); title.textContent = "badgefile / badge 素材";
+    panel.appendChild(title);
+    const grayLabel = document.createElement("label");
+    const gray = document.createElement("input"); gray.type = "checkbox";
+    gray.checked = !!rule.badgeGrayscale;
+    gray.onchange = () => { rule.badgeGrayscale = gray.checked; markDirty(); };
+    const grayText = document.createElement("span"); grayText.textContent = "Badge 去色识别（灰度）";
+    grayLabel.appendChild(gray); grayLabel.appendChild(grayText);
+    panel.appendChild(grayLabel);
+    frameBadges(rule).forEach((badge, index) => {
+      const row = document.createElement("div"); row.className = "frame-collection-row";
+      const select = document.createElement("button"); select.type = "button"; select.textContent = `Badge ${index + 1}`;
+      select.onclick = () => {
+        rule.imageName = badge.imageName;
+        if (el.imageName) el.imageName.value = badge.imageName;
+        refreshRoiLayoutFromRule(); refreshActiveRuleItem();
+      };
+      const name = document.createElement("input"); name.type = "text"; name.value = badge.imageName;
+      name.onchange = () => {
+        const value = name.value.trim();
+        if (!value) { name.value = badge.imageName; return; }
+        badge.imageName = value;
+        rule.imageName = value; if (el.imageName) el.imageName.value = value;
+        markDirty(); refreshActiveRuleItem();
+      };
+      const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "×";
+      remove.disabled = rule.badges.length <= 1;
+      remove.title = remove.disabled ? "至少保留一个 badge 素材" : "删除该 badge 素材";
+      remove.onclick = async () => {
+        if (rule.badges.length <= 1 || state.frameBadgeDeletePending) return;
+        state.frameBadgeDeletePending = true;
+        try {
+          // Preserve files still used by another rule in this JSON.
+          const shared = state.rules.some(other => other !== rule && frameImageNames(other).includes(badge.imageName)) ||
+            (rule.rangeOperations || []).some(op => op && op.imageName === badge.imageName) ||
+            rule.badges.some((other, i) => i !== index && other.imageName === badge.imageName);
+          if (!shared) await deleteRuleLinkedImage(badge.imageName);
+          rule.badges.splice(index, 1);
+          const next = rule.badges[0];
+          rule.imageName = next ? next.imageName : "";
+
+          if (el.imageName) el.imageName.value = rule.imageName;
+          clearRuleImageCacheByImageName(badge.imageName);
+          markDirty(); renderFrameCollections(); refreshRoiLayoutFromRule(); refreshActiveRuleItem();
+        } catch (error) { showMessage(error.message, "error"); }
+        finally { state.frameBadgeDeletePending = false; }
+      };
+      row.append(select, name, remove); panel.appendChild(row);
+    });
+    const rangeTitle = document.createElement("strong"); rangeTitle.textContent = "range 处理区域（未配置时默认 click）";
+    panel.appendChild(rangeTitle);
+    frameRanges(rule).forEach((range, index) => {
+      const row = document.createElement("div"); row.className = "frame-collection-row frame-range-row";
+      const select = document.createElement("button"); select.type = "button"; select.textContent = `Range ${index + 1}`;
+      select.onclick = () => { state.frameRangeIndex = index; refreshRoiLayoutFromRule(); };
+      const input = document.createElement("input"); input.type = "text"; input.value = range;
+      input.title = "区域坐标与尺寸：x,y,宽,高";
+      input.placeholder = "x,y,宽,高";
+      input.setAttribute("aria-label", `Range ${index + 1} 坐标与尺寸`);
+      input.onchange = () => {
+        if (!parseRoiStrict(input.value)) { input.value = range; return; }
+        rule.roiRange[index] = input.value; markDirty(); refreshRoiLayoutFromRule();
+      };
+      const operation = document.createElement("select");
+      ["click", "image", "ocr"].forEach(value => {
+        const option = document.createElement("option"); option.value = value; option.textContent = value; operation.appendChild(option);
+      });
+      operation.value = frameOperationLabel(rule, index);
+      operation.title = "badge 命中后该区域的处理方式";
+      operation.onchange = () => {
+        rule.rangeOperations[index] = {type: operation.value || "click"};
+        markDirty(); renderFrameCollections(); refreshRoiLayoutFromRule();
+      };
+      const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "×";
+      remove.disabled = rule.roiRange.length === 1; remove.title = "至少保留一个操作框";
+      remove.onclick = () => {
+        if (rule.roiRange.length <= 1) return;
+        rule.roiRange.splice(index, 1); rule.rangeOperations.splice(index, 1);
+        state.frameRangeIndex = Math.min(state.frameRangeIndex || 0, rule.roiRange.length - 1);
+        markDirty(); renderFrameCollections(); refreshRoiLayoutFromRule();
+      };
+      row.append(select, input, operation, remove); panel.appendChild(row);
+      renderFrameOperationFields(panel, rule, index);
+    });
+    const add = document.createElement("button"); add.type = "button"; add.textContent = "新增操作框";
+    add.onclick = () => {
+      rule.roiRange.push(selectedFrameRange(rule)); rule.rangeOperations.push("click");
+      state.frameRangeIndex = rule.roiRange.length - 1;
+      markDirty(); renderFrameCollections(); refreshRoiLayoutFromRule();
+    };
+    panel.appendChild(add);
+  }
+
+  function renderOtherFrameRanges(rule) {
+    el.imageStage.querySelectorAll(".frame-extra-range").forEach(box => box.remove());
+    if (state.ruleType !== "frame" || !rule || !el.mainImage.src) return;
+    frameRanges(rule).forEach((range, index) => {
+      if (index === (state.frameRangeIndex || 0)) return;
+      const box = document.createElement("div"); box.className = "roi roi-range frame-extra-range";
+      const tag = document.createElement("span"); tag.className = "tag";
+      tag.textContent = `Range ${index + 1}: ${frameOperationLabel(rule, index)}`;
+      box.appendChild(tag); el.imageStage.appendChild(box); applyBoxFromRoi(box, range);
+      box.onclick = event => { event.stopPropagation(); state.frameRangeIndex = index; refreshRoiLayoutFromRule(); };
+    });
+  }
+
+  function frontKey(type = state.ruleType) {
+    return type === "frame" ? "roiBadge" : "roiFront";
+  }
+
   function getCurrentRule() {
     if (state.activeRuleIndex < 0 || state.activeRuleIndex >= state.rules.length) {
       return null;
@@ -1593,11 +1825,16 @@
 
     const front = boxToRoi(el.roiFront);
     const back = boxToRoi(el.roiBack);
+    if (state.ruleType === "frame") {
+      frameRanges(rule)[state.frameRangeIndex || 0] = boxToRoi(el.roiRange);
+      el.roiRangeValue.value = selectedFrameRange(rule);
+      renderFrameCollections(); renderOtherFrameRanges(rule);
+    }
 
     if (isScatterRule()) {
       setPolygonBoundingRoi(rule);
     } else {
-      rule.roiFront = front;
+      rule[frontKey()] = front;
       el.roiFrontValue.value = front;
       if (state.ruleType === "list") {
         state.listMeta.roiBack = back;
@@ -1619,6 +1856,7 @@
     clampBox(el.roiBack);
 
     return {
+      range: state.ruleType === "frame" ? boxToRoi(el.roiRange) : boxToRoi(el.roiFront),
       front: boxToRoi(el.roiFront),
       back: boxToRoi(el.roiBack),
     };
@@ -1631,7 +1869,8 @@
       return rule;
     }
 
-    rule.roiFront = roi.front;
+    rule[frontKey(type)] = roi.front;
+    if (type === "frame") rule.roiRange = roi.range;
     if (type !== "list") {
       rule.roiBack = roi.back;
     } else {
@@ -1646,6 +1885,21 @@
       return;
     }
 
+    if (target === "range") {
+      const parsed = parseRoiStrict(el.roiRangeValue.value);
+      if (!parsed) {
+        el.roiRangeValue.value = selectedFrameRange(rule);
+        showMessage("roiRange 格式无效，应为 x,y,w,h", "error");
+        return;
+      }
+      applyBoxFromRoi(el.roiRange, parsed);
+      clampBox(el.roiRange);
+      frameRanges(rule)[state.frameRangeIndex || 0] = boxToRoi(el.roiRange);
+      el.roiRangeValue.value = selectedFrameRange(rule);
+      renderFrameCollections(); renderOtherFrameRanges(rule);
+      markDirty();
+      return;
+    }
     const isFront = target === "front";
     const input = isFront ? el.roiFrontValue : el.roiBackValue;
     const box = isFront ? el.roiFront : el.roiBack;
@@ -1653,7 +1907,7 @@
 
     if (!parsed) {
       const fallback = isFront
-        ? (rule.roiFront || "0,0,100,100")
+        ? (rule[frontKey()] || "0,0,100,100")
         : (state.ruleType === "list" ? (state.listMeta.roiBack || "0,0,100,100") : (rule.roiBack || "0,0,100,100"));
       input.value = fallback;
       showMessage(`${isFront ? "roiFront" : "roiBack"} 格式无效，应为 x,y,w,h`, "error");
@@ -1669,7 +1923,7 @@
     }
 
     if (isFront) {
-      rule.roiFront = normalized;
+      rule[frontKey()] = normalized;
     } else if (state.ruleType === "list") {
       state.listMeta.roiBack = normalized;
     } else {
@@ -1682,6 +1936,17 @@
   function refreshRoiLayoutFromRule() {
     const rule = getCurrentRule();
     updateRoiViewport();
+    const isFrame = state.ruleType === "frame";
+    el.roiRange.classList.toggle("hidden", !isFrame || !el.mainImage.src);
+    el.roiRangeLabel.classList.toggle("hidden", !isFrame);
+    el.roiFrontLabel.textContent = isFrame ? "roiBadge" : "roiFront";
+    el.roiFront.querySelector(".tag").textContent = isFrame ? "Badge" : "Front";
+    if (isFrame && rule) {
+      applyBoxFromRoi(el.roiRange, selectedFrameRange(rule));
+      clampBox(el.roiRange);
+      el.roiRangeValue.value = selectedFrameRange(rule);
+      el.roiRange.querySelector(".tag").textContent = `Range ${(state.frameRangeIndex || 0) + 1}: ${frameOperationLabel(rule, state.frameRangeIndex || 0)}`;
+    }
     if (!rule) {
       applyBoxFromRoi(el.roiFront, "0,0,100,100");
       applyBoxFromRoi(el.roiBack, "0,0,100,100");
@@ -1691,7 +1956,8 @@
       renderPolygonCanvas();
       return;
     }
-    const front = rule.roiFront || "0,0,100,100";
+    renderOtherFrameRanges(rule);
+    const front = rule[frontKey()] || "0,0,100,100";
     const back = state.ruleType === "list" ? (state.listMeta.roiBack || "0,0,100,100") : (rule.roiBack || "0,0,100,100");
     applyBoxFromRoi(el.roiFront, front);
     applyBoxFromRoi(el.roiBack, back);
@@ -1828,11 +2094,12 @@
       rule[field.key] = field.default ?? "";
     }
     rule.itemName = String(rule.itemName || "new");
-    rule.roiFront = "0,0,100,100";
+    rule[frontKey(type)] = "0,0,100,100";
+    if (type === "frame") { rule.roiRange = ["0,0,100,100"]; rule.badges = []; rule.rangeOperations = ["click"]; }
     if (type !== "list") {
       rule.roiBack = "0,0,100,100";
     }
-    if (type === "image") {
+    if ((type === "image" || type === "frame")) {
       rule.imageName = String(rule.imageName || "").trim() || defaultImageNameForItem(rule.itemName || "new");
       rule.__autoImageName = true;
     }
@@ -1849,7 +2116,7 @@
     const result = [];
     for (const raw of rules || []) {
       const item = { ...defaultRuleByType(type), ...(raw || {}) };
-      if (type === "image") {
+      if ((type === "image" || type === "frame")) {
         const autoName = defaultImageNameForItem(item.itemName || "");
         item.__autoImageName = !item.imageName || item.imageName === autoName;
       }
@@ -1864,6 +2131,10 @@
   function cloneRules(rules) {
     return (rules || []).map((rule) => ({
       ...rule,
+      ...(Array.isArray(rule.roiRange) ? {roiRange: [...rule.roiRange]} : {}),
+      ...(Array.isArray(rule.badges) ? {badges: rule.badges.map(b => ({...b}))} : {}),
+      ...(Array.isArray(rule.rangeOperations) ? {rangeOperations: rule.rangeOperations.map(op =>
+        op && typeof op === "object" ? {...op} : op)} : {}),
       polygon: Array.isArray(rule.polygon)
         ? rule.polygon.map((point) => Array.isArray(point) ? [...point] : point)
         : rule.polygon,
@@ -1874,7 +2145,7 @@
     const type = state.ruleType;
     el.listMetaBox.classList.toggle("hidden", type !== "list");
 
-    const showSaveImage = type === "image" || isListImageRule();
+    const showSaveImage = (type === "image" || type === "frame") || isListImageRule();
     el.saveImageBtn.classList.toggle("hidden", !showSaveImage);
 
     refreshActiveRuleImageExists().catch(() => {
@@ -1886,7 +2157,7 @@
     if (!rule) {
       return "";
     }
-    if (state.ruleType === "image") {
+    if ((state.ruleType === "image" || state.ruleType === "frame")) {
       return String(rule.imageName || "").trim();
     }
     if (isListImageRule()) {
@@ -1899,7 +2170,7 @@
     if (!rule) {
       return "";
     }
-    if (state.ruleType === "image") {
+    if ((state.ruleType === "image" || state.ruleType === "frame")) {
       const imageName = String(rule.imageName || "").trim();
       return imageName || defaultImageNameForItem(rule.itemName || "image");
     }
@@ -1913,7 +2184,7 @@
     if (!rule) {
       return false;
     }
-    return state.ruleType === "image" || isListImageRule();
+    return (state.ruleType === "image" || state.ruleType === "frame") || isListImageRule();
   }
 
   function currentRulePreviewUrl(rule) {
@@ -2181,6 +2452,7 @@
   }
 
   function fillRuleForm() {
+    state.frameRangeIndex = 0;
     const rule = getCurrentRule();
     if (!rule) {
       clearRuleForm();
@@ -2192,11 +2464,13 @@
       setElementValue(element, rule[field.key] ?? field.default ?? "");
     }
 
-    const front = rule.roiFront || "0,0,100,100";
+    renderOtherFrameRanges(rule);
+    const front = rule[frontKey()] || "0,0,100,100";
     const back = state.ruleType === "list" ? (state.listMeta.roiBack || "0,0,100,100") : (rule.roiBack || "0,0,100,100");
     el.roiFrontValue.value = front;
     el.roiBackValue.value = back;
 
+    renderFrameCollections();
     refreshRoiLayoutFromRule();
 
     fillListMetaForm();
@@ -2217,9 +2491,10 @@
 
     const oldPreviewImageName = getRulePreviewImageName(rule);
     for (const field of getRuleFields()) {
-      if (state.ruleType === "image" && field.key === "imageName" && changedField === "itemName") {
+      if ((state.ruleType === "image" || state.ruleType === "frame") && field.key === "imageName" && changedField === "itemName") {
         continue;
       }
+      if (state.ruleType === "frame" && field.key === "imageName") continue;
       const element = document.getElementById(getRuleFieldDomId(field.key));
       rule[field.key] = readFieldValue(field, element);
     }
@@ -2365,7 +2640,7 @@
   }
 
   function updateRuleSourceActionVisibility() {
-    const canCreate = !state.sourceLeafHasDirs && !state.jsonFileName;
+    const canCreate = Boolean(state.currentDirPath) && !state.jsonFileName;
     const canDelete = Boolean(state.jsonFileName);
 
     el.newJsonName.classList.toggle("hidden", !canCreate);
@@ -2441,7 +2716,7 @@
         state.sourceDirs = preferredDirs.slice(0, depth);
         state.currentDirPath = joinPath(state.sourceDirs);
         state.sourceLeafHasDirs = dirs.length > 0 && !selectedDir;
-        state.sourceLeafJsonFiles = state.sourceLeafHasDirs ? [] : (Array.isArray(data.json_files) ? data.json_files : []);
+        state.sourceLeafJsonFiles = Array.isArray(data.json_files) ? data.json_files : [];
         break;
       }
 
@@ -2451,7 +2726,7 @@
       depth += 1;
     }
 
-    if (!state.sourceLeafHasDirs) {
+    if (state.currentDirPath) {
       if (state.sourceDirs.length > 0) {
         const sep = document.createElement("span");
         sep.className = "breadcrumb-sep";
@@ -2497,8 +2772,8 @@
     if (!fileName) {
       throw new Error("请输入新 JSON 名称");
     }
-    if (state.sourceLeafHasDirs) {
-      throw new Error("当前路径下还有子目录，请继续选择到最终目录");
+    if (!state.currentDirPath) {
+      throw new Error("请先选择任务目录");
     }
 
     const res = await api(`${API_PREFIX}/api/rules/source/create`, {
@@ -2702,7 +2977,7 @@
     syncRoiToRule();
 
     let imageName = "";
-    if (state.ruleType === "image") {
+    if ((state.ruleType === "image" || state.ruleType === "frame")) {
       imageName = String(rule.imageName || "").trim();
       if (!imageName) {
         imageName = defaultImageNameForItem(rule.itemName || "image");
@@ -2717,6 +2992,15 @@
       imageName = defaultImageNameForItem(rule.itemName || "image");
     }
 
+    if (state.ruleType === "frame") {
+      const directory = (rule.imageName || "").replace(/\\/g, "/").split("/").slice(0, -1).join("/");
+      const base = `${directory ? directory + "/" : ""}${(rule.itemName || "frame").replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+      const names = new Set(state.rules.flatMap(frameImageNames));
+      let number = Math.max(rule.badgeSerial || 0, frameBadges(rule).length) + 1;
+      while (names.has(`${base}_badge_${number}.png`)) number += 1;
+      rule.badgeSerial = number;
+      imageName = `${base}_badge_${number}.png`;
+    }
     const result = await api(`${API_PREFIX}/api/images/crop-save`, {
       method: "POST",
       body: JSON.stringify({
@@ -2725,10 +3009,16 @@
         task_name: state.taskName,
         json_relpath: state.jsonRelPath,
         image_name: imageName,
-        roi: rule.roiFront,
+        roi: rule[frontKey()],
       }),
     });
 
+    if (state.ruleType === "frame") {
+      frameBadges(rule).push({imageName});
+      rule.imageName = imageName;
+      if (el.imageName) el.imageName.value = imageName;
+      markDirty(); renderFrameCollections();
+    }
     appendOutput("裁剪图片", result);
     showMessage(`图片已保存: ${result.target_image}`, "ok");
 
@@ -2768,6 +3058,7 @@
     const itemName = String(removed?.itemName || "").trim() || `第 ${removedIndex + 1} 项`;
     const imageRule = canDeleteRuleLinkedImage(removed);
     const imageName = imageRule ? getRuleDeleteImageName(removed) : "";
+    const badgeNames = state.ruleType === "frame" ? frameImageNames(removed) : [];
 
     let deleteLinkedImage = false;
     if (imageRule) {
@@ -2833,13 +3124,19 @@
         messageType = "error";
       } else {
         try {
-          const result = await deleteRuleLinkedImage(imageName);
+          const sharedPrimary = state.rules.some(r => frameImageNames(r).includes(imageName));
+          const result = sharedPrimary ? {removed: false, message: "该素材仍被其他规则引用，保留图片"} : await deleteRuleLinkedImage(imageName);
+          for (const extra of new Set(badgeNames)) {
+            if (extra !== imageName && !state.rules.some(r => frameImageNames(r).includes(extra))) {
+              await deleteRuleLinkedImage(extra); clearRuleImageCacheByImageName(extra);
+            }
+          }
           clearRuleImageCacheByImageName(imageName);
           appendOutput("删除规则关联图像", result);
           if (result.removed) {
             message = `已删除规则配置与关联图像: ${itemName}`;
           } else {
-            message = `已删除规则配置: ${itemName}，关联图像原本不存在`;
+            message = `已删除规则配置: ${itemName}，${sharedPrimary ? "保留其他规则仍在引用的素材" : "关联图像原本不存在"}`;
           }
         } catch (error) {
           appendOutput("删除规则关联图像失败", {
@@ -2862,9 +3159,9 @@
   function updateTestButtonVisibility() {
     const hasRule = Boolean(getCurrentRule());
     const subtype = getRuleSubtype();
-    const canTestType = state.ruleType === "image"
+    const canTestType = (state.ruleType === "image" || state.ruleType === "frame")
       || state.ruleType === "ocr"
-      || (state.ruleType === "list" && (subtype === "image" || subtype === "ocr"));
+      || (state.ruleType === "list" && ((subtype === "image" || subtype === "frame") || subtype === "ocr"));
     let canUse = canTestType && hasRule && !!state.currentImageId && !!state.taskName && !!state.jsonRelPath;
 
     if (canUse && isImagePreviewRule()) {
@@ -2925,7 +3222,7 @@
     });
 
     const result = res.result || {};
-    setTestOverlay(result.roiFront, result.roiBack);
+    setTestOverlay(result.roiBadge || result.roiFront, result.roiBack, result.matched ? (result.roiRanges || result.roiRange) : "");
     appendOutput("测试结果", result);
   }
 
@@ -3232,7 +3529,7 @@
     el.addRuleBtn.addEventListener("click", () => {
       const rule = createRuleFromCurrentCanvas(state.ruleType);
       rule.itemName = `item_${state.rules.length + 1}`;
-      if (state.ruleType === "image") {
+      if ((state.ruleType === "image" || state.ruleType === "frame")) {
         rule.imageName = defaultImageNameForItem(rule.itemName);
       }
       state.rules.push(rule);
@@ -3274,6 +3571,11 @@
   }
 
   async function init() {
+    setupRoiBox(el.roiRange);
+    for (const event of ["change", "blur"]) el.roiRangeValue.addEventListener(event, () => applyRoiInputToRule("range"));
+    el.roiRangeValue.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") { event.preventDefault(); applyRoiInputToRule("range"); }
+    });
     setupRoiBox(el.roiFront);
     setupRoiBox(el.roiBack);
     await loadRuleSchemas();

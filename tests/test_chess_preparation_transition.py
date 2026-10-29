@@ -20,6 +20,7 @@ class ChessPreparationTransitionTest(unittest.TestCase):
         task.device = SimpleNamespace()
         task.screenshot = Mock()
         task._is_preparation_mode = Mock(side_effect=lambda: phase['preparation'])
+        task._board_action_allowed = Mock(side_effect=lambda: phase['preparation'])
         task._ensure_shop_closed = Mock(return_value=True)
         task._board_set_has_shikigami = Mock(side_effect=lambda index: index == 11)
         task._ensure_hand_room_for_recall = Mock(return_value=True)

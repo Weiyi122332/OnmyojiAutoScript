@@ -238,7 +238,12 @@ class ChessFlowIntegrationTest(unittest.TestCase):
         task._hand_capacity_count = Mock(return_value=0)
         task._lineup_hand_card_match_count = Mock(return_value=0)
         task._confirm_shop_purchase = Mock(return_value=purchase_succeeds)
-        task.appear = Mock(return_value=False)
+        badge = object()
+        task._shop_purchase_badge = Mock(return_value=badge)
+        task.appear = Mock(side_effect=lambda rule: rule is badge)
+        task._economy_action_allowed = Mock(return_value=True)
+        task._is_shop_open = Mock(return_value=True)
+        task.click = Mock(return_value=True)
         task.ui_click_until_disappear = Mock(return_value=purchase_succeeds)
         task.device = SimpleNamespace(click_record_remove=Mock())
         return task
@@ -246,18 +251,19 @@ class ChessFlowIntegrationTest(unittest.TestCase):
     def test_confirmed_purchase_clears_the_slots_click_history(self):
         task = self._shop_task(True)
         self.assertTrue(task._buy_shop_slot(1, SHOP_CLICK, 'hakurou'))
-        task.device.click_record_remove.assert_called_once_with(SHOP_CLICK)
-        self.assertEqual(task.ui_click_until_disappear.call_args.kwargs['max_clicks'], 1)
+        self.assertEqual(task.device.click_record_remove.call_count, 2)
+        task.click.assert_called_once_with(SHOP_CLICK)
 
     def test_blocked_purchase_cancels_after_two_cleanup_retries(self):
         task = self._shop_task(False)
         task._free_one_hand_slot_for_purchase = Mock(side_effect=[
             {'type': 'other'}, {'type': 'lineup'},
         ])
+        task._hand_capacity_count.side_effect = [9, 10, 9, 10, 9]
         self.assertFalse(task._buy_shop_slot(1, SHOP_CLICK, 'hakurou'))
-        self.assertEqual(task.ui_click_until_disappear.call_count, 3)
+        self.assertEqual(task.click.call_count, 3)
         self.assertEqual(task._free_one_hand_slot_for_purchase.call_count, 2)
-        task.device.click_record_remove.assert_not_called()
+        self.assertEqual(task.device.click_record_remove.call_count, 3)
 
 
 class ChessSpecialRoundTest(unittest.TestCase):
