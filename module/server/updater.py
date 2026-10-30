@@ -1,3 +1,4 @@
+from deploy.source_guard import validate_update_source
 import datetime
 import subprocess
 from typing import Tuple
@@ -101,6 +102,7 @@ class Updater(DeployConfig, GitManager, PipManager):
             return False
 
         source = "origin"
+        validate_update_source(self.git, self.root_filepath, self.Repository, source)
         for _ in range(FETCH_RETRY):
             result = self.execute_command(
                 f'"{self.git}" fetch {source} {self.Branch}',

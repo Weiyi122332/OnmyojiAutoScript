@@ -1,3 +1,4 @@
+from deploy.source_guard import validate_update_source
 # This Python file uses the following encoding: utf-8
 # copy from alas https://github.com/LmeSzinc/AzurLaneAutoScript
 from deploy.config import DeployConfig
@@ -22,6 +23,7 @@ class GitManager(DeployConfig):
             self, repo, source='origin', branch='master',
             proxy='', ssl_verify=True, keep_changes=False
     ):
+        validate_update_source(self.git, self.root_filepath, repo, source)
         logger.hr('Git Init', 1)
         if not self.execute(f'"{self.git}" init', allow_failure=True):
             self.remove('./.git/config')
