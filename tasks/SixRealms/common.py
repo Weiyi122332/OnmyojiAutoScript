@@ -1,3 +1,4 @@
+from tasks.GlobalGame.assets import GlobalGameAssets
 import random
 import re
 from module.atom.image import RuleImage
@@ -64,11 +65,16 @@ class SixRealmsCommon(GameUi, SixRealmsAssets):
             self.screenshot()
             if self.get_current_page() == store_page:
                 return True
-            if self.appear_then_click(self.I_UI_CONFIRM):
+            # The summon entry remains visible underneath this modal. Never
+            # click it again while the summon dialog is present.
+            if self.appear(SixRealmsAssets.I_MS_CHECK_OPEN_STORE):
+                self.appear_then_click(GlobalGameAssets.I_UI_CONFIRM_BACKUP, interval=0.7)
+                continue
+            if self.appear_then_click(GlobalGameAssets.I_UI_CONFIRM_BACKUP, interval=0.7):
                 continue
             if self.appear_then_click(store_rule, interval=1.5):
                 continue
-        self.appear_then_click(self.I_UI_CANCEL)
+        self.appear_then_click(GlobalGameAssets.I_UI_CANCEL)
         return False
 
     def enter_battle(self, fire_rule: RuleImage, boss_unlock: RuleImage = None,
@@ -131,7 +137,7 @@ class SixRealmsCommon(GameUi, SixRealmsAssets):
         buy_cnt = 0
         while True:
             self.screenshot()
-            if self.appear_then_click(self.I_UI_CONFIRM, interval=0.7):
+            if self.appear_then_click(GlobalGameAssets.I_UI_CONFIRM_BACKUP, interval=0.7):
                 continue
             if not buy_interval_timer.reached():
                 continue

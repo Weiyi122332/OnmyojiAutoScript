@@ -68,5 +68,15 @@
     "threshold": 0.8,
     "profile": "High",
     "description": "description"
+  },
+  {
+    "itemName": "d_done",
+    "imageName": "rewards_d_done.png",
+    "roiFront": "984,132,86,39",
+    "roiBack": "969,129,290,506",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
   }
 ]

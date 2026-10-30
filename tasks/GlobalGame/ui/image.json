@@ -2,7 +2,7 @@
   {
     "itemName": "ui_confirm",
     "imageName": "ui_confirm.png",
-    "roiFront": "667,417,169,47",
+    "roiFront": "692,419,124,39",
     "roiBack": "547,368,322,122",
     "method": "Template matching",
     "threshold": 0.8,
@@ -10,10 +10,20 @@
     "description": "通用确认"
   },
   {
+    "itemName": "ui_confirm_backup",
+    "imageName": "ui_confirm_backup.png",
+    "roiFront": "700,419,109,41",
+    "roiBack": "640,362,255,128",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "备用确认"
+  },
+  {
     "itemName": "ui_cancel",
     "imageName": "ui_ui_cancel.png",
-    "roiFront": "432,403,177,62",
-    "roiBack": "432,403,177,62",
+    "roiFront": "472,417,111,42",
+    "roiBack": "424,371,212,116",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "High",

@@ -35,7 +35,7 @@ class ScrcpyCore(Connection):
     _scrcpy_server_stream: t.Optional[_AdbStreamConnection] = None
     _scrcpy_video_socket: t.Optional[socket.socket] = None
     _scrcpy_control_socket: t.Optional[socket.socket] = None
-    _scrcpy_control_socket_lock = threading.Lock()
+    _scrcpy_control_socket_lock = threading.RLock()
 
     _scrcpy_stream_loop_thread = None
     _scrcpy_resolution: t.Tuple[int, int] = (1280, 720)

@@ -1,5 +1,6 @@
 from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
+from module.atom.frame import RuleFrame, Image, Ocr, Click
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
 from module.atom.long_click import RuleLongClick
@@ -14,23 +15,21 @@ class WeeklyPurchaseAssets:
 
 	# Image Rule Assets
 	# 神社 
-	I_GUILD_SHRINE = RuleImage(profile="High", roi_front=(869,623,64,62), roi_back=(869,623,64,62), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/guild/guild_guild_shrine.png")
+	I_GUILD_SHRINE = RuleImage(roi_front=(869,623,64,62), roi_back=(869,623,64,62), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/guild/guild_guild_shrine.png")
 	# 功勋商店 
-	I_GUILD_STORE = RuleImage(profile="High", roi_front=(651,420,212,161), roi_back=(651,420,212,180), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/guild/guild_guild_store.png")
+	I_GUILD_STORE = RuleImage(roi_front=(651,420,212,161), roi_back=(651,420,212,180), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/guild/guild_guild_store.png")
 	# 蓝票 
-	I_GUILD_BLUE = RuleImage(profile="High", roi_front=(794,186,74,73), roi_back=(315,164,584,370), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/guild/guild_guild_blue.png")
+	I_GUILD_BLUE = RuleImage(roi_front=(794,186,74,73), roi_back=(315,164,584,370), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/guild/guild_guild_blue.png")
 	# 黑蛋碎片 
-	I_GUILD_SCRAP = RuleImage(profile="High", roi_front=(570,439,71,68), roi_back=(331,160,559,372), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/guild/guild_guild_scrap.png")
+	I_GUILD_SCRAP = RuleImage(roi_front=(570,439,71,68), roi_back=(331,160,559,372), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/guild/guild_guild_scrap.png")
 	# 皮肤券 
-	I_GUILD_SKIN = RuleImage(profile="High", roi_front=(795,438,71,72), roi_back=(320,162,573,371), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/guild/guild_guild_skin.png")
+	I_GUILD_SKIN = RuleImage(roi_front=(795,438,71,72), roi_back=(320,162,573,371), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/guild/guild_guild_skin.png")
 	# 皮肤券判断是否到末端 
-	I_GUILD_SKIN_CHECK = RuleImage(profile="High", roi_front=(795,438,71,72), roi_back=(320,162,573,371), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/guild/guild_guild_skin.png")
+	I_GUILD_SKIN_CHECK = RuleImage(roi_front=(795,438,71,72), roi_back=(320,162,573,371), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/guild/guild_guild_skin.png")
 	# 购买黑碎检查 
-	I_GUILD_CHECK_SCRAP = RuleImage(profile="High", roi_front=(592,248,90,88), roi_back=(593,249,90,88), threshold=0.6, method="Template matching", file="./tasks/WeeklyPurchase/guild/guild_guild_check_scrap.png")
+	I_GUILD_CHECK_SCRAP = RuleImage(roi_front=(592,248,90,88), roi_back=(593,249,90,88), threshold=0.6, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/guild/guild_guild_check_scrap.png")
 	# 功勋礼包 
-	I_GUILD_HONOR_GIFT = RuleImage(profile="High", roi_front=(569,212,74,73), roi_back=(315,164,584,370), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/guild/guild_guild_honor_gift.png")
-	# 寮商店标志 
-	I_RM_CHECK_GUILD_STORE = _PageAssets.I_PAGE_WEEKLYPURCHASE_RM_CHECK_GUILD_STORE
+	I_GUILD_HONOR_GIFT = RuleImage(roi_front=(569,212,74,73), roi_back=(315,164,584,370), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/guild/guild_guild_honor_gift.png")
 
 
 	# Ocr Rule Assets
@@ -51,34 +50,33 @@ class WeeklyPurchaseAssets:
 	S_GUILD_STORE = RuleSwipe(roi_front=(806,460,46,35), roi_back=(754,360,90,34), mode="default", name="guild_store")
 
 
-	# Click Rule Assets
-	#  
-	C_ITACHI_GIFT = RuleClick(roi_front=(731,250,153,55), roi_back=(731,250,153,55), name="itachi_gift")
-
-
 	# Image Rule Assets
 	#  
-	I_ITACHI_SHOP_ENTRY = RuleImage(profile="High", roi_front=(47,635,45,40), roi_back=(42,630,55,50), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/itachi_shop/itachi_shop_itachi_shop_entry.png")
-	#  
-	I_ITACHI_SHOP_CHECK = _PageAssets.I_PAGE_WEEKLYPURCHASE_ITACHI_SHOP_CHECK
+	I_ITACHI_SHOP_ENTRY = RuleImage(roi_front=(47,635,45,40), roi_back=(34,627,341,60), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/itachi_shop/itachi_shop_itachi_shop_entry.png")
 
 
 	# Ocr Rule Assets
 	#  
-	O_ITACHI_COIN = RuleOcr(roi=(1081,21,134,38), area=(1081,21,134,38), mode="DigitCounter", method="Default", keyword="", name="itachi_coin")
+	O_ITACHI_COIN = RuleOcr(roi=(1102,13,134,38), area=(1102,13,134,38), mode="DigitCounter", method="Default", keyword="", name="itachi_coin")
 	#  
 	O_ITACHI_BUY_COST = RuleOcr(roi=(634,530,70,41), area=(634,530,70,41), mode="Digit", method="Default", keyword="", name="itachi_buy_cost")
+	# 小型鼬乐礼盒
+	O_ITACHI_MINI = RuleOcr(roi=(736,133,145,42), area=(677,101,452,474), mode="Single", method="Default", keyword="小型鼬乐礼盒", name="itachi_mini")
+	# 中型鼬乐礼盒
+	O_ITACHI_MEDIUM = RuleOcr(roi=(949,136,145,42), area=(677,101,452,474), mode="Single", method="Default", keyword="中型鼬乐礼盒", name="itachi_medium")
+	# 大型鼬乐礼盒
+	O_ITACHI_LARGE = RuleOcr(roi=(733,363,145,42), area=(677,101,452,474), mode="Single", method="Default", keyword="大型鼬乐礼盒", name="itachi_large")
 
 
 	# Image Rule Assets
 	# 兑换随机御魂 
-	I_BL_BUY_SOULS = RuleImage(profile="High", roi_front=(197,476,90,38), roi_back=(197,476,90,38), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/bondlings/bondlings_bl_buy_souls.png")
+	I_BL_BUY_SOULS = RuleImage(roi_front=(197,476,90,38), roi_back=(197,476,90,38), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/bondlings/bondlings_bl_buy_souls.png")
 	# 兑换契灵石头 
-	I_BL_BUY_STONE = RuleImage(profile="High", roi_front=(493,472,89,42), roi_back=(493,472,89,42), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/bondlings/bondlings_bl_buy_stone.png")
+	I_BL_BUY_STONE = RuleImage(roi_front=(493,472,89,42), roi_back=(493,472,89,42), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/bondlings/bondlings_bl_buy_stone.png")
 	# 兑换高级盘 
-	I_BL_BUY_HIGH = RuleImage(profile="High", roi_front=(779,473,89,42), roi_back=(779,473,89,42), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/bondlings/bondlings_bl_buy_high.png")
+	I_BL_BUY_HIGH = RuleImage(roi_front=(779,473,89,42), roi_back=(779,473,89,42), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/bondlings/bondlings_bl_buy_high.png")
 	# 兑换中级盘 
-	I_BL_BUY_MEDIUM = RuleImage(profile="High", roi_front=(1079,476,93,40), roi_back=(1079,476,93,40), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/bondlings/bondlings_bl_buy_medium.png")
+	I_BL_BUY_MEDIUM = RuleImage(roi_front=(1079,476,93,40), roi_back=(1079,476,93,40), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/bondlings/bondlings_bl_buy_medium.png")
 
 
 	# Ocr Rule Assets
@@ -96,20 +94,20 @@ class WeeklyPurchaseAssets:
 
 	# Image Rule Assets
 	# 蓝票 
-	I_CH_BLUE = RuleImage(profile="High", roi_front=(646,142,91,105), roi_back=(144,106,879,440), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/charisma/charisma_ch_blue.png")
+	I_CH_BLUE = RuleImage(roi_front=(646,142,91,105), roi_back=(144,106,879,440), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/charisma/charisma_ch_blue.png")
 	# description 
-	I_CH_BLACK = RuleImage(profile="High", roi_front=(869,396,94,92), roi_back=(139,123,880,428), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/charisma/charisma_ch_black.png")
+	I_CH_BLACK = RuleImage(roi_front=(869,396,94,92), roi_back=(139,123,880,428), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/charisma/charisma_ch_black.png")
 	# 蓝票购买确认 
-	I_CH_CHECK_BLUE = RuleImage(profile="High", roi_front=(615,255,45,71), roi_back=(489,173,289,239), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/charisma/charisma_ch_check_blue.png")
+	I_CH_CHECK_BLUE = RuleImage(roi_front=(615,255,45,71), roi_back=(489,173,289,239), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/charisma/charisma_ch_check_blue.png")
 
 
 	# Image Rule Assets
 	# 进入寄售屋 
-	I_CON_ENTER_CHECK = RuleImage(profile="High", roi_front=(255,188,114,96), roi_back=(152,119,306,263), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/consignment/consignment_con_enter_check.png")
+	I_CON_ENTER_CHECK = RuleImage(roi_front=(255,188,114,96), roi_back=(152,119,306,263), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/consignment/consignment_con_enter_check.png")
 	# 兑换 
-	I_CON_ENTER = RuleImage(profile="High", roi_front=(1176,304,68,74), roi_back=(1176,304,68,74), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/consignment/consignment_con_enter.png")
+	I_CON_ENTER = RuleImage(roi_front=(1176,304,68,74), roi_back=(1176,304,68,74), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/consignment/consignment_con_enter.png")
 	# 寄售券 
-	I_CON_TICKET = RuleImage(profile="High", roi_front=(700,194,100,100), roi_back=(700,194,100,100), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/consignment/consignment_con_ticket.png")
+	I_CON_TICKET = RuleImage(roi_front=(700,194,100,100), roi_back=(700,194,100,100), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/consignment/consignment_con_ticket.png")
 
 
 	# Ocr Rule Assets
@@ -119,22 +117,22 @@ class WeeklyPurchaseAssets:
 
 	# Image Rule Assets
 	# 红蛋 
-	I_FS_RED = RuleImage(profile="High", roi_front=(400,138,141,135), roi_back=(400,138,141,135), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/friendship_points/friendship_points_fs_red.png")
+	I_FS_RED = RuleImage(roi_front=(400,138,141,135), roi_back=(400,138,141,135), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/friendship_points/friendship_points_fs_red.png")
 	# 破碎的咒符 
-	I_FS_BROKEN = RuleImage(profile="High", roi_front=(173,142,149,129), roi_back=(173,142,149,129), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/friendship_points/friendship_points_fs_broken.png")
+	I_FS_BROKEN = RuleImage(roi_front=(173,142,149,129), roi_back=(173,142,149,129), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/friendship_points/friendship_points_fs_broken.png")
 	# description 
-	I_FS_WHITE_CLICK = RuleImage(profile="High", roi_front=(627,140,138,132), roi_back=(627,140,138,132), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/friendship_points/friendship_points_fs_white_click.png")
+	I_FS_WHITE_CLICK = RuleImage(roi_front=(627,140,138,132), roi_back=(627,140,138,132), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/friendship_points/friendship_points_fs_white_click.png")
 	# 白蛋确认 
-	I_FS_WHITE_CHECK = RuleImage(profile="High", roi_front=(594,238,88,82), roi_back=(520,163,234,212), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/friendship_points/friendship_points_fs_white_check.png")
+	I_FS_WHITE_CHECK = RuleImage(roi_front=(594,238,88,82), roi_back=(520,163,234,212), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/friendship_points/friendship_points_fs_white_check.png")
 
 
 	# Image Rule Assets
 	# 蓝票 
-	I_HONOR_BLUE = RuleImage(profile="High", roi_front=(868,152,100,100), roi_back=(154,113,864,476), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/honor/honor_honor_blue.png")
+	I_HONOR_BLUE = RuleImage(roi_front=(868,152,100,100), roi_back=(154,113,864,476), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/honor/honor_honor_blue.png")
 	# 黑蛋碎片 
-	I_HONOR_BLACK = RuleImage(profile="High", roi_front=(645,406,100,100), roi_back=(145,96,883,491), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/honor/honor_honor_black.png")
+	I_HONOR_BLACK = RuleImage(roi_front=(645,406,100,100), roi_back=(145,96,883,491), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/honor/honor_honor_black.png")
 	# 三星白蛋 
-	I_HONOR_WHITE = RuleImage(profile="High", roi_front=(424,399,100,100), roi_back=(155,127,841,388), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/honor/honor_honor_white.png")
+	I_HONOR_WHITE = RuleImage(roi_front=(424,399,100,100), roi_back=(155,127,841,388), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/honor/honor_honor_white.png")
 
 
 	# Ocr Rule Assets
@@ -148,65 +146,65 @@ class WeeklyPurchaseAssets:
 
 	# Image Rule Assets
 	# 黑蛋 
-	I_ME_BLACK = RuleImage(profile="High", roi_front=(631,152,130,120), roi_back=(165,121,859,431), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/medal/medal_me_black.png")
+	I_ME_BLACK = RuleImage(roi_front=(631,152,130,120), roi_back=(165,121,859,431), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/medal/medal_me_black.png")
 	# 蓝票 
-	I_ME_BLUE = RuleImage(profile="High", roi_front=(176,148,138,126), roi_back=(139,115,887,464), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/medal/medal_me_blue.png")
+	I_ME_BLUE = RuleImage(roi_front=(176,148,138,126), roi_back=(139,115,887,464), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/medal/medal_me_blue.png")
 	# 体力 
-	I_ME_AP = RuleImage(profile="High", roi_front=(842,395,145,123), roi_back=(156,111,862,454), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/medal/medal_me_ap.png")
+	I_ME_AP = RuleImage(roi_front=(842,395,145,123), roi_back=(156,111,862,454), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/medal/medal_me_ap.png")
 	# 随机御魂 
-	I_ME_SOULS = RuleImage(profile="High", roi_front=(173,391,148,133), roi_back=(121,116,898,476), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/medal/medal_me_souls.png")
+	I_ME_SOULS = RuleImage(roi_front=(173,391,148,133), roi_back=(121,116,898,476), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/medal/medal_me_souls.png")
 	# 白蛋 
-	I_ME_WHITE = RuleImage(profile="High", roi_front=(399,391,142,131), roi_back=(115,114,908,452), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/medal/medal_me_white.png")
+	I_ME_WHITE = RuleImage(roi_front=(399,391,142,131), roi_back=(115,114,908,452), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/medal/medal_me_white.png")
 	# 御灵挑战券 
-	I_ME_CHALLENGE_PASS = RuleImage(profile="High", roi_front=(618,390,146,129), roi_back=(114,102,914,478), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/medal/medal_me_challenge_pass.png")
+	I_ME_CHALLENGE_PASS = RuleImage(roi_front=(618,390,146,129), roi_back=(114,102,914,478), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/medal/medal_me_challenge_pass.png")
 	# 红蛋 
-	I_ME_RED = RuleImage(profile="High", roi_front=(847,146,137,129), roi_back=(141,129,864,454), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/medal/medal_me_red.png")
+	I_ME_RED = RuleImage(roi_front=(847,146,137,129), roi_back=(141,129,864,454), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/medal/medal_me_red.png")
 	# 破碎的咒符 
-	I_ME_BROKEN = RuleImage(profile="High", roi_front=(398,144,143,116), roi_back=(146,116,866,475), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/medal/medal_me_broken.png")
+	I_ME_BROKEN = RuleImage(roi_front=(398,144,143,116), roi_back=(146,116,866,475), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/medal/medal_me_broken.png")
 	# 购买检查 
-	I_ME_CHECK_BLACK = RuleImage(profile="High", roi_front=(592,508,100,51), roi_back=(548,482,185,101), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/medal/medal_me_check_black.png")
+	I_ME_CHECK_BLACK = RuleImage(roi_front=(592,508,100,51), roi_back=(548,482,185,101), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/medal/medal_me_check_black.png")
 	# 购买检查 
-	I_ME_CHECK_BLUE = RuleImage(profile="High", roi_front=(592,493,100,52), roi_back=(550,463,179,106), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/medal/medal_me_check_blue.png")
+	I_ME_CHECK_BLUE = RuleImage(roi_front=(592,493,100,52), roi_back=(550,463,179,106), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/medal/medal_me_check_blue.png")
 	# 购买检查 
-	I_ME_CHECK_AP = RuleImage(profile="High", roi_front=(588,242,100,100), roi_back=(588,242,100,100), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/medal/medal_me_check_ap.png")
+	I_ME_CHECK_AP = RuleImage(roi_front=(588,242,100,100), roi_back=(588,242,100,100), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/medal/medal_me_check_ap.png")
 	# 购买检查 
-	I_ME_CHECK_SOULS = RuleImage(profile="High", roi_front=(591,480,100,52), roi_back=(541,453,192,106), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/medal/medal_me_check_souls.png")
+	I_ME_CHECK_SOULS = RuleImage(roi_front=(591,480,100,52), roi_back=(541,453,192,106), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/medal/medal_me_check_souls.png")
 
 
 	# Image Rule Assets
 	# 寄售屋 
-	I_MALL_CONSIGNMENT = RuleImage(profile="High", roi_front=(217,648,46,40), roi_back=(175,610,120,103), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_consignment.png")
+	I_MALL_CONSIGNMENT = RuleImage(roi_front=(217,648,46,40), roi_back=(175,610,120,103), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_consignment.png")
 	# 寄售屋 
-	I_MALL_CONSIGNMENT_CHECK = RuleImage(profile="High", roi_front=(12,166,100,390), roi_back=(12,166,100,390), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_consignment_check.png")
+	I_MALL_CONSIGNMENT_CHECK = RuleImage(roi_front=(12,166,100,390), roi_back=(12,166,100,390), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_consignment_check.png")
 	# 密卷屋 
-	I_MALL_SCCALES = RuleImage(profile="High", roi_front=(470,649,68,49), roi_back=(427,621,147,92), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_sccales.png")
+	I_MALL_SCCALES = RuleImage(roi_front=(470,649,68,49), roi_back=(427,621,147,92), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_sccales.png")
 	# 密卷屋 
-	I_MALL_SCCALES_CHECK = RuleImage(profile="High", roi_front=(409,253,100,100), roi_back=(336,133,253,355), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_sccales_check.png")
+	I_MALL_SCCALES_CHECK = RuleImage(roi_front=(409,253,100,100), roi_back=(336,133,253,355), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_sccales_check.png")
 	# description 
-	I_MALL_SCALES_SURE = RuleImage(profile="High", roi_front=(1195,100,62,85), roi_back=(1195,100,62,85), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_scales_sure.png")
+	I_MALL_SCALES_SURE = RuleImage(roi_front=(1195,100,62,85), roi_back=(1195,100,62,85), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_scales_sure.png")
 	# 契灵商店 
-	I_MALL_BONDLINGS_SURE = RuleImage(profile="High", roi_front=(1194,421,69,74), roi_back=(1194,421,69,74), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_bondlings_sure.png")
+	I_MALL_BONDLINGS_SURE = RuleImage(roi_front=(1194,421,69,74), roi_back=(1194,421,69,74), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_bondlings_sure.png")
 	# 已选中契灵商店 
-	I_MALL_BONDLINGS_ON = RuleImage(profile="High", roi_front=(903,12,27,32), roi_back=(309,0,952,62), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_bondlings_on.png")
+	I_MALL_BONDLINGS_ON = RuleImage(roi_front=(903,12,27,32), roi_back=(309,0,952,62), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_bondlings_on.png")
 	# 契灵商店 
-	I_MALL_BONDLINGS_CHECK = RuleImage(profile="High", roi_front=(355,186,34,104), roi_back=(355,186,34,104), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_bondlings_check.png")
+	I_MALL_BONDLINGS_CHECK = RuleImage(roi_front=(355,186,34,104), roi_back=(355,186,34,104), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_bondlings_check.png")
 	# 杂货铺 
-	I_MALL_SUNDRY = RuleImage(profile="High", roi_front=(875,646,53,54), roi_back=(834,621,116,90), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_sundry.png")
+	I_MALL_SUNDRY = RuleImage(roi_front=(875,646,53,54), roi_back=(834,621,116,90), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_sundry.png")
 	# 杂货铺 
-	I_MALL_SUNDRY_CHECK = RuleImage(profile="High", roi_front=(1101,6,31,44), roi_back=(1035,0,131,58), threshold=0.7, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_sundry_check.png")
+	I_MALL_SUNDRY_CHECK = RuleImage(roi_front=(1101,6,31,44), roi_back=(1035,0,131,58), threshold=0.7, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_mall_sundry_check.png")
 
 
 	# Image Rule Assets
 	# 特殊 
-	I_SIDE_CHECK_SPECIAL = RuleImage(profile="High", roi_front=(218,7,42,42), roi_back=(140,0,659,74), threshold=0.7, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_side_check_special.png")
+	I_SIDE_CHECK_SPECIAL = RuleImage(roi_front=(218,7,42,42), roi_back=(140,0,659,74), threshold=0.7, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_side_check_special.png")
 	# 荣誉 
-	I_SIDE_CHECK_HONOR = RuleImage(profile="High", roi_front=(751,8,41,42), roi_back=(358,0,733,67), threshold=0.7, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_side_check_honor.png")
+	I_SIDE_CHECK_HONOR = RuleImage(roi_front=(751,8,41,42), roi_back=(358,0,733,67), threshold=0.7, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_side_check_honor.png")
 	# 友情点 
-	I_SIDE_CHECK_FRIENDS = RuleImage(profile="High", roi_front=(924,8,39,43), roi_back=(602,0,543,67), threshold=0.7, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_side_check_friends.png")
+	I_SIDE_CHECK_FRIENDS = RuleImage(roi_front=(924,8,39,43), roi_back=(602,0,543,67), threshold=0.7, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_side_check_friends.png")
 	# 勋章 
-	I_SIDE_CHECK_MEDAL = RuleImage(profile="High", roi_front=(665,6,40,44), roi_back=(453,1,476,58), threshold=0.7, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_side_check_medal.png")
+	I_SIDE_CHECK_MEDAL = RuleImage(roi_front=(665,6,40,44), roi_back=(453,1,476,58), threshold=0.7, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_side_check_medal.png")
 	# 魅力值 
-	I_SIDE_CHECK_CHARISMA = RuleImage(profile="High", roi_front=(921,4,48,46), roi_back=(741,0,435,59), threshold=0.7, method="Template matching", file="./tasks/WeeklyPurchase/mall/navbar/navbar_side_check_charisma.png")
+	I_SIDE_CHECK_CHARISMA = RuleImage(roi_front=(921,4,48,46), roi_back=(741,0,435,59), threshold=0.7, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/navbar/navbar_side_check_charisma.png")
 
 
 	# List Rule Assets
@@ -231,57 +229,57 @@ class WeeklyPurchaseAssets:
 
 
 	# Click Rule Assets
-	# 一号位 
+	# 一号位
 	C_SCA_DEMON_1 = RuleClick(roi_front=(255,158,100,100), roi_back=(255,158,100,100), name="sca_demon_1")
-	# 二号位 
+	# 二号位
 	C_SCA_DEMON_2 = RuleClick(roi_front=(181,318,100,100), roi_back=(181,318,100,100), name="sca_demon_2")
-	# 三号位 
+	# 三号位
 	C_SCA_DEMON_3 = RuleClick(roi_front=(257,476,100,100), roi_back=(257,476,100,100), name="sca_demon_3")
-	# 四号位 
+	# 四号位
 	C_SCA_DEMON_4 = RuleClick(roi_front=(553,478,100,100), roi_back=(553,478,100,100), name="sca_demon_4")
-	# 五号位 
+	# 五号位
 	C_SCA_DEMON_5 = RuleClick(roi_front=(639,316,100,100), roi_back=(639,316,100,100), name="sca_demon_5")
-	# 六号位 
+	# 六号位
 	C_SCA_DEMON_6 = RuleClick(roi_front=(560,155,100,100), roi_back=(560,155,100,100), name="sca_demon_6")
-	# 点击魂外部 
+	# 点击魂外部
 	C_SCA_SOULS_GET = RuleClick(roi_front=(1187,497,93,133), roi_back=(1187,497,93,133), name="sca_souls_get")
-	# 点击外部的区域返回到御魂礼盒主界面 
+	# 点击外部的区域返回到御魂礼盒主界面
 	C_SCA_SOULS_BACK = RuleClick(roi_front=(118,14,503,51), roi_back=(118,14,503,51), name="sca_souls_back")
 
 
 	# Image Rule Assets
 	# 蛇皮 
-	I_SCA_OROCHI_SCALES = RuleImage(profile="High", roi_front=(110,261,100,100), roi_back=(77,184,175,216), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_orochi_scales.png")
+	I_SCA_OROCHI_SCALES = RuleImage(roi_front=(110,261,100,100), roi_back=(77,184,175,216), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_orochi_scales.png")
 	# 首领御魂 
-	I_SCA_DEMON_SOULS = RuleImage(profile="High", roi_front=(707,260,100,100), roi_back=(659,190,182,218), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_souls.png")
+	I_SCA_DEMON_SOULS = RuleImage(roi_front=(707,260,100,100), roi_back=(659,190,182,218), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_souls.png")
 	# 永生之海 
-	I_SCA_PICTURE_BOOK = RuleImage(profile="High", roi_front=(995,258,100,100), roi_back=(954,177,185,240), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_picture_book.png")
+	I_SCA_PICTURE_BOOK = RuleImage(roi_front=(995,258,100,100), roi_back=(954,177,185,240), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_picture_book.png")
 	# 土蜘蛛 
-	I_SCA_DEMON_BOSS_1 = RuleImage(profile="High", roi_front=(246,224,112,126), roi_back=(168,142,346,290), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_1.png")
+	I_SCA_DEMON_BOSS_1 = RuleImage(roi_front=(246,224,112,126), roi_back=(168,142,346,290), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_1.png")
 	# 胧车 
-	I_SCA_DEMON_BOSS_2 = RuleImage(profile="High", roi_front=(457,203,123,153), roi_back=(413,136,273,250), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_2.png")
+	I_SCA_DEMON_BOSS_2 = RuleImage(roi_front=(457,203,123,153), roi_back=(413,136,273,250), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_2.png")
 	# 荒骷髅 
-	I_SCA_DEMON_BOSS_3 = RuleImage(profile="High", roi_front=(686,239,131,121), roi_back=(631,132,344,273), threshold=0.6, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_3.png")
+	I_SCA_DEMON_BOSS_3 = RuleImage(roi_front=(686,239,131,121), roi_back=(631,132,344,273), threshold=0.6, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_3.png")
 	# 地震鲶 
-	I_SCA_DEMON_BOSS_4 = RuleImage(profile="High", roi_front=(912,188,141,169), roi_back=(804,121,315,292), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_4.png")
+	I_SCA_DEMON_BOSS_4 = RuleImage(roi_front=(912,188,141,169), roi_back=(804,121,315,292), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_4.png")
 	# 蜃气楼 
-	I_SCA_DEMON_BOSS_5 = RuleImage(profile="High", roi_front=(345,469,136,160), roi_back=(241,414,504,242), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_5.png")
+	I_SCA_DEMON_BOSS_5 = RuleImage(roi_front=(345,469,136,160), roi_back=(241,414,504,242), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_5.png")
 	# 歌姬 
-	I_SCA_DEMON_BOSS_6 = RuleImage(profile="High", roi_front=(561,480,141,141), roi_back=(437,402,555,236), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_6.png")
+	I_SCA_DEMON_BOSS_6 = RuleImage(roi_front=(561,480,141,141), roi_back=(437,402,555,236), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_6.png")
 	# 永生之海第一个选择 
-	I_SCA_SELECT_1 = RuleImage(profile="High", roi_front=(189,519,113,51), roi_back=(189,519,113,51), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_select_1.png")
+	I_SCA_SELECT_1 = RuleImage(roi_front=(189,519,113,51), roi_back=(189,519,113,51), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_select_1.png")
 	# description 
-	I_SCA_SELECT_2 = RuleImage(profile="High", roi_front=(583,519,116,54), roi_back=(583,519,116,54), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_select_2.png")
+	I_SCA_SELECT_2 = RuleImage(roi_front=(583,519,116,54), roi_back=(583,519,116,54), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_select_2.png")
 	# description 
-	I_SCA_SELECT_3 = RuleImage(profile="High", roi_front=(972,517,123,50), roi_back=(972,517,123,50), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_select_3.png")
+	I_SCA_SELECT_3 = RuleImage(roi_front=(972,517,123,50), roi_back=(972,517,123,50), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_select_3.png")
 	# 获得的六星 
-	I_SCA_SIX_STAR = RuleImage(profile="High", roi_front=(120,216,97,22), roi_back=(113,102,1056,257), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_six_star.png")
+	I_SCA_SIX_STAR = RuleImage(roi_front=(120,216,97,22), roi_back=(113,102,1056,257), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_six_star.png")
 	# 点击屏幕继续 
-	I_SCA_REWARD = RuleImage(profile="High", roi_front=(584,503,100,100), roi_back=(584,503,100,100), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_reward.png")
+	I_SCA_REWARD = RuleImage(roi_front=(584,503,100,100), roi_back=(584,503,100,100), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_reward.png")
 	# 点击兑换 
-	I_SCA_DEMON_BUY = RuleImage(profile="High", roi_front=(861,572,180,62), roi_back=(861,572,180,62), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_buy.png")
+	I_SCA_DEMON_BUY = RuleImage(roi_front=(861,572,180,62), roi_back=(861,572,180,62), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_buy.png")
 	# 夜荒魂 
-	I_SCA_DEMON_BOSS_7 = RuleImage(profile="High", roi_front=(819,489,100,100), roi_back=(640,423,412,222), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_7.png")
+	I_SCA_DEMON_BOSS_7 = RuleImage(roi_front=(819,489,100,100), roi_back=(640,423,412,222), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/scales/scales_sca_demon_boss_7.png")
 
 
 	# Ocr Rule Assets
@@ -303,13 +301,13 @@ class WeeklyPurchaseAssets:
 
 	# Image Rule Assets
 	# 购买御灵 
-	I_SP_BUY_TOTEM = RuleImage(profile="High", roi_front=(398,299,148,113), roi_back=(160,121,880,487), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/special/special_sp_buy_totem.png")
+	I_SP_BUY_TOTEM = RuleImage(roi_front=(398,299,148,113), roi_back=(160,121,880,487), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/special/special_sp_buy_totem.png")
 	# 购买中级盘 
-	I_SP_BUY_MEDIUM = RuleImage(profile="High", roi_front=(392,150,150,108), roi_back=(144,113,908,501), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/special/special_sp_buy_medium.png")
+	I_SP_BUY_MEDIUM = RuleImage(roi_front=(392,150,150,108), roi_back=(144,113,908,501), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/special/special_sp_buy_medium.png")
 	# 购买低级盘 
-	I_SP_BUY_LOW = RuleImage(profile="High", roi_front=(176,148,144,108), roi_back=(128,142,902,449), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/special/special_sp_buy_low.png")
+	I_SP_BUY_LOW = RuleImage(roi_front=(176,148,144,108), roi_back=(128,142,902,449), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/special/special_sp_buy_low.png")
 	# 判断是否滑动到底 
-	I_SP_SWIPE_CHECK = RuleImage(profile="High", roi_front=(900,164,42,61), roi_back=(173,144,840,379), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/mall/special/special_sp_swipe_check.png")
+	I_SP_SWIPE_CHECK = RuleImage(roi_front=(900,164,42,61), roi_back=(173,144,840,379), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/mall/special/special_sp_swipe_check.png")
 
 
 	# Ocr Rule Assets
@@ -324,35 +322,35 @@ class WeeklyPurchaseAssets:
 
 	# Image Rule Assets
 	# 下期预览 
-	I_S_NEXT_PERIOD = RuleImage(profile="High", roi_front=(1083,574,90,86), roi_back=(1083,574,90,86), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_next_period.png")
+	I_S_NEXT_PERIOD = RuleImage(roi_front=(1083,574,90,86), roi_back=(1083,574,90,86), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_next_period.png")
 	# description 
-	I_S_WHITE_FIVE = RuleImage(profile="High", roi_front=(769,143,77,85), roi_back=(769,143,77,85), threshold=0.85, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_white_five.png")
+	I_S_WHITE_FIVE = RuleImage(roi_front=(769,143,77,85), roi_back=(769,143,77,85), threshold=0.85, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_white_five.png")
 	# description 
-	I_S_WHITE_FOUR = RuleImage(profile="High", roi_front=(951,144,73,82), roi_back=(951,144,73,82), threshold=0.85, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_white_four.png")
+	I_S_WHITE_FOUR = RuleImage(roi_front=(951,144,73,82), roi_back=(951,144,73,82), threshold=0.85, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_white_four.png")
 	# 黑蛋 
-	I_S_BLACK = RuleImage(profile="High", roi_front=(588,143,78,83), roi_back=(588,143,78,83), threshold=0.9, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_black.png")
+	I_S_BLACK = RuleImage(roi_front=(588,143,78,83), roi_back=(588,143,78,83), threshold=0.9, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_black.png")
 	# description 
-	I_S_BUY_BLACK = RuleImage(profile="High", roi_front=(777,508,173,60), roi_back=(777,508,173,60), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_buy_black.png")
+	I_S_BUY_BLACK = RuleImage(roi_front=(777,508,173,60), roi_back=(777,508,173,60), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_buy_black.png")
 	# description 
-	I_S_BUY_WHITE_FIVE = RuleImage(profile="High", roi_front=(778,512,177,56), roi_back=(778,512,177,56), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_buy_white_five.png")
+	I_S_BUY_WHITE_FIVE = RuleImage(roi_front=(778,512,177,56), roi_back=(778,512,177,56), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_buy_white_five.png")
 	# description 
-	I_S_BUY_WHITE_FOUR = RuleImage(profile="High", roi_front=(779,507,173,64), roi_back=(779,507,173,64), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_buy_white_four.png")
+	I_S_BUY_WHITE_FOUR = RuleImage(roi_front=(779,507,173,64), roi_back=(779,507,173,64), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_buy_white_four.png")
 	# description 
-	I_S_CONFIRM_WHITE_FIVE = RuleImage(profile="High", roi_front=(554,522,174,61), roi_back=(520,416,220,193), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_confirm_white_five.png")
+	I_S_CONFIRM_WHITE_FIVE = RuleImage(roi_front=(554,522,174,61), roi_back=(520,416,220,193), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_confirm_white_five.png")
 	# description 
-	I_S_CONFIRM_WHITE_FOUR = RuleImage(profile="High", roi_front=(548,486,176,62), roi_back=(509,404,252,231), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_confirm_white_four.png")
+	I_S_CONFIRM_WHITE_FOUR = RuleImage(roi_front=(548,486,176,62), roi_back=(509,404,252,231), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_confirm_white_four.png")
 	# description 
-	I_S_CONFIRM_BLACK = RuleImage(profile="High", roi_front=(547,496,180,62), roi_back=(532,426,214,184), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_confirm_black.png")
+	I_S_CONFIRM_BLACK = RuleImage(roi_front=(547,496,180,62), roi_back=(532,426,214,184), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_confirm_black.png")
 	# description 
-	I_S_BUY_UP = RuleImage(profile="High", roi_front=(762,412,56,54), roi_back=(762,412,56,54), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_buy_up.png")
+	I_S_BUY_UP = RuleImage(roi_front=(762,412,56,54), roi_back=(762,412,56,54), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_buy_up.png")
 	# description 
-	I_S_CHECK_BLACK = RuleImage(profile="High", roi_front=(811,225,108,178), roi_back=(811,225,108,178), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_check_black.png")
+	I_S_CHECK_BLACK = RuleImage(roi_front=(811,225,108,178), roi_back=(811,225,108,178), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_check_black.png")
 	# description 
-	I_S_CHECK_WHITE_FIVE = RuleImage(profile="High", roi_front=(810,222,109,182), roi_back=(810,222,109,182), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_check_white_five.png")
+	I_S_CHECK_WHITE_FIVE = RuleImage(roi_front=(810,222,109,182), roi_back=(810,222,109,182), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_check_white_five.png")
 	# description 
-	I_S_CHECK_WHITE_FOUR = RuleImage(profile="High", roi_front=(808,222,113,181), roi_back=(808,222,113,181), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_check_white_four.png")
+	I_S_CHECK_WHITE_FOUR = RuleImage(roi_front=(808,222,113,181), roi_back=(808,222,113,181), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_check_white_four.png")
 	# 召唤页面前往神龛标志 
-	I_S_SUMMON_TO_SHRINE = RuleImage(profile="High", roi_front=(1235,353,16,38), roi_back=(864,210,413,337), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_summon_to_shrine.png")
+	I_S_SUMMON_TO_SHRINE = RuleImage(roi_front=(1235,353,16,38), roi_back=(864,210,413,337), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/shrine/shrine_s_summon_to_shrine.png")
 
 
 	# Ocr Rule Assets
@@ -370,31 +368,31 @@ class WeeklyPurchaseAssets:
 
 	# Image Rule Assets
 	# 千物宝库 
-	I_TT_ENTER = RuleImage(profile="High", roi_front=(1140,585,73,76), roi_back=(1140,585,73,76), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_enter.png")
+	I_TT_ENTER = RuleImage(roi_front=(1140,585,73,76), roi_back=(1140,585,73,76), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_enter.png")
 	# 确认进入 
-	I_TT_CHECK = RuleImage(profile="High", roi_front=(141,61,228,67), roi_back=(141,61,228,67), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_check.png")
+	I_TT_CHECK = RuleImage(roi_front=(141,61,228,67), roi_back=(141,61,228,67), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_check.png")
 	# description 
-	I_TT_BLACK = RuleImage(profile="High", roi_front=(710,176,91,90), roi_back=(453,171,589,109), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_black.png")
+	I_TT_BLACK = RuleImage(roi_front=(710,176,91,90), roi_back=(453,171,589,109), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_black.png")
 	# description 
-	I_TT_TICKET_BULE = RuleImage(profile="High", roi_front=(484,176,85,91), roi_back=(475,170,562,110), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_ticket_bule.png")
+	I_TT_TICKET_BULE = RuleImage(roi_front=(484,176,85,91), roi_back=(475,170,562,110), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_ticket_bule.png")
 	# description 
-	I_TT_AP = RuleImage(profile="High", roi_front=(938,177,88,87), roi_back=(467,167,581,123), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_ap.png")
+	I_TT_AP = RuleImage(roi_front=(938,177,88,87), roi_back=(467,167,581,123), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_ap.png")
 	# 提高 
-	I_TT_BUY_UP = RuleImage(profile="High", roi_front=(755,427,59,57), roi_back=(740,386,80,146), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_buy_up.png")
+	I_TT_BUY_UP = RuleImage(roi_front=(755,427,59,57), roi_back=(740,386,80,146), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_buy_up.png")
 	# description 
-	I_TT_BUY_CONFIRM = RuleImage(profile="High", roi_front=(584,512,53,53), roi_back=(553,487,169,115), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_buy_confirm.png")
+	I_TT_BUY_CONFIRM = RuleImage(roi_front=(584,512,53,53), roi_back=(553,487,169,115), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_buy_confirm.png")
 	# 唤妖借处 
-	I_TT_BORROW = RuleImage(profile="High", roi_front=(1043,262,39,149), roi_back=(960,169,208,309), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_borrow.png")
+	I_TT_BORROW = RuleImage(roi_front=(1043,262,39,149), roi_back=(960,169,208,309), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_borrow.png")
 	# 配置式神 
-	I_TT_CONFIGURE = RuleImage(profile="High", roi_front=(1129,608,42,44), roi_back=(1036,523,240,197), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_configure.png")
+	I_TT_CONFIGURE = RuleImage(roi_front=(1129,608,42,44), roi_back=(1036,523,240,197), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_configure.png")
 	# 确认配置 
-	I_TT_CONFIRM = RuleImage(profile="High", roi_front=(1129,608,42,44), roi_back=(1036,523,240,197), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_confirm.png")
+	I_TT_CONFIRM = RuleImage(roi_front=(1129,608,42,44), roi_back=(1036,523,240,197), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_confirm.png")
 	# 选择式神（第四个） 
-	I_TT_SHIKIGAMI = RuleImage(profile="High", roi_front=(682,257,15,14), roi_back=(652,221,151,148), threshold=0.7, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_shikigami.png")
+	I_TT_SHIKIGAMI = RuleImage(roi_front=(682,257,15,14), roi_back=(652,221,151,148), threshold=0.7, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_shikigami.png")
 	# 替换式神 
-	I_TT_SHIKIGAMI_REPLACE = RuleImage(profile="High", roi_front=(755,641,57,19), roi_back=(703,580,148,134), threshold=0.7, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_shikigami_replace.png")
+	I_TT_SHIKIGAMI_REPLACE = RuleImage(roi_front=(755,641,57,19), roi_back=(703,580,148,134), threshold=0.7, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_shikigami_replace.png")
 	# 借出确认 
-	I_TT_BORROW_CONFIRM = RuleImage(profile="High", roi_front=(960,508,50,53), roi_back=(886,444,222,194), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/tt/tt_tt_borrow_confirm.png")
+	I_TT_BORROW_CONFIRM = RuleImage(roi_front=(960,508,50,53), roi_back=(886,444,222,194), threshold=0.8, method="Template matching", profile="High", file="./tasks/WeeklyPurchase/tt/tt_tt_borrow_confirm.png")
 
 
 	# Ocr Rule Assets
@@ -412,3 +410,5 @@ class WeeklyPurchaseAssets:
 	O_TT_NUMBER = RuleOcr(roi=(576,415,58,49), area=(576,415,58,49), mode="Digit", method="Default", keyword="", name="tt_number")
 
 
+	I_ITACHI_SHOP_CHECK = _PageAssets.I_PAGE_WEEKLYPURCHASE_ITACHI_SHOP_CHECK
+	I_RM_CHECK_GUILD_STORE = _PageAssets.I_PAGE_WEEKLYPURCHASE_RM_CHECK_GUILD_STORE

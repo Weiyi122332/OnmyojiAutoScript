@@ -1,6 +1,8 @@
 # This Python file uses the following encoding: utf-8
 import time
+from copy import copy
 
+from module.atom.click import RuleClick
 from module.logger import logger
 from tasks.Chess.assets import ChessAssets
 from tasks.Component.Buy.buy import Buy
@@ -12,7 +14,7 @@ from tasks.GameUi.task_pages import page_itachi_shop
 
 
 class ItachiCoinShop(Buy, GameUi, WeeklyPurchaseAssets):
-    """购买鼬乐园商店中自动前移的三个鼬乐礼盒。"""
+    """按完整名称识别并购买三个鼬乐礼盒。"""
 
     ENTERTAINMENT_OVERLAY_TIMEOUT = 8.0
     ENTERTAINMENT_STABLE_TIME = 1.0
@@ -35,15 +37,20 @@ class ItachiCoinShop(Buy, GameUi, WeeklyPurchaseAssets):
 
         self.goto_page(page_itachi_shop)
         purchased = 0
+        purchased_gifts = set()
         for _ in range(self.MAX_GIFT_PURCHASES):
-            if not self._open_front_gift_once():
-                # 已购买商品不会再打开购买弹窗。这里只点击一次，避免在同一
-                # 商品位置进行高频试探。
-                logger.info('鼬乐币商店已购买')
+            gift = self._find_itachi_gift(purchased_gifts)
+            if gift is None:
+                logger.info('No remaining Itachi gift name matched; stop purchase')
+                break
+            name, area = gift
+            if not self._open_front_gift_once(name, area):
+                logger.warning(f'Itachi gift dialog did not open: {name}')
                 break
             if not self._buy_opened_gift():
                 break
             purchased += 1
+            purchased_gifts.add(name)
 
         logger.info(f'Itachi coin gifts purchased: {purchased}')
         self.goto_page(page_entertainment)
@@ -68,11 +75,34 @@ class ItachiCoinShop(Buy, GameUi, WeeklyPurchaseAssets):
 
         return False
 
-    def _open_front_gift_once(self) -> bool:
-        """只点击一次前排商品，并等待至多三秒确认购买框。"""
-
+    def _find_itachi_gift(self, purchased_gifts: set[str]):
+        """同一截图扫描商品区，仅接受完整礼盒名称，禁止逐字兜底匹配。"""
         self.screenshot()
-        self.click(self.C_ITACHI_GIFT)
+        rules = (self.O_ITACHI_MINI, self.O_ITACHI_MEDIUM, self.O_ITACHI_LARGE)
+        scan = copy(rules[0])
+        scan.roi = tuple(rules[0].area)
+        results = scan.detect_and_ocr(self.device.image)
+        for rule in rules:
+            if rule.keyword in purchased_gifts:
+                continue
+            for result in results:
+                text = ''.join(result.ocr_text.split())
+                if text != rule.keyword:
+                    continue
+                box = result.box
+                x, y = box.min(axis=0)
+                right, bottom = box.max(axis=0)
+                area = (int(x + scan.roi[0]), int(y + scan.roi[1]),
+                        int(right - x), int(bottom - y))
+                if area[2] > 0 and area[3] > 0:
+                    logger.info(f'Itachi gift matched: {rule.keyword}, area={area}')
+                    return rule.keyword, area
+        return None
+
+    def _open_front_gift_once(self, name: str, area: tuple) -> bool:
+        """只点击一次 OCR 匹配位置，并等待至多三秒确认购买框。"""
+
+        self.click(RuleClick(roi_front=area, roi_back=area, name=f'itachi_gift_{name}'))
         deadline = time.monotonic() + self.GIFT_DIALOG_TIMEOUT
         while time.monotonic() < deadline:
             self.screenshot()

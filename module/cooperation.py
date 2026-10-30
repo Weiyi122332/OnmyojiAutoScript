@@ -49,6 +49,9 @@ class Cooperation:
                 CREATE TABLE IF NOT EXISTS room_checks
                   (source TEXT PRIMARY KEY, target TEXT, task TEXT, token TEXT,
                    created REAL, ready INTEGER, answered REAL);
+                CREATE TABLE IF NOT EXISTS task_completions
+                  (source TEXT, target TEXT, task TEXT, created REAL, reason TEXT,
+                   PRIMARY KEY(source, target, task));
             ''')
 
     @contextmanager
@@ -104,6 +107,26 @@ class Cooperation:
             db.execute('INSERT OR REPLACE INTO room_checks VALUES (?, ?, ?, ?, ?, NULL, NULL)',
                        (self.name, peer, task, token, time.time()))
         return token
+
+    def begin_completion_phase(self, task, peer):
+        """Invalidate this instance's previous outgoing completion on a new role phase."""
+        with self.connect() as db:
+            db.execute('DELETE FROM task_completions WHERE source=? AND target=? AND task=?',
+                       (self.name, peer, task))
+        return time.time()
+
+    def notify_task_completion(self, task, peer, reason):
+        with self.connect() as db:
+            db.execute('INSERT OR REPLACE INTO task_completions VALUES (?, ?, ?, ?, ?)',
+                       (self.name, peer, task, time.time(), reason))
+        logger.info(f'Cooperation completed: {self.name} -> {peer}/{task}: {reason}')
+
+    def peer_task_completion(self, task, peer, since):
+        with self.connect() as db:
+            row = db.execute('SELECT created, reason FROM task_completions '
+                             'WHERE source=? AND target=? AND task=?',
+                             (peer, self.name, task)).fetchone()
+        return row[1] if row and row[0] >= since else None
 
     def pending_room_check(self, task, peer):
         with self.connect() as db:

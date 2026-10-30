@@ -2,13 +2,14 @@
 # @author runhey
 # github https://github.com/runhey
 from enum import Enum
-from pydantic import BaseModel, Field
-from tasks.Component.config_base import ConfigBase, TimeDelta
+from pydantic import BaseModel, Field, field_validator
+from tasks.Component.config_base import ConfigBase, TimeDelta, dynamic_hide
 from tasks.Component.config_scheduler import Scheduler
 from tasks.Utils.config_enum import ShikigamiClass
 
 
 class CardType(str, Enum):
+    ALTERNATE = '轮换'
     FISH = '斗鱼'
     TAIKO = '太鼓'
     
@@ -20,7 +21,16 @@ class ActivationScheduler(Scheduler):
 
 
 class ActivationConfig(BaseModel):
-    card_type: CardType = Field(default=CardType.TAIKO, description='card_rule_help')
+    @field_validator('card_type', mode='before')
+    @classmethod
+    def migrate_rotation_name(cls, value):
+        return CardType.ALTERNATE if value == '轮换斗鱼/太鼓' else value
+
+    hide_fields = dynamic_hide('last_card_type', 'pending_card_type')
+
+    card_type: CardType = Field(default=CardType.ALTERNATE, description='card_rule_help')
+    last_card_type: CardType | None = Field(default=None, description='上次成功挂卡类型')
+    pending_card_type: CardType | None = Field(default=None, description='已选中待激活的卡类型')
     min_taiko_num: int = Field(default=8, description='挂卡太鼓每小时最少收益,低于则不挂卡')
     min_fish_num: int = Field(default=16, description='挂卡斗鱼每小时最少收益,低于则不挂卡')
     exchange_before: bool = Field(default=True, description='exchange_before_help')

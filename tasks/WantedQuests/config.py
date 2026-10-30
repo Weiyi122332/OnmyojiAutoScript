@@ -9,6 +9,7 @@ from module.atom.image import RuleImage
 from pydantic import BaseModel, Field
 
 from tasks.Component.config_base import ConfigBase, Time
+from tasks.Component.SwitchSoul.switch_soul_config import SwitchSoulConfig
 from tasks.Component.config_scheduler import Scheduler
 from typing import List
 
@@ -36,10 +37,8 @@ class WQType(str, Enum):
 class WQInfo:
     """悬赏信息"""
     type: WQType    # 悬赏类型
-    dest: str       # 目的地(探索第十章/秘闻第七层/...)
     number: int     # 怪物数量
     goto_btn: RuleImage # 前往按钮
-    do_num: int     # 执行次数(探索一章节4个怪,需要打12个怪,则执行3次)
 
 
 class CooperationType(int, Enum):
@@ -100,6 +99,7 @@ class CooperationSelectMaskDescription(str, Enum):
 
 
 class WantedQuestsConfig(BaseModel):
+    auto_rotate: bool = Field(default=True, title="自动轮换", description="探索悬赏时自动开启轮换并补充候补式神")
     before_end: Time = Field(default=Time(0, 0, 0), description='before_end_help')
     invite_friend_name: str = Field(default=str(""), description="invite_friend_name_help")
     cooperation_type: CooperationSelectMaskDescription = Field(default=CooperationSelectMaskDescription.Any,
@@ -130,3 +130,4 @@ class WantedQuestsConfig(BaseModel):
 class WantedQuests(ConfigBase):
     scheduler: Scheduler = Field(default_factory=Scheduler)
     wanted_quests_config: WantedQuestsConfig = Field(default_factory=WantedQuestsConfig)
+    switch_soul: SwitchSoulConfig = Field(default_factory=SwitchSoulConfig)

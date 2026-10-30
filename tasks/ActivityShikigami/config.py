@@ -20,7 +20,7 @@ class ActivityTask(str, Enum):
     RICH_MAN = '大富翁'
     FAKE_GOD = '伪神'
     CLIMB = '爬塔'
-    BOSS = '首领boss'
+    BOSS = '首领'
 
 
 class ClimbTask(str, Enum):
@@ -30,13 +30,13 @@ class ClimbTask(str, Enum):
     AP100 = '百体'
 
 
-ACTIVITY_EXECUTION_ORDER = ('探索', '大富翁', '伪神', '爬塔', '首领boss')
+ACTIVITY_EXECUTION_ORDER = ('探索', '大富翁', '伪神', '爬塔', '首领')
 ACTIVITY_NAME_TO_FIELD = {
     '大富翁': 'rich_man',
     '伪神': 'fakegod',
     '爬塔': 'climb',
     '探索': 'exploration',
-    '首领boss': 'boss',
+    '首领': 'boss',
 }
 ACTIVITY_NAME_ALIASES = {
     '探索': '探索',
@@ -52,9 +52,9 @@ ACTIVITY_NAME_ALIASES = {
     'fake_god': '伪神',
     '伪神': '伪神',
     '伪神降临': '伪神',
-    '首领boss': '首领boss',
-    '首领': '首领boss',
-    'boss': '首领boss',
+    '首领boss': '首领',
+    '首领': '首领',
+    'boss': '首领',
 }
 CLIMB_TYPES = ('pass', 'ap', 'ap100')
 BATTLE_TYPES = ('rich_man', *CLIMB_TYPES, 'pass_hard', 'boss', 'fakegod')
@@ -134,8 +134,8 @@ class GeneralConfig(ConfigBase):
                      for part in re.split(r'[,，;；\n\r]+', str(item.value if isinstance(item, ActivityTask) else item))
                      if part.strip()]
             names = [ACTIVITY_NAME_ALIASES.get(name.lower(), name) for name in names]
-            if '爬塔' in names and '首领boss' not in names:
-                names.insert(names.index('爬塔') + 1, '首领boss')
+            if '爬塔' in names and '首领' not in names:
+                names.insert(names.index('爬塔') + 1, '首领')
             data['task_sequence'] = names
         return data
 

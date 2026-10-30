@@ -10,26 +10,6 @@
     "description": "奇怪了之前的不能用"
   },
   {
-    "itemName": "wq_d1111",
-    "imageName": "wq_wq_d1111.png",
-    "profile": "High",
-    "roiFront": "20,171,99,105",
-    "roiBack": "6,148,150,299",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "妖气封印"
-  },
-  {
-    "itemName": "wq_nian",
-    "imageName": "wq_wq_nian.png",
-    "profile": "High",
-    "roiFront": "19,176,100,100",
-    "roiBack": "0,153,166,273",
-    "method": "Template matching",
-    "threshold": 0.8,
-    "description": "年兽"
-  },
-  {
     "itemName": "wqse_special_fire",
     "imageName": "wq_wqse_special_fire.png",
     "profile": "High",

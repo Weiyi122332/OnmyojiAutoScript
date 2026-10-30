@@ -113,7 +113,7 @@ class ScriptTask(GameUi, DelegationAssets):
                 continue
             if self.appear(self.I_REWARDS_MIN):
                 # 先检查完成任务，不能因为停留三秒就跳过尚未领取的奖励。
-                if self.ocr_appear(self.O_D_DONE):
+                if self.appear(self.I_D_DONE):
                     self.wait_delegation_done_reward()
                     idle_since = monotonic()
                     continue
@@ -147,7 +147,7 @@ class ScriptTask(GameUi, DelegationAssets):
                     if list_frames >= 2:
                         logger.info('Delegation reward flow returned to task list')
                         return
-                elif self.ocr_appear(self.O_D_DONE):
+                elif self.appear(self.I_D_DONE):
                     list_frames = 0
                     if monotonic() >= retry_at:
                         if attempts >= 3:
@@ -155,11 +155,14 @@ class ScriptTask(GameUi, DelegationAssets):
                                 'Delegation: completed task is still on list after 3 entry clicks; '
                                 'reward dialog never opened'
                             )
-                        # OCR 更新到当前帧的完成标签后再点击，避免沿用旧坐标。
-                        if self.ocr_appear_click(self.O_D_DONE, interval=1):
-                            attempts += 1
-                            retry_at = monotonic() + 5
-                            logger.info(f'Delegation open completed-task reward: attempt={attempts}/3; awaiting page confirmation')
+                        # 当前帧匹配完成标签，框内取点后向右100像素点击任务卡。
+                        x, y = self.I_D_DONE.coord()
+                        self.device.click(x=x + 100, y=y,
+                                          control_name='DELEGATION_DONE_OFFSET_RIGHT_100')
+                        attempts += 1
+                        retry_at = monotonic() + 5
+                        logger.info(f'Delegation open completed-task reward: attempt={attempts}/3; '
+                                    f'click=({x + 100}, {y}); awaiting page confirmation')
                 else:
                     list_frames = 0
             else:

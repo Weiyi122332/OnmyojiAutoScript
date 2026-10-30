@@ -516,6 +516,26 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
     def _is_activity_page(page: Page) -> bool:
         return page.category == 'activity_shikigami' or page.key == 'page_activity'
 
+    def _recover_town_navigation(self, transition: Transition) -> None:
+        """町中入口失败且仍在町中时，经庭院重新进入后交给外层重试。"""
+        current = self.navigator.current_page
+        if (transition.source.key != 'page_town'
+                or transition.destination.key == 'page_main'
+                or current is None or current.key != 'page_town'):
+            return
+        back = next((edge for edge in current.transitions
+                     if edge.destination.key == 'page_main'), None)
+        if back is None:
+            return
+        enter = next((edge for edge in back.destination.transitions
+                      if edge.destination.key == 'page_town'), None)
+        if enter is None:
+            return
+        logger.info('Town entrance unavailable: return to courtyard '
+                    'and re-enter town before retrying image recognition')
+        if self._execute_transition(back):
+            self._execute_transition(enter)
+
     def _execute_transition(self, transition: Transition) -> bool:
         """执行一条导航边。
 
@@ -549,6 +569,7 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
                 skip_first_screenshot=False,
                 categories=self._navigation_detect_categories(destination),
             )
+            self._recover_town_navigation(transition)
             return False
 
         if self._wait_for_destination(destination):
@@ -570,6 +591,7 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
             skip_first_screenshot=False,
             categories=self._navigation_detect_categories(destination),
         )
+        self._recover_town_navigation(transition)
         return False
 
     def _collect_page_check_results(self, destination: Page) -> list[str]:

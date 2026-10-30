@@ -1,8 +1,8 @@
 [
   {
     "itemName": "itachi_coin",
-    "roiFront": "1081,21,134,38",
-    "roiBack": "1081,21,134,38",
+    "roiFront": "1102,13,134,38",
+    "roiBack": "1102,13,134,38",
     "mode": "DigitCounter",
     "method": "Default",
     "keyword": "",
@@ -16,5 +16,32 @@
     "method": "Default",
     "keyword": "",
     "description": ""
+  },
+  {
+    "itemName": "itachi_mini",
+    "roiFront": "736,133,145,42",
+    "roiBack": "677,101,452,474",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "小型鼬乐礼盒",
+    "description": "小型鼬乐礼盒"
+  },
+  {
+    "itemName": "itachi_medium",
+    "roiFront": "949,136,145,42",
+    "roiBack": "677,101,452,474",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "中型鼬乐礼盒",
+    "description": "中型鼬乐礼盒"
+  },
+  {
+    "itemName": "itachi_large",
+    "roiFront": "733,363,145,42",
+    "roiBack": "677,101,452,474",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "大型鼬乐礼盒",
+    "description": "大型鼬乐礼盒"
   }
 ]

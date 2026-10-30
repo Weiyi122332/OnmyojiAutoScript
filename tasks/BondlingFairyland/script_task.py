@@ -199,8 +199,35 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
         logger.info('Bondling private confirmed, create team')
         return self.create_ensure(ensure_rules=[self.I_CREATE_TEAM])
 
+    def _begin_bondling_completion_phase(self):
+        runtime, task, peer = self._room_cooperation()
+        self._bondling_completion_since = (
+            runtime.begin_completion_phase(task, peer) if peer else datetime.now().timestamp()
+        )
+
+    def _notify_bondling_completion(self, reason):
+        runtime, task, peer = self._room_cooperation()
+        if not peer:
+            return False
+        runtime.notify_task_completion(task, peer, reason)
+        return True
+
+    def _bondling_peer_finished(self):
+        runtime, task, peer = self._room_cooperation()
+        if not peer:
+            return False
+        since = getattr(self, '_bondling_completion_since', None)
+        if since is None:
+            return False
+        reason = runtime.peer_task_completion(task, peer, since)
+        if reason:
+            logger.info(f'契灵：队长已结束本轮任务，队员收尾退出：{reason}')
+            return True
+        return False
+
     def run_leader(self):
         self.prepare_battle_cooperation('BondlingFairyland')
+        self._begin_bondling_completion_phase()
         """  点击 求援， 组队模式  """
         logger.hr('Start run leader', 2)
         success = True
@@ -244,6 +271,7 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
             if success:
                 is_first = True
                 if not create_bond_team():
+                    self._notify_bondling_completion('no_bondling_available')
                     return True
 
             self.check_and_invite(True)
@@ -251,7 +279,9 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
             if self.current_count >= self.limit_count:
                 if self.appear(self.I_GI_IN_ROOM):
                     # 次数达到也要邀请好友进房间,然后退出,不然队员无法判断是否完成契灵,出现异常
-                    self.invite_friends(self.config.bondling_fairyland.invite_config)
+                    notified = self._notify_bondling_completion('count_limit_reached')
+                    if not notified:
+                        self.invite_friends(self.config.bondling_fairyland.invite_config)
                     # 等待三秒让队员进房间,避免队员没进房间出现异常
                     sleep(3)
                     logger.info(f'契灵次数:{self.current_count}已完成,退出')
@@ -260,6 +290,7 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
             if datetime.now() - self.start_time >= self.limit_time:
                 if self.appear(self.I_GI_IN_ROOM):
                     logger.info('bondling_fairyland time limit out')
+                    self._notify_bondling_completion('time_limit_reached')
                     break
 
             if self.appear(self.I_GI_IN_ROOM):
@@ -286,6 +317,7 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
                         is_first = False
                         success = self.run_general_battle(self.config.bondling_fairyland.battle_config)
                         continue
+        self._notify_bondling_completion('leader_stopped')
         # 当结束或者是失败退出循环的时候只有两个UI的可能，在房间或者是在组队界面
         # 如果在房间就退出
         if self.exit_room():
@@ -305,6 +337,7 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
 
     def run_member(self):
         self.prepare_battle_cooperation('BondlingFairyland')
+        self._begin_bondling_completion_phase()
         logger.hr('Start run member', 2)
         # 开始等待队长拉人
         wait_time = self.config.bondling_fairyland.invite_config.wait_time
@@ -317,15 +350,14 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
 
         while 1:
 
+            if self._bondling_peer_finished():
+                break
             self.screenshot()
 
             if wait_timer.reached():
                 logger.info(f"队员等待超时:{wait_timer.current()}, 退出")
                 break
 
-            # if self.current_count >= self.limit_count:
-            #     logger.info('Orochi count limit out')
-            #     breakpush_n
             if datetime.now() - self.start_time >= self.limit_time:
                 logger.info('BondlingFairyland time limit out')
                 break
@@ -756,6 +788,8 @@ class ScriptTask(GameUi, GeneralInvite, GeneralRoom, GeneralBattle, SwitchSoul, 
         logger.info(f'Wait battle {wait_second} seconds')
         success = True
         while 1:
+            if self._bondling_peer_finished():
+                return False
             self.screenshot()
 
             if self.appear(self.I_EXIT):

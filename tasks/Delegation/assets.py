@@ -1,4 +1,5 @@
 from module.atom.image import RuleImage
+from module.atom.frame import RuleFrame, Image, Ocr, Click
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
 from module.atom.long_click import RuleLongClick
@@ -18,17 +19,17 @@ class DelegationAssets:
 
 	# Image Rule Assets
 	# 委派式神 
-	I_D_CONFIRM = RuleImage(profile="High", roi_front=(979,302,152,62), roi_back=(974,297,162,72), threshold=0.8, method="Template matching", file="./tasks/Delegation/d/d_d_confirm.png")
+	I_D_CONFIRM = RuleImage(roi_front=(979,302,152,62), roi_back=(974,297,162,72), threshold=0.8, method="Template matching", profile="High", file="./tasks/Delegation/d/d_d_confirm.png")
 	# 再考虑下 
-	I_D_CANCEL = RuleImage(profile="High", roi_front=(945,413,130,56), roi_back=(940,408,140,66), threshold=0.8, method="Template matching", file="./tasks/Delegation/d/d_d_cancel.png")
+	I_D_CANCEL = RuleImage(roi_front=(945,413,130,56), roi_back=(940,408,140,66), threshold=0.8, method="Template matching", profile="High", file="./tasks/Delegation/d/d_d_cancel.png")
 	# 出发 
-	I_D_START = RuleImage(profile="High", roi_front=(1101,534,120,129), roi_back=(1096,529,130,139), threshold=0.8, method="Template matching", file="./tasks/Delegation/d/d_d_start.png")
+	I_D_START = RuleImage(roi_front=(1101,534,120,129), roi_back=(1096,529,130,139), threshold=0.8, method="Template matching", profile="High", file="./tasks/Delegation/d/d_d_start.png")
 	# 跳过 
-	I_D_SKIP = RuleImage(profile="High", roi_front=(661,518,70,39), roi_back=(656,513,80,49), threshold=0.67, method="Template matching", file="./tasks/Delegation/d/d_d_skip.png")
+	I_D_SKIP = RuleImage(roi_front=(661,518,70,39), roi_back=(656,513,80,49), threshold=0.67, method="Template matching", profile="High", file="./tasks/Delegation/d/d_d_skip.png")
 	# 首位出战 
-	I_D_SELECT_FIRST = RuleImage(profile="High", roi_front=(225,581,44,41), roi_back=(166,491,142,178), threshold=0.7, method="Template matching", file="./tasks/Delegation/d/d_d_select_first.png")
+	I_D_SELECT_FIRST = RuleImage(roi_front=(225,581,44,41), roi_back=(166,491,142,178), threshold=0.7, method="Template matching", profile="High", file="./tasks/Delegation/d/d_d_select_first.png")
 	# 返回 
-	I_D_BACK = RuleImage(profile="High", roi_front=(940,415,138,51), roi_back=(935,410,148,61), threshold=0.8, method="Template matching", file="./tasks/Delegation/d/d_d_back.png")
+	I_D_BACK = RuleImage(roi_front=(940,415,138,51), roi_back=(935,410,148,61), threshold=0.8, method="Template matching", profile="High", file="./tasks/Delegation/d/d_d_back.png")
 
 
 	# Ocr Rule Assets
@@ -38,24 +39,24 @@ class DelegationAssets:
 
 	# Image Rule Assets
 	# description 
-	I_REWARDS_DONE = RuleImage(profile="High", roi_front=(982,303,149,60), roi_back=(972,293,169,80), threshold=0.8, method="Template matching", file="./tasks/Delegation/rewards/rewards_rewards_done.png")
+	I_REWARDS_DONE = RuleImage(roi_front=(982,303,149,60), roi_back=(972,293,169,80), threshold=0.8, method="Template matching", profile="High", file="./tasks/Delegation/rewards/rewards_rewards_done.png")
 	# description 
-	I_REWARDS_CHAT = RuleImage(profile="High", roi_front=(1171,124,48,65), roi_back=(1161,114,68,85), threshold=0.8, method="Template matching", file="./tasks/Delegation/rewards/rewards_rewards_chat.png")
+	I_REWARDS_CHAT = RuleImage(roi_front=(1171,124,48,65), roi_back=(1161,114,68,85), threshold=0.8, method="Template matching", profile="High", file="./tasks/Delegation/rewards/rewards_rewards_chat.png")
 	# 完美达成 
-	I_REWARDS_GET = RuleImage(profile="High", roi_front=(444,78,100,100), roi_back=(434,68,120,120), threshold=0.8, method="Template matching", file="./tasks/Delegation/rewards/rewards_rewards_get.png")
+	I_REWARDS_GET = RuleImage(roi_front=(444,78,100,100), roi_back=(434,68,120,120), threshold=0.8, method="Template matching", profile="High", file="./tasks/Delegation/rewards/rewards_rewards_get.png")
 	# description 
-	I_REWARDS_MIN = RuleImage(profile="High", roi_front=(840,131,44,58), roi_back=(830,121,64,78), threshold=0.8, method="Template matching", file="./tasks/Delegation/rewards/rewards_rewards_min.png")
+	I_REWARDS_MIN = RuleImage(roi_front=(840,131,44,58), roi_back=(830,121,64,78), threshold=0.8, method="Template matching", profile="High", file="./tasks/Delegation/rewards/rewards_rewards_min.png")
 	# 差强人意 
-	I_REWARDS_FALSE = RuleImage(profile="High", roi_front=(430,72,100,100), roi_back=(420,62,120,120), threshold=0.8, method="Template matching", file="./tasks/Delegation/rewards/rewards_rewards_false.png")
+	I_REWARDS_FALSE = RuleImage(roi_front=(430,72,100,100), roi_back=(420,62,120,120), threshold=0.8, method="Template matching", profile="High", file="./tasks/Delegation/rewards/rewards_rewards_false.png")
 	# description 
-	I_CHAT_1 = RuleImage(profile="High", roi_front=(735,350,318,100), roi_back=(651,161,601,391), threshold=0.8, method="Template matching", file="./tasks/Delegation/rewards/rewards_chat_1.png")
+	I_CHAT_1 = RuleImage(roi_front=(735,350,318,100), roi_back=(651,161,601,391), threshold=0.8, method="Template matching", profile="High", file="./tasks/Delegation/rewards/rewards_chat_1.png")
 	# description 
-	I_CHAT_2 = RuleImage(profile="High", roi_front=(721,384,325,100), roi_back=(671,309,428,258), threshold=0.8, method="Template matching", file="./tasks/Delegation/rewards/rewards_chat_2.png")
+	I_CHAT_2 = RuleImage(roi_front=(721,384,325,100), roi_back=(671,309,428,258), threshold=0.8, method="Template matching", profile="High", file="./tasks/Delegation/rewards/rewards_chat_2.png")
+	#  
+	I_D_DONE = RuleImage(roi_front=(984,132,86,39), roi_back=(969,129,290,506), threshold=0.8, method="Template matching", profile="High", file="./tasks/Delegation/rewards/rewards_d_done.png")
 
 
 	# Ocr Rule Assets
-	# 完成 
-	O_D_DONE = RuleOcr(roi=(804,129,311,439), area=(804,129,311,439), mode="Full", method="Default", keyword="完成", name="d_done")
 	# 完成对话 
 	O_D_DONE_CHAT = RuleOcr(roi=(282,580,695,140), area=(282,580,695,140), mode="Single", method="Default", keyword="", name="d_done_chat")
 

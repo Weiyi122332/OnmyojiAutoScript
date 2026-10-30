@@ -31,15 +31,18 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
     # 追踪界面(显示"前往"按钮的界面,左上角位置,神秘任务不好使)显示以下名称时,任务不再执行
     unwanted_boss_name_list: list = []
     # 已经执行过的悬赏封印(仅记录执行过的, 不一定成功运行)
-    wq_executed_set: set[WQInfo] = set()
+    wq_executed_set: set[tuple[str, int, WQInfo]] = set()
 
     def run(self):
         con = self.config.model.wanted_quests
+        self.unwanted_boss_name_list = []
         unwanted_boss_names = con.wanted_quests_config.unwanted_boss_names
         if unwanted_boss_names is not None and unwanted_boss_names != '':
             self.unwanted_boss_name_list = re.split(r"[，,]", unwanted_boss_names)
 
-        # 悬赏会使用探索和秘闻战斗，御魂直接复用这两个任务的预设。
+        self.wq_executed_set = set()
+
+        # 使用悬赏封印独立配置的御魂预设。
         self.switch_mission_souls()
 
         preSuc = False
@@ -99,30 +102,23 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         raise TaskEnd('WantedQuests')
 
     def switch_mission_souls(self) -> None:
-        """为悬赏装配探索与秘闻任务已配置的御魂预设。"""
-        soul_configs = (
-            ('Exploration', self.config.model.exploration.switch_soul_config),
-            ('Secret', self.config.model.secret.switch_soul),
-        )
-        for task_name, soul_config in soul_configs:
-            if soul_config.enable:
-                logger.info(f'Wanted quests use {task_name} soul preset')
-                self.goto_page(page_shikigami_records)
-                self.run_switch_soul(soul_config.switch_group_team)
-            if soul_config.enable_switch_by_name:
-                logger.info(f'Wanted quests use {task_name} named soul preset')
-                self.goto_page(page_shikigami_records)
-                self.run_switch_soul_by_name(
-                    soul_config.group_name,
-                    soul_config.team_name,
-                )
+        """装配悬赏封印自己的御魂预设。"""
+        soul_config = self.config.model.wanted_quests.switch_soul
+        if soul_config.enable:
+            self.goto_page(page_shikigami_records)
+            self.run_switch_soul(soul_config.switch_group_team)
+        if soul_config.enable_switch_by_name:
+            self.goto_page(page_shikigami_records)
+            self.run_switch_soul_by_name(
+                soul_config.group_name, soul_config.team_name,
+            )
 
     def open_wq_info(self) -> bool:
         """打开对应怪物悬赏详情界面"""
         timeout_timer = Timer(5).start()
         while not timeout_timer.reached():
             self.screenshot()
-            if self.appear(self.I_TRACE_TRUE):
+            if self.appear(self.I_TRACE_DISABLE) or self.appear(self.I_WQ_TRACE_ONE_REALWORLD):
                 return True
             self.click(self.O_WQ_TEXT_ALL, interval=1.2)
         return False
@@ -234,8 +230,12 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
             return
         while 1:
             self.screenshot()
-            # 追踪成功  或  是现世任务 不需要追踪
-            if self.appear(self.I_WQ_TRACE_ONE_ENABLE) or self.appear(self.I_WQ_TRACE_ONE_REALWORLD):
+            if self.appear(self.I_WQ_TRACE_ONE_REALWORLD):
+                logger.info('Skip real-world wanted quest')
+                self.ui_click_until_disappear(self.I_UI_BACK_RED, interval=1.5)
+                return False
+            # 追踪成功。
+            if self.appear(self.I_WQ_TRACE_ONE_ENABLE):
                 break
             if self.appear(self.I_WQ_TRACE_ONE_DISABLE):
                 self.click(self.I_WQ_TRACE_ONE_DISABLE, interval=1.5)
@@ -247,8 +247,7 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
             # 防止点击后界面来不及刷新
             sleep(1.5)
         # 关闭单个任务的追踪界面
-        self.ui_click_until_smt_disappear(self.C_WQ_TRACE_ONE_CLOSE, stop=self.I_WQ_TRACE_ONE_CHECK_OPENED,
-                                          interval=1.5)
+        self.ui_click_until_disappear(self.I_UI_BACK_RED, interval=1.5)
 
     def execute_mission(self, num_want: int):
         """
@@ -257,22 +256,33 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         :return:
         """
         logger.hr('Start wanted quests')
-        if not self.appear(self.I_GOTO_1):
-            # 如果没有出现 '前往'按钮， 那就是这个可能是神秘任务但是没有解锁
-            logger.info('This is a secret mission but not unlock')
-            self.ui_click(self.I_TRACE_TRUE, self.I_TRACE_FALSE)
+        if self.appear(self.I_WQ_TRACE_ONE_REALWORLD):
+            logger.info('Skip real-world wanted quest')
+            self.ui_click_until_disappear(self.I_UI_BACK_RED, interval=1.5)
+            self.goto_page(page_exploration)
             return False
-        # 跳过不想打的
-        monster_name = self.O_WQ_MONSTER_TYPE.detect_text(self.device.image)
-        if monster_name in self.unwanted_boss_name_list:
-            logger.warning(f'unwanted {monster_name}')
-            self.ui_click(self.I_TRACE_TRUE, self.I_TRACE_FALSE)
+        target_text = ''.join(self.O_WQ_MONSTER_TYPE.detect_text(self.device.image).split())
+        ignored_target = next((name.strip() for name in self.unwanted_boss_name_list
+                               if name.strip() and name.strip() in target_text), None)
+        self._wanted_target_text = target_text
+        if '神秘妖怪' in target_text:
+            logger.info(f'Locked mystery target, close details: {target_text}')
+            self.ui_click_until_disappear(self.I_UI_BACK_RED)
+            self.goto_page(page_exploration)
+            return False
+        if '未知目标' in target_text or ignored_target:
+            logger.info(f'Skip wanted target: {target_text}')
+            self.ui_click(self.I_WQ_TRACE_ONE_ENABLE, self.I_WQ_TRACE_ONE_DISABLE)
+            self.ui_click_until_disappear(self.I_UI_BACK_RED, interval=1.5)
+            self.goto_page(page_exploration)
             return False
         # 获取排序后的悬赏信息列表
         ordered_wq_infos = self.get_ordered_wq_infos(num_want)
         if not ordered_wq_infos:
             logger.info('Current wanted quest skipped all, cancel it')
-            self.ui_click(self.I_TRACE_TRUE, self.I_TRACE_FALSE)
+            self.ui_click(self.I_WQ_TRACE_ONE_ENABLE, self.I_WQ_TRACE_ONE_DISABLE)
+            self.ui_click_until_disappear(self.I_UI_BACK_RED, interval=1.5)
+            self.goto_page(page_exploration)
             return False
         wq_call_dict: dict[WQType, Callable] = {
             WQType.CHALLENGE: self.challenge,
@@ -283,15 +293,18 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         wq_info = self.get_need_exec_wq(ordered_wq_infos)
         if not wq_info:
             logger.info('Current wanted quests can not be executed')
-            self.ui_click(self.I_TRACE_TRUE, self.I_TRACE_FALSE)
+            self.ui_click(self.I_WQ_TRACE_ONE_ENABLE, self.I_WQ_TRACE_ONE_DISABLE)
+            self.ui_click_until_disappear(self.I_UI_BACK_RED, interval=1.5)
+            self.goto_page(page_exploration)
             return False
         try:
             logger.info(f'Choose wq: {wq_info}')
-            wq_call_dict[wq_info.type](wq_info.goto_btn, wq_info.do_num)
+            do_num = (num_want + wq_info.number - 1) // wq_info.number
+            wq_call_dict[wq_info.type](wq_info.goto_btn, do_num)
         except ExploreWantedBoss:
             logger.warning('Maybe only need attack boss')
         finally:
-            self.wq_executed_set.add(wq_info)
+            self.wq_executed_set.add((self._wanted_target_text, num_want, wq_info))
             self.goto_page(page_exploration)
 
     def get_need_exec_wq(self, ordered_wq_infos: List[WQInfo]) -> Optional[WQInfo]:
@@ -308,19 +321,14 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
     def get_ordered_wq_infos(self, num_want: int) -> List[WQInfo]:
         """获取当前悬赏妖怪页面排好序的信息列表, 会自动排除无法执行的悬赏"""
         wq_type_ocr = [self.O_WQ_TYPE_1, self.O_WQ_TYPE_2, self.O_WQ_TYPE_3, self.O_WQ_TYPE_4]
-        wq_info_ocr = [self.O_WQ_INFO_1, self.O_WQ_INFO_2, self.O_WQ_INFO_3, self.O_WQ_INFO_4]
         goto_btn_list = [self.I_GOTO_1, self.I_GOTO_2, self.I_GOTO_3, self.I_GOTO_4]
         wq_info_list = []
         for i in range(4):
-            wq_info = self.build_wq_info(wq_type_ocr[i], wq_info_ocr[i], goto_btn_list[i], num_want)
+            wq_info = self.build_wq_info(wq_type_ocr[i], goto_btn_list[i])
             if not wq_info:
                 continue
-            # 跳过高层秘闻
-            if wq_info.dest[-1] in {"捌", "玖", "拾", "番外"}:
-                logger.warning('This secret layer is too high, skip')
-                continue
-            # 跳过已经执行过的(例:都是探索第5层4只怪, 上次计算需要打2次但是这次还是打2次, 肯定出问题了也不需要执行了)
-            if wq_info in self.wq_executed_set:
+            # 只有剩余数量也未变化时，才判定这条路线未取得进展。
+            if (self._wanted_target_text, num_want, wq_info) in self.wq_executed_set:
                 logger.warning('This wanted quest has been executed, skip')
                 continue
             wq_info_list.append(wq_info)
@@ -329,35 +337,31 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         wq_info_list.sort(key=lambda x: type_ordered_list.index(x.type))
         return wq_info_list
 
-    def build_wq_info(self, type_rule: RuleOcr, info_rule: RuleOcr, goto_btn_rule: RuleImage, num_want: int) -> Optional[WQInfo]:
-        """
-        构建单条悬赏信息
-        :param type_rule: 悬赏类型
-        :param info_rule: 悬赏信息
-        :param goto_btn_rule: 前往按钮
-        :param num_want: 想要攻击的数量
-        :return: WQInfo
-        """
-        wq_type_txt = type_rule.ocr(self.device.image)
-        # 适配老逻辑, 将式神碎片改为挑战
-        wq_type_txt = '挑战' if wq_type_txt == '式神' else wq_type_txt
-        if wq_type_txt == '' or not WQType.contains(wq_type_txt):
-            logger.warning(f'Unknown wq type: {wq_type_txt}')
+    @staticmethod
+    def parse_wq_row(text: str):
+        text = ''.join(text.split()).replace('：', ':')
+        type_match = re.match(r'^(式神碎片|式神|挑战|探索|秘闻|妖气)', text)
+        number_match = re.search(r'[数教]量:([0-9]+)', text)
+        if not type_match or not number_match:
             return None
-        wq_type = WQType(wq_type_txt)
-        type_ordered_list = self.get_config()._wq_type_ordered_list
-        if wq_type not in type_ordered_list:
-            logger.warning(f'{wq_type.value} is not in the order list')
+        number = int(number_match.group(1))
+        if number <= 0:
             return None
-        wq_info_txt = info_rule.ocr(self.device.image)
-        wq_info_txt = wq_info_txt.replace('：', ':').replace('（', '(').replace('）', ')')
-        match = re.search(r"(.+?)\s*\(?[数教]量[:：]\s*(\d+)", wq_info_txt)
-        if not match:
-            logger.warning(f'Unknown wq info: {wq_info_txt}')
+        kind = type_match.group(1)
+        return WQType('挑战' if kind in ('式神碎片', '式神') else kind), number
+
+    def build_wq_info(self, type_rule: RuleOcr, goto_btn_rule: RuleImage) -> Optional[WQInfo]:
+        row_text = type_rule.ocr(self.device.image)
+        parsed = self.parse_wq_row(row_text)
+        if parsed is None:
+            logger.warning(f'Unknown wanted quest row: {row_text}')
             return None
-        wq_dest, wq_number = match.group(1).strip(), int(match.group(2))
-        do_num = num_want // wq_number + (num_want % wq_number > 0)
-        return WQInfo(wq_type, wq_dest, wq_number, goto_btn_rule, do_num)
+        wq_type, number = parsed
+        if wq_type not in self.get_config()._wq_type_ordered_list:
+            return None
+        if wq_type not in (WQType.CHALLENGE, WQType.EXPLORE, WQType.SECRET):
+            return None
+        return WQInfo(wq_type, number, goto_btn_rule)
 
     def challenge(self, goto_btn, num):
         self.ui_click(goto_btn, self.I_WQC_FIRE)

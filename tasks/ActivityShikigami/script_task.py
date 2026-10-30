@@ -14,7 +14,7 @@ ACTIVITY_METHOD_FIELDS = {
     '伪神': 'run_fakegod',
     '爬塔': 'run_climb',
     '探索': 'run_exploration',
-    '首领boss': 'run_boss',
+    '首领': 'run_boss',
 }
 
 
