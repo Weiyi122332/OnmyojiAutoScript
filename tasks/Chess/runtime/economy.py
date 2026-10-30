@@ -845,6 +845,8 @@ class ChessEconomyMixin:
         allow_hidden: bool,
     ) -> str:
         """点击刷新，以至少三个对应商店槽位变化确认成功。"""
+        if not self._battle_refresh_time_allowed():
+            return 'no_progress'
         if not allow_hidden and not self.appear(self.I_REFRESH):
             logger.warning('Cannot refresh Chess shop: button is missing')
             return 'no_progress'
@@ -862,12 +864,15 @@ class ChessEconomyMixin:
             if not self._economy_action_allowed():
                 return 'no_progress'
             gold_before = gold
+            if not self._battle_refresh_time_allowed():
+                return 'no_progress'
             self.click(self.I_REFRESH)
             # 按实际点击计数；确认失败也计入额度，避免重试超限。
             counts = self.chess_state.economy_refresh_counts
             counts[round_no] = counts.get(round_no, 0) + 1
             deadline = time.monotonic() + self.ACTION_ICON_WAIT_TIMEOUT
             previous = None
+            previous_identities = None
             changed = []
             while time.monotonic() < deadline:
                 self.screenshot()
@@ -882,12 +887,29 @@ class ChessEconomyMixin:
                 )
                 if stable and len(changed) >= self.SHOP_REFRESH_CHANGED_SLOT_MINIMUM:
                     break
+                if len(changed) >= self.SHOP_REFRESH_CHANGED_SLOT_MINIMUM:
+                    # Gold borders and active-card effects can keep animating
+                    # after the shop is ready. Two matching identity scans are
+                    # stronger evidence than requiring every pixel to settle.
+                    identities = self._shop_page_identities()
+                    identity_changes = (sum(
+                        before[i]['name'] is not None and before[i]['name'] != identities[i-1]
+                        for i in range(1, 6)
+                    ) if identities is not None else 0)
+                    if (identities is not None and identities == previous_identities
+                            and identity_changes >= self.SHOP_REFRESH_CHANGED_SLOT_MINIMUM):
+                        logger.info('Chess refresh confirmed by stable card identities despite animation')
+                        break
+                    previous_identities = identities
+                else:
+                    previous_identities = None
                 previous = after
             else:
                 # Spending gold or a partially changed page is ambiguous progress.
                 # Do not spend another refresh to recover a confirmation failure.
                 gold_after = self._read_shop_gold()
                 if changed or gold_after is None or gold_after < gold_before:
+                    logger.warning('Chess refresh confirmation timed out; scan current targets before pausing refresh')
                     return 'no_progress'
                 continue
             logger.info(
@@ -912,6 +934,30 @@ class ChessEconomyMixin:
             f'{self.SHOP_REFRESH_CHANGED_SLOT_MINIMUM} slots changed'
         )
         return 'no_progress'
+
+    def _battle_refresh_time_allowed(self) -> bool:
+        """战阶段最后五秒独立禁止刷新，覆盖经济循环外的调用和重试。"""
+        if self._read_chess_mode() != '战':
+            return True
+        remaining = self._read_remaining_time()
+        cache = getattr(self, '_detail_frame_cache', None)
+        age = max(0, time.monotonic() - cache[2]) if cache and len(cache) > 2 else 0
+        if remaining is not None and remaining - age <= 5:
+            logger.info('Skip Chess shop refresh: battle has at most 5 seconds remaining')
+            return False
+        return True
+
+    def _shop_page_identities(self):
+        """Return five unambiguous names in slot order, or no usable page."""
+        slots = {}
+        for card in self._frame_card_scan('store'):
+            if not card.get('name'):
+                continue
+            index = 5 - self._frame_shop_column(card['position'][0])
+            previous = slots.get(index)
+            if previous is None or card['badge_score'] > previous['badge_score']:
+                slots[index] = card
+        return tuple(slots[i]['name'] for i in range(1, 6)) if len(slots) == 5 else None
 
     def _economy_emergency(self) -> bool:
         health = self.chess_state.current_health
@@ -1041,6 +1087,12 @@ class ChessEconomyMixin:
                     allow_hidden=battle_mode,
                 )
                 if result == 'no_progress':
+                    # Do not refresh twice after ambiguous progress. Buying the
+                    # now visible targets is still safe: each card rechecks its
+                    # portrait, cost and gold badge before clicking.
+                    if self._economy_action_allowed() and self._is_shop_open():
+                        logger.info('Chess refresh unconfirmed: purchase current shop targets once')
+                        self.purchase_lineup_cards_once()
                     return 'blocked'
                 logger.info('Refresh Chess shop completed')
                 self._advance_economy_operation_counter(level)

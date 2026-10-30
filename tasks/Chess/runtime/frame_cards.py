@@ -169,8 +169,8 @@ class ChessFrameCardsMixin:
         }
 
 
-    def _frame_card_identity(self, kind, portrait, text):
-        """Require a portrait match; use name/traits to resolve near-score candidates."""
+    def _frame_card_candidates(self, kind, portrait):
+        """Return only portrait candidates close enough to the best match."""
         portrait = self._frame_matching_portrait(portrait)
         frame = ChessAssets.F_HAND_CARD if kind == 'card' else ChessAssets.F_STORE_CARD
         threshold = frame.operations[-2].get('threshold', 0.8)
@@ -182,23 +182,52 @@ class ChessFrameCardsMixin:
             if np.isfinite(score) and score >= threshold:
                 scored.append((score, name))
         if not scored:
-            return None, 0.0
+            return []
         scored.sort(reverse=True)
-        near = [(score, name) for score, name in scored if scored[0][0]-score < 0.03]
+        return [(score, name) for score, name in scored if scored[0][0]-score < 0.03]
+
+    def _frame_card_identity(self, kind, portrait, text, candidates=None):
+        """Portrait first, bonds second, then shop name if still ambiguous."""
+        near = self._frame_card_candidates(kind, portrait) if candidates is None else candidates
+        if not near:
+            return None, 0.0
         if len(near) == 1:
             return near[0][1], near[0][0]
-        entries = self.frame_card_library['cards'][kind]
+        best_score = near[0][0]
+        bond_text = text[1:4] if kind == 'store' else text[:3]
+        observed = bond_key(tuple(normalize_bond_ocr_text(t) for t in bond_text))
+        matching = [(score, name) for score, name in near
+                    if observed and observed == bond_key(SHIKIGAMI_BONDS_BY_ROMAJI[name])]
+        if len(matching) == 1:
+            return matching[0][1], matching[0][0]
+        if matching:
+            near = matching
         if kind == 'store':
             raw = normalize_bond_ocr_text(text[0])
+            entries = self.frame_card_library['cards']['store']
             names = [(score, name) for score, name in near if entries[name]['name'] == raw]
             if len(names) == 1:
                 return names[0][1], names[0][0]
-        observed = bond_key(tuple(normalize_bond_ocr_text(t) for t in text[-3:]))
-        matching = [
-            (score, name) for score, name in near
-            if observed and observed == bond_key(SHIKIGAMI_BONDS_BY_ROMAJI[name])
-        ]
-        return (matching[0][1], matching[0][0]) if len(matching) == 1 else (None, scored[0][0])
+        return None, best_score
+
+    def _resolve_frame_card(self, kind, local, image, portrait):
+        """Read only the ranges needed to disambiguate the portrait candidates."""
+        text = [''] * (4 if kind == 'store' else 3)
+        candidates = self._frame_card_candidates(kind, portrait)
+        name, score = self._frame_card_identity(kind, portrait, text, candidates)
+        if name is not None or not candidates:
+            return name, score, tuple(text)
+        _, targets = local.range_targets(image.shape, allow_missing_image=True)
+        # Store: range1 name, range2-4 bonds (range4 may be empty).
+        # Hand: range1-3 bonds. Neither path reads the image or click ranges as text.
+        bond_indexes = range(1, 4) if kind == 'store' else range(3)
+        for index in bond_indexes:
+            text[index] = targets[index].ocr(image)
+        name, score = self._frame_card_identity(kind, portrait, text, candidates)
+        if name is None and kind == 'store':
+            text[0] = targets[0].ocr(image)
+            name, score = self._frame_card_identity(kind, portrait, text, candidates)
+        return name, score, tuple(text)
 
     def _frame_card_scan(self, kind):
         """Locate all badges, then run one Frame per card; reuse outputs on the same screenshot."""
@@ -288,15 +317,7 @@ class ChessFrameCardsMixin:
                 })
                 logger.debug(f'Chess Frame emblem: name={reference.get("name")}, score={identity_score:.3f}, roi={roi}, text={raw_text}')
                 continue
-            text = tuple(result[:-2])
-            name, identity_score = self._frame_card_identity(kind, result[-2], text)
-            if name is None and identity_score > 0:
-                local.defer_ocr = False
-                result = self.runframe(local)
-                if not result:
-                    continue
-                text = tuple(result[:-2])
-                name, identity_score = self._frame_card_identity(kind, result[-2], text)
+            name, identity_score, text = self._resolve_frame_card(kind, local, image, result[-2])
             roi = result[-1]
             cx, cy, cw, ch = roi
             click_rule = None

@@ -164,7 +164,7 @@ class ChessAssets:
 	# 棋局专用兼容：GlobalGameAssets.I_NETWORK_ERROR
 	I_SHARED_NETWORK_ERROR = RuleImage(roi_front=(436,258,406,198), roi_back=(431,253,416,208), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/gg_network_error.png")
 	# 棋局专用兼容：GlobalGameAssets.I_UI_CONFIRM
-	I_SHARED_UI_CONFIRM = RuleImage(roi_front=(667,417,169,47), roi_back=(547,368,322,122), threshold=0.8, method="Template matching", file="./tasks/Chess/shared_ui/ui_confirm.png")
+	I_SHARED_UI_CONFIRM = RuleImage(roi_front=(692,419,124,39), roi_back=(547,368,322,122), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/shared_ui/ui_confirm.png")
 	# 棋局专用兼容：GlobalGameAssets.I_UI_REWARD
 	I_SHARED_UI_REWARD = RuleImage(roi_front=(521,212,237,66), roi_back=(361,47,556,286), threshold=0.73, method="Template matching", file="./tasks/Chess/shared_ui/ui_ui_reward.png")
 	# 棋局专用兼容：GlobalGameAssets.I_CLIENT_CLEAR

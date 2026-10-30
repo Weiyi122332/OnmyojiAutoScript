@@ -489,7 +489,7 @@ class ChessLegacyScriptTask(
 
     @economy_scope
     def _run_battle_economy_until_budget_limit(self) -> None:
-        """战阶段购买体系卡后续跑升级/刷新，并受 12 秒保护。"""
+        """战阶段按预算购买、升级；末尾五秒由刷新入口禁止刷新。"""
         if self._read_chess_mode() != '战':
             return
         # 与备阶段使用同一入口：先确保商店打开并购买当前体系卡，
@@ -502,13 +502,6 @@ class ChessLegacyScriptTask(
             self._read_chess_mode() == '战'
             and getattr(self, '_economy_pending', False)
         ):
-            remaining = self._read_remaining_time()
-            if remaining is not None and remaining < 12:
-                logger.info(
-                    'Stop Chess battle upgrade/refresh loop: '
-                    f'remaining_time={remaining} < 12'
-                )
-                return
             result = self._run_economy_atomic_batch(battle_mode=True)
             if result in ('complete', 'blocked'):
                 return

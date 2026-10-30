@@ -1,6 +1,7 @@
 {
-  "source_revision": "bc5327464fb4476c56d5e4fa7d9d0721f5388be4",
-  "public_revision": "47a3a3bc6173e6560ab8cc3658d3e55bc2c80287",
+  "source_revision": "4d9ef7843cc36ba0f83ba0ef2e04054193ec3953",
+  "source_remote": "git@github.com:xylolit-mu/OnmyojiAutoScript-private.git",
+  "source_branch": "dev",
   "rules": [
     {
       "module": "tasks.Component.GeneralBattle.assets",
@@ -96,7 +97,7 @@
       "symbol": "I_UI_CONFIRM",
       "asset": "I_SHARED_UI_CONFIRM",
       "source": "tasks/GlobalGame/ui/ui_confirm.png",
-      "sha256": "c7d865931f146a8323bd9e9e4af7b1f448fdaad8294f619f1f8cb9b49e5afa3b"
+      "sha256": "5cae9c63153f59456a328dac567491d32be0c73cdc93eb5a86a05f1f1de944fb"
     },
     {
       "module": "tasks.GlobalGame.assets",

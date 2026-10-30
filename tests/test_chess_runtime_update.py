@@ -105,6 +105,7 @@ class ChessHealthEconomyTest(unittest.TestCase):
 
     def test_partial_refresh_progress_spends_only_one_attempt_and_consumes_quota(self):
         task = self.task()
+        task._read_chess_mode = Mock(return_value='备')
         task._read_level = Mock(return_value=6)
         task._read_shop_gold = Mock(return_value=60)
         task.appear = Mock(return_value=True)

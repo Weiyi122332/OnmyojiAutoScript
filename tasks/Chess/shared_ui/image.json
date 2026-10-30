@@ -106,11 +106,12 @@
   {
     "itemName": "shared_ui_confirm",
     "description": "棋局专用兼容：GlobalGameAssets.I_UI_CONFIRM",
-    "roiFront": "667,417,169,47",
+    "roiFront": "692,419,124,39",
     "roiBack": "547,368,322,122",
     "threshold": 0.8,
     "method": "Template matching",
-    "imageName": "ui_confirm.png"
+    "imageName": "ui_confirm.png",
+    "profile": "High"
   },
   {
     "itemName": "shared_ui_reward",

@@ -37,10 +37,13 @@ def economy_action_allowed(self):
     expected_round = getattr(self, '_economy_guard_round', None)
     if expected_round is None:
         return True
+    mode = self._read_chess_mode()
     if (self._read_round_number() != expected_round
-            or self._read_chess_mode() not in ('备', '战')
+            or mode not in ('备', '战')
             or self.appear(self.I_SELECT_GRIGRI)):
         return False
+    if mode == '战':
+        return True
     remaining = self._read_remaining_time()
     cache = getattr(self, '_detail_frame_cache', None)
     age = max(0, time.monotonic() - cache[2]) if cache and len(cache) > 2 else 0
