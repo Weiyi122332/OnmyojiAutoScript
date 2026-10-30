@@ -25,7 +25,6 @@ from tasks.Component.GeneralBattle.general_battle import GeneralBattle, ExitMatc
     BattleAction
 from tasks.Component.Login.service import LoginService
 from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
-from tasks.Component.config_base import Time
 from tasks.Dokan.assets import DokanAssets
 from tasks.Dokan.config import Dokan
 from tasks.Dokan.list_scroll import choose_wheel_count, scroll_dokan_list
@@ -850,51 +849,16 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
         self.switch_member_soul_done = True
 
     def next_run(self, skip_today=False, is_dokan_activated=False):
-        """
-            设置下次运行时间
-            该函数假定道馆时间设置为:每天固定时间尝试开启(例如:19:00),成功后设置为明天固定时间(例如19:00)
-                                失败则在短时间(例如:2分钟)内再次尝试开启道馆任务
-            此假定应该符合绝大多数人需求,如果存在其他需求,,,help yourself
-
-        @param skip_today: 是否跳过今天,True->当作当天的道馆已成功打掉,False->无效
-                            为了跳过周五->周天
-        @type skip_today: bool
-        @param is_dokan_activated:
-        @type is_dokan_activated: bool
-        @return:
-        @rtype:
-        """
-        now = datetime.now()
-        run_time: Time = self.config.model.dokan.dokan_config.dokan_run_time
-        run_time_dt = datetime.combine(now.date(), run_time)
-        if skip_today:
-            if self.conf.dokan_config.monday_to_thursday and now.weekday() >= 4:  # 直接设置下周一的道馆时间
-                self.set_next_run(task="Dokan",
-                                  target=datetime.combine(now.date() + timedelta(days=7 - now.weekday()), run_time))
-                return
-            self.set_next_run(task="Dokan", target=datetime.combine(now.date() + timedelta(days=1), run_time))
+        """按公共调度规则安排下次运行，周末限制延后至下周一。"""
+        if (skip_today and self.conf.dokan_config.monday_to_thursday
+                and datetime.now().weekday() >= 4):
+            self.set_next_run_next_monday(task='Dokan')
             return
-        # 道馆没有开启
-        if not is_dokan_activated:
-            # 在服务器时间之前,设置为服务器时间
-            if now < run_time_dt:
-                self.set_next_run(task="Dokan", target=run_time_dt)
-                return
-            # 在服务器时间之后,如超过1小时,则直接当作成功;未超过则当作失败
-            if now - run_time_dt > timedelta(hours=1):
-                self.set_next_run(task="Dokan",
-                                  target=datetime.combine(now.date() + timedelta(days=1), run_time))
-                return
-            # 时间在道馆开启时间附近，failure_interval后执行
-            self.set_next_run(task="Dokan", target=now + self.config.dokan.scheduler.failure_interval)
-            return
-        # 道馆已开启
-        # 如果打两次,当前是第一次,设置为failure_interval后运行
-        if self.config.dokan.attack_count_config.remain_attack_count == 1:
-            self.set_next_run(task="Dokan", target=now + self.config.dokan.scheduler.failure_interval)
-            return
-        # 其余情况当作成功
-        self.set_next_run(task="Dokan", target=datetime.combine(now.date() + timedelta(days=1), run_time))
+        # 未开启或仍有一次挑战时使用失败间隔，完成或跳过当天时使用成功间隔。
+        success = skip_today or (
+            is_dokan_activated and self.config.dokan.attack_count_config.remain_attack_count != 1
+        )
+        self.set_next_run(task='Dokan', success=success, finish=True)
 
 if __name__ == '__main__':
     from module.config.config import Config

@@ -1,7 +1,7 @@
 """Battle Again must continue the second dojo in the same task run."""
 
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -120,21 +120,14 @@ class BackToBackDokanTest(unittest.TestCase):
         task.find_dokan.assert_not_called()
 
     def test_partial_run_retains_scheduler_retry_interval(self):
-        interval = timedelta(minutes=2)
         task = SimpleNamespace(
-            config=SimpleNamespace(model=SimpleNamespace(dokan=SimpleNamespace(
-                dokan_config=SimpleNamespace(dokan_run_time=datetime.now().time()),
-            )), dokan=SimpleNamespace(attack_count_config=SimpleNamespace(
+            config=SimpleNamespace(dokan=SimpleNamespace(attack_count_config=SimpleNamespace(
                 remain_attack_count=1,
-            ), scheduler=SimpleNamespace(failure_interval=interval))),
+            ))),
             set_next_run=Mock(),
         )
-        earliest = datetime.now() + interval
         ScriptTask.next_run(task, is_dokan_activated=True)
-        latest = datetime.now() + interval
-        target = task.set_next_run.call_args.kwargs['target']
-        self.assertLessEqual(earliest, target)
-        self.assertLessEqual(target, latest)
+        task.set_next_run.assert_called_once_with(task='Dokan', success=False, finish=True)
 
 
 if __name__ == '__main__':

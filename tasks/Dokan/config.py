@@ -50,7 +50,6 @@ class AttackAccountConfig(BaseModel):
 
 
 class DokanConfig(BaseModel):
-    dokan_run_time: Time = Field(Time(hour=20, minute=0, second=0), description='dokan_run_time_help')
     # 只在周一到周四开启道馆
     monday_to_thursday: bool = Field(default=True, description='monday_to_thursday_help')
     # 任务结束时推送本次运行的结算截图；关闭时仍保存截图
