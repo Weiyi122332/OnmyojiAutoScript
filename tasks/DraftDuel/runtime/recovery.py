@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import time
 from zipfile import BadZipFile
 
 import numpy as np
@@ -64,11 +65,27 @@ class DraftDuelRecoveryMixin:
             with os.fdopen(descriptor, 'wb') as stream:
                 np.savez_compressed(stream, metadata=np.array(serialized),
                                     **{f'head{i}': h for i, h in enumerate(heads)})
-            os.replace(temp, path)
+            for attempt in range(5):
+                try:
+                    os.replace(temp, path)
+                    break
+                except PermissionError:
+                    if attempt == 4:
+                        if not getattr(self, '_draft_checkpoint_write_blocked', False):
+                            logger.warning(f'DraftDuel checkpoint replacement denied: {path}; '
+                                           'retain previous checkpoint and retry on next save')
+                        self._draft_checkpoint_write_blocked = True
+                        return
+                    time.sleep(0.05 * 2 ** attempt)
             self._draft_checkpoint_signature = signature
+            self._draft_checkpoint_write_blocked = False
         finally:
-            if os.path.exists(temp):
+            try:
                 os.unlink(temp)
+            except FileNotFoundError:
+                pass
+            except PermissionError:
+                logger.warning(f'DraftDuel temporary checkpoint cleanup denied: {temp}')
 
     def _restore_draft_checkpoint(self):
         path = self._draft_checkpoint_path()

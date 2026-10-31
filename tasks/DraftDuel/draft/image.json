@@ -202,8 +202,8 @@
   {
     "itemName": "teamate_select",
     "imageName": "draft_teamate_select.png",
-    "roiFront": "425,17,29,82",
-    "roiBack": "395,0,85,125",
+    "roiFront": "160,37,63,59",
+    "roiBack": "72,16,470,105",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "High",

@@ -10,6 +10,32 @@ from tasks.DraftDuel.runtime.portrait_match import identify_portrait, locate_por
 
 
 class DeploymentTests(unittest.TestCase):
+    def test_hand_threshold_falls_by_point_zero_five_and_stops_at_first_match(self):
+        owner = self.owner('队员')
+        owner.I_HAND_CARD_AREA = SimpleNamespace(threshold=0.65, roi_back=(0, 0, 100, 100))
+        hit = ((10, 20, 30, 40), 0.57)
+        with patch('tasks.DraftDuel.runtime.deployment.locate_portrait',
+                   side_effect=[None, None, hit]) as locate:
+            self.assertEqual(owner._locate_deployment_portrait('head'), hit)
+        self.assertEqual([c.kwargs['threshold'] for c in locate.call_args_list], [.65, .6, .55])
+
+    def test_hand_threshold_never_falls_below_point_five(self):
+        for initial, expected in ((.65, [.65, .6, .55, .5]), (.63, [.63, .58, .53, .5])):
+            owner = self.owner('队长')
+            owner.I_HAND_CARD_AREA = SimpleNamespace(threshold=initial, roi_back=(0, 0, 100, 100))
+            with patch('tasks.DraftDuel.runtime.deployment.locate_portrait', return_value=None) as locate:
+                self.assertIsNone(owner._locate_deployment_portrait('head'))
+            self.assertEqual([c.kwargs['threshold'] for c in locate.call_args_list], expected)
+
+    def test_hand_matching_selects_highest_score_among_multiple_hits(self):
+        scores = np.array([[.51, .72, .61], [.65, .89, .55]], dtype=np.float32)
+        template = np.ones((2, 2, 3), dtype=np.uint8)
+        image = np.zeros((20, 20, 3), dtype=np.uint8)
+        with patch('tasks.DraftDuel.runtime.portrait_match.cv2.matchTemplate', return_value=scores):
+            area, score = locate_portrait(template, image, (5, 6, 10, 10), scale=1, threshold=.5)
+        self.assertEqual(area, (6, 7, 2, 2))
+        self.assertAlmostEqual(score, .89, places=6)
+
     def test_later_game_only_waits_for_battle(self):
         owner = self.owner('队长')
         owner.draft_small_game = 2

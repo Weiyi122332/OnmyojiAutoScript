@@ -53,8 +53,8 @@ class ScriptTask(
         self._draft_wait_lobby_seen = False
         self._draft_resume_phase = 'lobby'
         self._initialize_duel_state()
-        self._restore_draft_checkpoint()
-        phase = self._detect_draft_phase()
+        # 每次启动从大厅流程开始，不自动恢复上次运行保存的对局。
+        phase = 'lobby'
         while True:
             if phase == 'battle' and getattr(self, '_draft_deployment_state', None):
                 state = self._draft_deployment_state

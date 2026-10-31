@@ -10,6 +10,7 @@ class DraftDuelBattleMixin:
     def _confirm_small_game_end(self):
         if getattr(self, '_draft_end_recorded', False):
             return
+        self.device.click_record_clear()
         self.draft_finished_small_games = getattr(self, 'draft_finished_small_games', 0) + 1
         self._draft_round_had_battle = True
         self._record_small_game_stats()
@@ -22,12 +23,17 @@ class DraftDuelBattleMixin:
         seen = getattr(self, '_draft_battle_seen', False)
         settling = getattr(self, '_draft_resume_phase', '') == 'settlement'
         absent_since, absent = None, 0
+        battle_clicks_reset = False
         deadline = time.monotonic() + (120 if settling else self.SMALL_GAME_BATTLE_WINDOW)
         while True:
             self.device.stuck_record_clear()
             self.screenshot()
             now = time.monotonic()
             if self.appear(self._battle_info_rule()):
+                # 上阵阶段可能已设置 seen；仍在本阶段首次见到战斗时清除跨局点击。
+                if not battle_clicks_reset:
+                    self.device.click_record_clear()
+                    battle_clicks_reset = True
                 if not seen or settling:
                     deadline = now + self.SMALL_GAME_BATTLE_WINDOW
                     logger.info('DraftDuel entered/resumed small-game battle; wait window=300s')

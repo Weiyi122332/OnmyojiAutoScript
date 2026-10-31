@@ -1,5 +1,6 @@
 """恢复记录、防抖与最后一名上阵记录；全部使用临时目录和模拟画面。"""
 from pathlib import Path
+import os
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
@@ -12,6 +13,45 @@ from tasks.DraftDuel.script_task import ScriptTask
 
 
 class RecoveryChecks(unittest.TestCase):
+    def test_checkpoint_retries_temporary_replacement_denial(self):
+        with TemporaryDirectory() as folder:
+            path = Path(folder) / 'state.npz'
+            owner = self.owner(path)
+            replace = os.replace
+            attempts = []
+            def intermittent(source, destination):
+                attempts.append(source)
+                if len(attempts) < 3:
+                    raise PermissionError('file busy')
+                replace(source, destination)
+            with patch('tasks.DraftDuel.runtime.recovery.os.replace', side_effect=intermittent), \
+                    patch('tasks.DraftDuel.runtime.recovery.time.sleep'):
+                owner._save_draft_checkpoint('fight')
+            self.assertEqual(len(attempts), 3)
+            self.assertTrue(self.owner(path)._restore_draft_checkpoint())
+            self.assertEqual(list(Path(folder).iterdir()), [path])
+
+    def test_blocked_checkpoint_keeps_old_file_and_retries_same_state_later(self):
+        with TemporaryDirectory() as folder:
+            path = Path(folder) / 'state.npz'
+            owner = self.owner(path)
+            owner._save_draft_checkpoint('rank')
+            previous = path.read_bytes()
+            signature = owner._draft_checkpoint_signature
+            with patch('tasks.DraftDuel.runtime.recovery.os.replace',
+                       side_effect=PermissionError('file busy')) as replace, \
+                    patch('tasks.DraftDuel.runtime.recovery.time.sleep'):
+                owner._save_draft_checkpoint('fight')
+            self.assertEqual(replace.call_count, 5)
+            self.assertEqual(path.read_bytes(), previous)
+            self.assertEqual(owner._draft_checkpoint_signature, signature)
+            self.assertEqual(list(Path(folder).iterdir()), [path])
+            owner._save_draft_checkpoint('fight')
+            restored = self.owner(path)
+            self.assertTrue(restored._restore_draft_checkpoint())
+            self.assertEqual(restored._draft_resume_phase, 'fight')
+            self.assertFalse(owner._draft_checkpoint_write_blocked)
+
     def owner(self, path=None):
         owner = object.__new__(ScriptTask)
         owner.config = SimpleNamespace(config_name='offline-check', draft_duel=DraftDuel(
@@ -60,21 +100,24 @@ class RecoveryChecks(unittest.TestCase):
             a._clear_draft_checkpoint()
             self.assertFalse(path.exists())
 
-    def test_rank_resume_skips_invitation_and_selection(self):
+    def test_restart_ignores_checkpoint_and_starts_from_lobby(self):
         owner = self.owner()
         def restore():
             owner.draft_selected = list('abcde')
         owner._restore_draft_checkpoint = Mock(side_effect=restore)
         owner._detect_draft_phase = Mock(return_value='rank')
-        owner._enter_matchmaking = Mock()
+        owner._enter_matchmaking = Mock(return_value=False)
         owner._select_shikigami = Mock()
         owner._match_battle = Mock(return_value=False)
         owner.set_next_run = Mock()
         with self.assertRaises(TaskEnd):
             owner.run()
-        owner._enter_matchmaking.assert_not_called()
+        owner._restore_draft_checkpoint.assert_not_called()
+        owner._detect_draft_phase.assert_not_called()
+        owner._enter_matchmaking.assert_called_once()
         owner._select_shikigami.assert_not_called()
-        owner._match_battle.assert_called_once()
+        owner._match_battle.assert_not_called()
+        self.assertEqual(owner.draft_selected, [])
 
     def test_countdown_spike_and_small_increase_do_not_advance(self):
         owner = self.owner()

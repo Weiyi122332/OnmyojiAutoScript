@@ -60,7 +60,7 @@ class DraftDuelAssets:
 	# 上阵阶段 
 	I_POST_DRAFT_FIGHT = RuleImage(roi_front=(561,27,30,64), roi_back=(542,9,66,108), threshold=0.8, method="Template matching", profile="High", file="./tasks/DraftDuel/draft/draft_post_draft_fight.png")
 	# 队友选择中 
-	I_TEAMATE_SELECT = RuleImage(roi_front=(425,17,29,82), roi_back=(395,0,85,125), threshold=0.8, method="Template matching", profile="High", file="./tasks/DraftDuel/draft/draft_teamate_select.png")
+	I_TEAMATE_SELECT = RuleImage(roi_front=(160,37,63,59), roi_back=(72,16,470,105), threshold=0.8, method="Template matching", profile="High", file="./tasks/DraftDuel/draft/draft_teamate_select.png")
 	# 上阵确定 
 	I_SELECT_ENSURE = RuleImage(roi_front=(1115,545,107,78), roi_back=(1062,503,207,166), threshold=0.8, method="Template matching", profile="High", file="./tasks/DraftDuel/draft/draft_select_ensure.png")
 	# 组队阶段 
@@ -76,9 +76,9 @@ class DraftDuelAssets:
 	# 手牌搜索区域：仅使用back，无固定图片模板 
 	I_HAND_CARD_AREA = RuleImage(roi_front=(8,486,1021,223), roi_back=(8,486,1021,223), threshold=0.65, method="Template matching", profile="High", file="")
 	I_HAND_CARD_AREA.name = "HAND_CARD_AREA"
-	# 取消自动
+	# 取消自动 
 	I_AUTO_RIGHT = RuleImage(roi_front=(1000,619,58,71), roi_back=(957,579,142,138), threshold=0.8, method="Template matching", profile="High", file="./tasks/DraftDuel/draft/draft_auto_right.png")
-	# 自动上阵
+	# 自动上阵 
 	I_AUTO_DOWN = RuleImage(roi_front=(999,619,58,71), roi_back=(956,574,142,138), threshold=0.8, method="Template matching", profile="High", file="./tasks/DraftDuel/draft/draft_auto_down.png")
 
 

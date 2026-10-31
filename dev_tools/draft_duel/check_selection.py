@@ -8,6 +8,53 @@ from tasks.DraftDuel.strategy import normalize_name, choose_pick
 
 
 class SelectionTests(unittest.TestCase):
+    def test_bingyong_uses_correct_catalog_and_rating_name(self):
+        from tasks.DraftDuel.strategy.lineup import CATALOG, STRENGTH_SCORES, ENCYCLOPEDIA
+        self.assertEqual(normalize_name('兵俑'), '兵俑')
+        for table in (CATALOG, STRENGTH_SCORES, ENCYCLOPEDIA):
+            self.assertIn('兵俑', table)
+            self.assertNotIn('兵勇', table)
+        self.assertEqual(choose_pick(['兵俑']).name, '兵俑')
+
+    def test_unknown_candidates_require_two_consecutive_reads_per_slot_and_round(self):
+        owner = object.__new__(ScriptTask)
+        unknown = ['未知甲', '莹草', '未知乙']
+        names, ready = owner._normalize_selection_candidates(1, unknown)
+        self.assertEqual(names, [None, '莹草', None])
+        self.assertFalse(ready)
+        self.assertTrue(owner._normalize_selection_candidates(1, unknown)[1])
+        self.assertFalse(owner._normalize_selection_candidates(2, unknown)[1])
+        self.assertTrue(owner._normalize_selection_candidates(2, ['兵俑', '莹草', '未知乙'])[1])
+        self.assertFalse(owner._normalize_selection_candidates(2, unknown)[1])
+        names, _ = owner._normalize_selection_candidates(3, ['未知甲'] * 3)
+        self.assertFalse(any(names))
+
+    def test_recheck_then_select_known_candidate_at_original_button_position(self):
+        for second_read in ('未知甲', '兵俑'):
+            owner = object.__new__(ScriptTask)
+            owner.device = Mock()
+            owner._observe_duel_lobby = Mock()
+            owner._save_draft_checkpoint = Mock()
+            frame = [-1]
+            owner.screenshot = Mock(side_effect=lambda: frame.__setitem__(0, frame[0] + 1))
+            owner.appear = Mock(side_effect=lambda rule: (
+                frame[0] == 2 if rule is owner.I_POST_DRAFT_RANK else
+                frame[0] < 2 if rule in (owner.I_POST_DRAFT_SELECT, owner.I_SELECT_NONE_1) else False))
+            owner.O_SELECT_NUMBER = Mock(ocr=Mock(return_value='请选择第1名角色'))
+            owner.O_SHIKIGAMI_NAME_1 = Mock(ocr=Mock(side_effect=['未知甲', second_read]))
+            owner.O_SHIKIGAMI_NAME_2 = Mock(ocr=Mock(return_value='未知乙'))
+            owner.O_SHIKIGAMI_NAME_3 = Mock(ocr=Mock(return_value='莹草'))
+            clicks = []
+            owner.appear_then_click = Mock(side_effect=lambda button, **kw: clicks.append((frame[0], button)) or True)
+            with patch('tasks.DraftDuel.runtime.selection.time.sleep'), patch(
+                    'tasks.DraftDuel.runtime.selection.choose_pick',
+                    return_value=SimpleNamespace(name='莹草', score=40)) as choose:
+                self.assertTrue(owner._select_shikigami())
+            self.assertEqual(clicks, [(1, owner.I_SELECT_3)])
+            choose.assert_called_once_with(
+                ['兵俑', '莹草'] if second_read == '兵俑' else ['莹草'], team=owner.draft_selected)
+            self.assertEqual(owner.draft_selected, ['莹草'])
+
     def test_observed_mumu1_candidate_typo_resolves_to_catalog_entry(self):
         names = [normalize_name(n) for n in ['紧那罗', '天刀姬·绯夜猎', '樱花妖']]
         self.assertEqual(names, ['紧那罗', '妖刀姬·绯夜猎刃', '樱花妖'])

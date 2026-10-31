@@ -1,17 +1,20 @@
 """战斗信息标志与小局结算衔接的离线检查。"""
 import unittest
+from collections import deque
 from contextlib import nullcontext
 from unittest.mock import Mock, patch
-from module.exception import TaskEnd
+from module.exception import TaskEnd, GameTooManyClickError
+from module.device.device import Device
 from tasks.DraftDuel.script_task import ScriptTask
 from tasks.Component.GeneralBattle.assets import GeneralBattleAssets
 
 
 class BattleSettlementTests(unittest.TestCase):
-    def play(self, states, advance=2):
+    def play(self, states, advance=2, device=None, battle_seen=False):
         owner = object.__new__(ScriptTask)
-        owner.device = Mock()
-        owner.click = Mock()
+        owner.device = device if device is not None else Mock()
+        owner._draft_battle_seen = battle_seen
+        owner.click = Mock(side_effect=lambda _: Device.handle_control_check(owner.device, 'SAFE_RANDOM_CLICK')) if device else Mock()
         owner._observe_duel_lobby = Mock()
         owner._sync_draft_state = Mock(return_value=True)
         owner._observe_victory_count = Mock()
@@ -23,6 +26,31 @@ class BattleSettlementTests(unittest.TestCase):
         with patch('tasks.DraftDuel.runtime.battle.time.sleep'), clock:
             phase = owner._battle_and_settlement()
         return owner, phase
+
+    def guarded_device(self):
+        device = Mock()
+        device.click_record = deque(maxlen=15)
+        device.click_record_clear.side_effect = device.click_record.clear
+        device.click_record_add.side_effect = lambda button: device.click_record.append(str(button))
+        device.click_record_check.side_effect = lambda: Device.click_record_check(device)
+        return device
+
+    def test_normal_clicks_do_not_accumulate_across_eight_games(self):
+        device = self.guarded_device()
+        for _ in range(8):
+            Device.handle_control_check(device, 'LOBBY_BATTLE')
+            owner, phase = self.play([
+                [GeneralBattleAssets.I_BATTLE_INFO], [], [],
+                [ScriptTask.I_FIGHT_RESULT], [ScriptTask.I_FIGHT_RESULT],
+                [ScriptTask.I_POST_DRAFT_RANK]], device=device, battle_seen=True)
+            self.assertEqual(phase, 'rank')
+        self.assertEqual(device.click_record_clear.call_count, 16)
+
+    def test_repeated_clicks_on_stuck_result_still_trigger_guard(self):
+        device = self.guarded_device()
+        with self.assertRaises(GameTooManyClickError):
+            self.play([[GeneralBattleAssets.I_BATTLE_INFO], [], []] +
+                      [[ScriptTask.I_FIGHT_RESULT]] * 11, device=device)
 
     def test_active_battle_extends_every_300_seconds(self):
         battle = GeneralBattleAssets.I_BATTLE_INFO
