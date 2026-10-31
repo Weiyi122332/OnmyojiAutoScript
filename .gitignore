@@ -302,8 +302,6 @@ oas.bat
 /tasks/FrogBoss/check_result_markers.py
 /tasks/GameUi/check_navigation.py
 /tasks/GameUi/export_pages.py
-/tasks/GameUi/MINIMAL_RESOURCE_CLEANUP.json
-/tasks/GameUi/page_asset_ownership.json
 /tasks/GameUi/page_checks/*.md
 
 # Locks for local lineup editor writes

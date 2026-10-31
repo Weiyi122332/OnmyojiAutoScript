@@ -1,0 +1,302 @@
+[
+  {
+    "itemName": "post_draft_rank",
+    "imageName": "draft_post_draft_rank.png",
+    "roiFront": "425,17,29,82",
+    "roiBack": "395,0,85,125",
+    "method": "Multi-scale template matching",
+    "threshold": 0.83,
+    "profile": "High",
+    "description": "等待匹配阶段"
+  },
+  {
+    "itemName": "lobby_battle",
+    "imageName": "lobby_battle.png",
+    "roiFront": "1163,585,84,86",
+    "roiBack": "1110,535,170,175",
+    "method": "Multi-scale template matching",
+    "threshold": 0.85,
+    "profile": "High",
+    "description": "开始战斗"
+  },
+  {
+    "itemName": "empty_teammate",
+    "imageName": "empty_teammate.png",
+    "roiFront": "980,320,70,70",
+    "roiBack": "970,310,90,90",
+    "method": "Template matching",
+    "threshold": 0.83,
+    "profile": "High",
+    "description": "可邀请队友"
+  },
+  {
+    "itemName": "select_1",
+    "imageName": "draft_select_1.png",
+    "roiFront": "373,636,53,52",
+    "roiBack": "352,616,95,99",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "式神选择1"
+  },
+  {
+    "itemName": "select_2",
+    "imageName": "draft_select_2.png",
+    "roiFront": "748,636,53,52",
+    "roiBack": "723,616,95,99",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "式神选择2"
+  },
+  {
+    "itemName": "select_3",
+    "imageName": "draft_select_3.png",
+    "roiFront": "1123,636,53,52",
+    "roiBack": "1103,614,95,99",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "式神选择3"
+  },
+  {
+    "itemName": "select_none_1",
+    "imageName": "draft_select_none_1.png",
+    "roiFront": "434,16,78,79",
+    "roiBack": "429,11,88,89",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "第1位未选择"
+  },
+  {
+    "itemName": "select_none_2",
+    "imageName": "draft_select_none_2.png",
+    "roiFront": "523,16,78,79",
+    "roiBack": "517,10,88,89",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "第2位未选择"
+  },
+  {
+    "itemName": "select_none_3",
+    "imageName": "draft_select_none_3.png",
+    "roiFront": "608,16,78,79",
+    "roiBack": "602,12,88,89",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "第3位未选择"
+  },
+  {
+    "itemName": "select_none_4",
+    "imageName": "draft_select_none_4.png",
+    "roiFront": "695,16,78,79",
+    "roiBack": "690,10,88,89",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "第4位未选择"
+  },
+  {
+    "itemName": "select_none_5",
+    "imageName": "draft_select_none_5.png",
+    "roiFront": "783,17,78,79",
+    "roiBack": "777,10,88,89",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "第5位未选择"
+  },
+  {
+    "itemName": "lobby_teammate_wait",
+    "imageName": "draft_lobby_teammate_wait.png",
+    "roiFront": "1163,585,83,84",
+    "roiBack": "1110,535,170,175",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "队员等待开始"
+  },
+  {
+    "itemName": "post_draft_select",
+    "imageName": "draft_post_draft_select.png",
+    "roiFront": "385,29,33,56",
+    "roiBack": "343,8,89,102",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "式神挑选阶段"
+  },
+  {
+    "itemName": "fight_cancel_wait_leader",
+    "imageName": "draft_fight_cancel_wait_leader.png",
+    "roiFront": "593,604,92,43",
+    "roiBack": "563,588,146,80",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "取消匹配等待"
+  },
+  {
+    "itemName": "fight_wait",
+    "imageName": "draft_fight_wait.png",
+    "roiFront": "587,553,99,37",
+    "roiBack": "564,529,146,80",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "匹配等待"
+  },
+  {
+    "itemName": "exit_moment",
+    "imageName": "draft_exit_moment.png",
+    "roiFront": "581,516,99,37",
+    "roiBack": "558,499,146,80",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "暂离"
+  },
+  {
+    "itemName": "exit",
+    "imageName": "draft_exit.png",
+    "roiFront": "583,436,99,37",
+    "roiBack": "562,414,146,80",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "离队"
+  },
+  {
+    "itemName": "exit_cancel",
+    "imageName": "draft_exit_cancel.png",
+    "roiFront": "580,358,99,37",
+    "roiBack": "557,336,146,80",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "取消离队"
+  },
+  {
+    "itemName": "leader_exit",
+    "imageName": "draft_leader_exit.png",
+    "roiFront": "776,166,47,50",
+    "roiBack": "760,134,85,105",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "队长退出"
+  },
+  {
+    "itemName": "post_draft_fight",
+    "imageName": "draft_post_draft_fight.png",
+    "roiFront": "561,27,30,64",
+    "roiBack": "542,9,66,108",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "上阵阶段"
+  },
+  {
+    "itemName": "teamate_select",
+    "imageName": "draft_teamate_select.png",
+    "roiFront": "425,17,29,82",
+    "roiBack": "395,0,85,125",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "队友选择中"
+  },
+  {
+    "itemName": "select_ensure",
+    "imageName": "draft_select_ensure.png",
+    "roiFront": "1115,545,107,78",
+    "roiBack": "1062,503,207,166",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "上阵确定"
+  },
+  {
+    "itemName": "wait_fight_lobby",
+    "imageName": "draft_wait_fight_lobby.png",
+    "roiFront": "140,104,147,64",
+    "roiBack": "121,87,190,96",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "组队阶段"
+  },
+  {
+    "itemName": "draft_share",
+    "imageName": "draft_draft_share.png",
+    "roiFront": "1132,613,68,67",
+    "roiBack": "1098,565,130,141",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "头筹分享"
+  },
+  {
+    "itemName": "fight_statistic",
+    "imageName": "draft_fight_statistic.png",
+    "roiFront": "1073,566,36,38",
+    "roiBack": "1053,539,81,95",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "战斗统计"
+  },
+  {
+    "itemName": "fight_result",
+    "imageName": "draft_fight_result.png",
+    "roiFront": "620,288,136,64",
+    "roiBack": "582,272,215,99",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "结果"
+  },
+  {
+    "itemName": "select_ensure_ready",
+    "imageName": "draft_select_ensure_ready.png",
+    "roiFront": "1095,546,146,78",
+    "roiBack": "1062,503,207,166",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
+  },
+  {
+    "itemName": "hand_card_area",
+    "imageName": "",
+    "roiFront": "8,486,1021,223",
+    "roiBack": "8,486,1021,223",
+    "method": "Template matching",
+    "threshold": 0.65,
+    "profile": "High",
+    "description": "手牌搜索区域：仅使用back，无固定图片模板"
+  },
+  {
+    "itemName": "auto_right",
+    "imageName": "draft_auto_right.png",
+    "roiFront": "1000,619,58,71",
+    "roiBack": "957,579,142,138",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "取消自动"
+  },
+  {
+    "itemName": "auto_down",
+    "imageName": "draft_auto_down.png",
+    "roiFront": "999,619,58,71",
+    "roiBack": "956,574,142,138",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "自动上阵"
+  }
+]

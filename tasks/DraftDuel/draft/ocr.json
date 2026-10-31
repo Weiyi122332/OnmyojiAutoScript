@@ -1,0 +1,56 @@
+[
+  {
+    "itemName": "shikigami_name_1",
+    "roiFront": "204,670,161,34",
+    "roiBack": "204,670,161,34",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "",
+    "description": "式神名称1"
+  },
+  {
+    "itemName": "shikigami_name_2",
+    "roiFront": "574,671,168,35",
+    "roiBack": "574,671,168,35",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "",
+    "description": "式神名称2"
+  },
+  {
+    "itemName": "shikigami_name_3",
+    "roiFront": "949,672,165,34",
+    "roiBack": "949,672,165,34",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "",
+    "description": "式神名称3"
+  },
+  {
+    "itemName": "select_number",
+    "roiFront": "490,126,199,33",
+    "roiBack": "490,126,199,33",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "",
+    "description": ""
+  },
+  {
+    "itemName": "fight_wait_time",
+    "roiFront": "614,61,59,40",
+    "roiBack": "614,61,59,40",
+    "mode": "Digit",
+    "method": "Default",
+    "keyword": "",
+    "description": "上阵剩余时间"
+  },
+  {
+    "itemName": "victory_count",
+    "roiFront": "132,95,165,71",
+    "roiBack": "132,95,165,71",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "",
+    "description": "胜场数"
+  }
+]

@@ -1,4 +1,3 @@
-from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
@@ -63,7 +62,6 @@ class AbyssShadowsAssets:
 	# 狭间_黑豹入口
 	I_ABYSS_LEOPARD = RuleImage(profile="High", roi_front=(1142,166,50,162), roi_back=(1093,143,138,297), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_abyss_leopard.png")
 	# 战报
-	I_ABYSS_NAVIGATION = _PageAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION
 	# 式神录
 	I_ABYSS_SHIKI = RuleImage(profile="High", roi_front=(1199,462,47,53), roi_back=(1199,462,47,53), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_abyss_shiki.png")
 	# 狭间暗域
@@ -116,7 +114,6 @@ class AbyssShadowsAssets:
 	# 神社页面标志
 	I_CHECK_SHENSHE = RuleImage(profile="High", roi_front=(72,76,45,115), roi_back=(31,27,119,207), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_check_shenshe.png")
 	# 狭间暗域页面标志
-	I_CHECK_ABYSS = _PageAssets.I_PAGE_ABYSSSHADOWS_CHECK_ABYSS
 	# 极难度
 	I_DIFFICULTY_EXTREME = RuleImage(profile="High", roi_front=(644,593,40,39), roi_back=(620,383,89,263), threshold=0.8, method="Template matching", file="./tasks/AbyssShadows/res/res_difficulty_extreme.png")
 	#

@@ -1089,7 +1089,7 @@ class AnnotatorManager:
         task_root = AnnotatorManager._resolve_task_root(task_name)
         result = []
         for p in task_root.rglob("*.json"):
-            if p.is_file() and "test_fixtures" not in p.parts and p.name not in ("page_asset_ownership.json", "MINIMAL_RESOURCE_CLEANUP.json"):
+            if p.is_file() and "test_fixtures" not in p.parts:
                 result.append(str(p.relative_to(task_root).as_posix()))
         return sorted(result)
 
@@ -1105,8 +1105,7 @@ class AnnotatorManager:
                 if item.name != "test_fixtures":
                     directories.append(item.name)
             elif item.is_file() and item.suffix.lower() == ".json":
-                if item.name not in ("page_asset_ownership.json", "MINIMAL_RESOURCE_CLEANUP.json"):
-                    json_files.append(item.name)
+                json_files.append(item.name)
 
         base_rel = ""
         if base != TASKS_ROOT:

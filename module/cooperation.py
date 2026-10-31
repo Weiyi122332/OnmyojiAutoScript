@@ -13,7 +13,7 @@ from module.config.utils import convert_to_underscore
 
 
 BATTLE_TASKS = frozenset(('Orochi', 'EvoZone', 'Exploration', 'FallenSun',
-                         'EternitySea', 'BondlingFairyland', 'OtherWorldTwilight'))
+                         'EternitySea', 'BondlingFairyland', 'OtherWorldTwilight', 'DraftDuel'))
 
 
 def instance_name(value):
@@ -51,6 +51,9 @@ class Cooperation:
                    created REAL, ready INTEGER, answered REAL);
                 CREATE TABLE IF NOT EXISTS task_completions
                   (source TEXT, target TEXT, task TEXT, created REAL, reason TEXT,
+                   PRIMARY KEY(source, target, task));
+                CREATE TABLE IF NOT EXISTS battle_states
+                  (source TEXT, target TEXT, task TEXT, session TEXT, payload TEXT, updated REAL,
                    PRIMARY KEY(source, target, task));
             ''')
 
@@ -107,6 +110,19 @@ class Cooperation:
             db.execute('INSERT OR REPLACE INTO room_checks VALUES (?, ?, ?, ?, ?, NULL, NULL)',
                        (self.name, peer, task, token, time.time()))
         return token
+
+    def publish_battle_state(self, task, peer, session, payload):
+        """Exchange round-scoped JSON using the existing cooperation database."""
+        with self.connect() as db:
+            db.execute('INSERT OR REPLACE INTO battle_states VALUES (?, ?, ?, ?, ?, ?)',
+                       (self.name, peer, task, session, json.dumps(payload, ensure_ascii=False), time.time()))
+
+    def peer_battle_state(self, task, peer):
+        with self.connect() as db:
+            row = db.execute('SELECT session, payload, updated FROM battle_states '
+                             'WHERE source=? AND target=? AND task=?',
+                             (peer, self.name, task)).fetchone()
+        return {'session': row[0], 'payload': json.loads(row[1]), 'updated': row[2]} if row else None
 
     def begin_completion_phase(self, task, peer):
         """Invalidate this instance's previous outgoing completion on a new role phase."""
@@ -175,6 +191,12 @@ class Cooperation:
             if not item.get('scheduler', {}).get('enable', False):
                 raise ScriptError(f'协同任务未启用：{name}/{task}')
         def role(item):
+            if task == 'DraftDuel':
+                settings = item.get('draft_duel_config', {})
+                mode = settings.get('match_mode', '单人')
+                if mode == '组队':
+                    mode = settings.get('role', '队长')
+                return {'队长': 'leader', '队员': 'member', '单人': 'alone'}.get(mode)
             return next((v.get('user_status') for v in item.values()
                          if isinstance(v, dict) and 'user_status' in v), None)
         if {role(own), role(other)} != {'leader', 'member'}:
@@ -218,6 +240,10 @@ class Cooperation:
             key = convert_to_underscore(task)
             item = getattr(config.model, key, None)
             configured = getattr(getattr(item, 'invite_config', None), 'cooperation_script', '')
+            if task == 'DraftDuel' and (not configured or item.draft_duel_config.match_mode == '单人'):
+                # 协斗显式留空时，不因对方单向填写而被动接入协同。
+                self.ack(task)
+                continue
             # Ignore obsolete requests when either side changed the pairing or disabled it.
             if not (self.root / 'config' / f'{source}.json').is_file():
                 self.ack(task)
@@ -292,6 +318,9 @@ class Cooperation:
 def prepare_task_cooperation(config, task):
     """Check and wake the partner as soon as the scheduler activates this task."""
     item = getattr(config.model, convert_to_underscore(task))
+    if task == 'DraftDuel' and (item.draft_duel_config.match_mode == '单人'
+                                or not item.invite_config.cooperation_script):
+        return
     runtime = getattr(config, 'cooperation_runtime', None)
     peer = item.invite_config.cooperation_script
     if not peer:

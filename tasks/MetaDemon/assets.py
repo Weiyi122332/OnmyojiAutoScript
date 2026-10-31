@@ -1,4 +1,3 @@
-from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
@@ -27,9 +26,7 @@ class MetaDemonAssets:
 	# 鬼王合成 
 	I_MD_SYNTHESIZE = RuleImage(profile="High", roi_front=(0,0,100,100), roi_back=(0,0,100,100), threshold=0.8, method="Template matching", file="./tasks/MetaDemon/md/md_md_synthesize.png")
 	# 鬼王页面标志 
-	I_CHECK_BOSS_PAGE = _PageAssets.I_PAGE_METADEMON_CHECK_BOSS_PAGE
 	# 超鬼王主界面 
-	I_MD_CHECK_MAIN_PAGE = _PageAssets.I_PAGE_METADEMON_MD_CHECK_MAIN_PAGE
 	# 领取昨日奖励 
 	I_MD_GET_YESTERDAY_REWARD = RuleImage(profile="High", roi_front=(547,571,183,56), roi_back=(471,523,327,163), threshold=0.8, method="Template matching", file="./tasks/MetaDemon/md/md_md_get_yesterday_reward.png")
 	# 一星鬼王召唤票 
@@ -53,7 +50,6 @@ class MetaDemonAssets:
 	# 喝茶 
 	I_MD_DRINK_TEA = RuleImage(profile="High", roi_front=(555,467,168,58), roi_back=(527,455,235,80), threshold=0.8, method="Template matching", file="./tasks/MetaDemon/md/md_md_drink_tea.png")
 	# 活动列表页超鬼王活动标志 
-	I_CHECK_ACT_LIST_METADEMON_ACT = _PageAssets.I_PAGE_METADEMON_CHECK_ACT_LIST_METADEMON_ACT
 	# 禁用强力追击 
 	I_MD_DISABLE_POWERFUL_FIRE = RuleImage(profile="High", roi_front=(1113,513,24,24), roi_back=(1108,508,36,36), threshold=0.8, method="Template matching", file="./tasks/MetaDemon/md/md_md_disable_powerful_fire.png")
 	# 开启强力追击 

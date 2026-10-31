@@ -1,0 +1,12 @@
+[
+  {
+    "itemName": "draft_duel",
+    "imageName": "page_checks_draft_duel.png",
+    "roiFront": "146,8,123,40",
+    "roiBack": "48,0,339,76",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "协同对弈页面"
+  }
+]

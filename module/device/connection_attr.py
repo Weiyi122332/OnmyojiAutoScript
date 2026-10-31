@@ -34,6 +34,7 @@ class ConnectionAttr:
         else:
             self.config = config
 
+        self._configure_adb_logging()
         # Init adb client
         logger.attr('AdbBinary', self.adb_binary)
         # Monkey patch to custom adb
@@ -68,6 +69,15 @@ class ConnectionAttr:
         self.serial = str(self.config.script.device.serial)
         self.serial_check()
         self.config.DEVICE_OVER_HTTP = self.is_over_http
+
+    @staticmethod
+    def _configure_adb_logging():
+        """Windows ADB 自动重启时使用项目日志，避免系统临时目录写入失败。"""
+        if os.name != 'nt' or os.environ.get('ANDROID_ADB_LOG_PATH'):
+            return
+        folder = os.path.abspath('log')
+        os.makedirs(folder, exist_ok=True)
+        os.environ['ANDROID_ADB_LOG_PATH'] = os.path.join(folder, 'adb.log')
 
     def serial_check(self):
         """

@@ -39,7 +39,7 @@ class ConfigMenu:
         self.menu["Guild"] = ['KekkaiUtilize', 'KekkaiActivation', 'RealmRaid', 'RyouToppa', 'Dokan', 'CollectiveMissions',
                               'Hunt' , 'AbyssShadows', 'GuildBanquet', 'DemonRetreat', 'GuildActivityMonitor']
         # 每周任务
-        self.menu["Weekly Task"] = ['TrueOrochi', 'WeeklyPurchase', 'Secret', 'WeeklyTrifles', 'MysteryShop', 'Duel', 'Chess']
+        self.menu["Weekly Task"] = ['TrueOrochi', 'WeeklyPurchase', 'Secret', 'WeeklyTrifles', 'MysteryShop', 'Duel', 'Chess', 'DraftDuel']
         # 活动的任务
         self.menu["Activity Task"] = ['ActivityShikigami', 'MartialArts', 'MetaDemon', 'FrogBoss', 'FrogChallenge', 'FloatParade', 'LBS', 'Quiz', 'KittyShop', 'DyeTrials', 'GuguArtStudio', 'IbukiArena']
         # 开发工具

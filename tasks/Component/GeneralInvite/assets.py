@@ -1,5 +1,5 @@
 from module.atom.image import RuleImage
-from module.atom.frame import RuleFrame
+from module.atom.frame import RuleFrame, Image, Ocr, Click
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
 from module.atom.long_click import RuleLongClick

@@ -266,7 +266,7 @@ def map_enter_dokan(task) -> bool:
     try_count = 0
     while try_count < 5:
         task.screenshot()
-        if task.appear(task.I_RYOU_DOKAN_CHECK):
+        if task.appear(GameUiAssets.I_PAGE_DOKAN_RYOU_DOKAN_CHECK):
             return True
         pos = task.O_DOKAN_MAP.ocr_full(task.device.image)
         if pos != (0, 0, 0, 0):

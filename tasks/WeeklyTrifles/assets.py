@@ -1,4 +1,3 @@
-from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
@@ -90,7 +89,6 @@ class WeeklyTriflesAssets:
 	# 全部保存本周次数 
 	I_WT_SAVE_ALL = RuleImage(profile="High", roi_front=(1115,598,79,74), roi_back=(1115,598,79,74), threshold=0.8, method="Template matching", file="./tasks/WeeklyTrifles/touch_fish/touch_fish_wt_save_all.png")
 	# 摸鱼行动页面标志 
-	I_CHECK_TOUCH_FISH = _PageAssets.I_PAGE_WEEKLYTRIFLES_CHECK_TOUCH_FISH
 	# 返回庭院 
 	I_WT_TF_GOTO_MAIN = RuleImage(profile="High", roi_front=(93,17,42,39), roi_back=(0,0,198,82), threshold=0.8, method="Template matching", file="./tasks/WeeklyTrifles/touch_fish/touch_fish_wt_tf_goto_main.png")
 	# 打开折叠窗口 

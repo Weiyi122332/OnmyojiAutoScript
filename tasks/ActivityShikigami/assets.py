@@ -1,4 +1,3 @@
-from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.frame import RuleFrame, Image, Ocr, Click
 from module.atom.click import RuleClick
@@ -256,11 +255,3 @@ class ActivityShikigamiAssets:
 	I_RM_TO_BATTLE_MAIN = RuleImage(roi_front=(1064,178,39,139), roi_back=(991,88,155,370), threshold=0.8, method="Template matching", profile="High", file="./tasks/ActivityShikigami/as/richman/as_to_battle_main.png")
 
 
-	I_CHECK_BATTLE_MAIN = _PageAssets.I_PAGE_CHECK_ACTIVITY
-	I_CHECK_BATTLE_PASS = _PageAssets.I_PAGE_CHECK_BATTLE_PASS
-	I_CHECK_CLIMB_MAIN = _PageAssets.I_PAGE_CHECK_ACT_GENERAL_2
-	I_CHECK_RM_RICHMAN = _PageAssets.I_PAGE_CHECK_RICHMAN
-	I_EXP_CHECK_EXPLORATION = _PageAssets.I_PAGE_CHECK_ACT_GENERAL_1
-	I_FG_CHECK_BATTLE_BOSS = _PageAssets.I_PAGE_CHECK_BATTLE_BOSS
-	I_FG_AS_CHECK_MAIN_2 = _PageAssets.I_PAGE_CHECK_ACT_GENERAL_2
-	I_CHECK_RM_MAIN = _PageAssets.I_PAGE_CHECK_ACTIVITY

@@ -152,7 +152,7 @@ class GameUiAssets:
 	# description 
 	I_TOWN_GOTO_HUNT = RuleImage(roi_front=(475,138,46,69), roi_back=(275,122,520,100), threshold=0.7, method="Template matching", profile="High", file="./tasks/GameUi/page/page_town_goto_hunt.png")
 	# 协同对弈 
-	I_TOWN_GOTO_DRAFT_DUEL = RuleImage(roi_front=(335,159,55,72), roi_back=(170,145,567,100), threshold=0.8, method="Template matching", profile="High", file="./tasks/GameUi/page/page_town_goto_draft_duel.png")
+	I_TOWN_GOTO_DRAFT_DUEL = RuleImage(roi_front=(344,154,38,39), roi_back=(170,145,567,100), threshold=0.8, method="Template matching", profile="High", file="./tasks/GameUi/page/page_town_goto_draft_duel.png")
 	# 百鬼奕 
 	I_TOWN_GOTO_HYAKKISEN = RuleImage(roi_front=(192,145,48,67), roi_back=(86,130,447,100), threshold=0.8, method="Template matching", profile="High", file="./tasks/GameUi/page/page_town_goto_hyakkisen.png")
 	# 町中进入百鬼标志 
@@ -232,6 +232,11 @@ class GameUiAssets:
 	I_PAGE_DOKAN_RYOU_DOKAN_FINDING_DOKAN = RuleImage(roi_front=(980,60,100,160), roi_back=(980,60,100,160), threshold=0.8, method="Template matching", profile="High", file="./tasks/GameUi/page_checks/page_check_dokan_ryou_dokan_finding_dokan.png")
 	# 已选择道馆 
 	I_PAGE_DOKAN_RYOU_DOKAN_FOUND_DOKAN = RuleImage(roi_front=(440,580,360,140), roi_back=(440,580,360,140), threshold=0.8, method="Template matching", profile="High", file="./tasks/GameUi/page_checks/page_check_dokan_ryou_dokan_found_dokan.png")
+
+
+	# Image Rule Assets
+	# 协同对弈页面 
+	I_DRAFT_DUEL = RuleImage(roi_front=(146,8,123,40), roi_back=(48,0,339,76), threshold=0.8, method="Template matching", profile="High", file="./tasks/GameUi/page_checks/page_checks_draft_duel.png")
 
 
 	# Image Rule Assets

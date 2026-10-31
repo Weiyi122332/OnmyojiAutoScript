@@ -1,4 +1,3 @@
-from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
@@ -26,7 +25,6 @@ class GuguArtStudioAssets:
 
 	# Image Rule Assets
 	# 呱呱画室主页面 
-	I_CHECK_GUGU_ACT = _PageAssets.I_PAGE_GUGUARTSTUDIO_CHECK_GUGU_ACT
 	# 获取颜料 
 	I_OBTAIN_PAINT = RuleImage(profile="High", roi_front=(1156,453,51,55), roi_back=(1118,406,156,149), threshold=0.7, method="Template matching", file="./tasks/GuguArtStudio/gas/gas_obtain_paint.png")
 	# 提交颜料 

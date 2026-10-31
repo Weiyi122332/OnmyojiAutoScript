@@ -2,6 +2,7 @@
 # @brief    Ryou Dokan Toppa (阴阳竂道馆突破功能)
 # @author   AzurTian
 # @note     draft version without full test
+from tasks.GameUi.assets import GameUiAssets
 import time
 
 import re
@@ -238,7 +239,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
 
     def run_on_dokan_map(self):
         """道馆地图页面逻辑处理"""
-        if self.appear(self.I_RYOU_DOKAN_FINDING_DOKAN):  # 道馆未开启
+        if self.appear(GameUiAssets.I_PAGE_DOKAN_RYOU_DOKAN_FINDING_DOKAN):  # 道馆未开启
             try_start_dokan = self.config.dokan.dokan_config.try_start_dokan
             if not try_start_dokan or self.found_dokan_cnt > 0:  # 未设置开启道馆/已经找过道馆但是没进去则退出
                 raise DokanNotStartedError
@@ -253,7 +254,7 @@ class ScriptTask(GameUi, SwitchSoul, GeneralBattle, DokanAssets):
             # 寻找到道馆后等一会页面刷新
             self.wait_until_appear(self.I_RYOU_DOKAN_CENTER_TOP, True, 5)
             return
-        if self.appear(self.I_RYOU_DOKAN_FOUND_DOKAN):  # 道馆已开启
+        if self.appear(GameUiAssets.I_PAGE_DOKAN_RYOU_DOKAN_FOUND_DOKAN):  # 道馆已开启
             self.goto_page(pages.page_dokan)  # 跳转到道馆
 
     def run_on_battle(self):

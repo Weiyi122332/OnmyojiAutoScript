@@ -1,4 +1,3 @@
-from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
@@ -27,13 +26,9 @@ class OrochiAssets:
 	# 小小宠物，发现宝藏 
 	I_PET_PRESENT = RuleImage(profile="High", roi_front=(873,184,62,147), roi_back=(873,184,62,147), threshold=0.8, method="Template matching", file="./tasks/Orochi/o/o_pet_present.png")
 	# 八岐大蛇标志 
-	I_OROCHI_CHECK_10 = _PageAssets.I_PAGE_OROCHI_OROCHI_CHECK_10
 	# 巫女大蛇标志 
-	I_OROCHI_CHECK_11 = _PageAssets.I_PAGE_OROCHI_OROCHI_CHECK_11
 	# 神罚标志 
-	I_OROCHI_CHECK_12 = _PageAssets.I_PAGE_OROCHI_OROCHI_CHECK_12
 	# 虚无大蛇标志 
-	I_OROCHI_CHECK_13 = _PageAssets.I_PAGE_OROCHI_OROCHI_CHECK_13
 
 
 	# List Rule Assets

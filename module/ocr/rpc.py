@@ -365,13 +365,32 @@ class OcrRuntime:
         return True
 
     def warmup(self, model_size: str = "medium") -> bool:
-        """Load the model on the worker before accepting RPC requests."""
+        """Load and run inference before reporting the worker ready."""
         model_size = _normalize_model_size(model_size)
         logger.info(f"Warming up OCR worker model: size={model_size}")
-        future = self._scheduler.submit(self._get_model, model_size)
+        future = self._scheduler.submit(self._warm_model, model_size)
         future.result()
         logger.info(f"OCR worker model warmup completed: size={model_size}")
         return True
+
+    def _warm_model(self, model_size: str):
+        model = self._get_model(model_size)
+        warmed = getattr(self._thread_local, 'warmed_sizes', set())
+        if model_size in warmed:
+            return
+        # 白底黑字确保同时经过检测和识别；空白图片不会预热识别网络。
+        import cv2
+        sample = np.full((48, 240, 3), 255, dtype=np.uint8)
+        cv2.putText(sample, 'OCR 12345', (8, 34), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.9, (0, 0, 0), 2, cv2.LINE_AA)
+        started = time.monotonic()
+        text, _ = model.ocr_single_line(sample)
+        if not text:
+            raise ScriptError('OCR inference warmup did not reach text recognition')
+        warmed.add(model_size)
+        self._thread_local.warmed_sizes = warmed
+        logger.info(f'OCR inference warmup completed: size={model_size}, '
+                    f'elapsed={time.monotonic() - started:.2f}s')
 
     def _run_request(self, func, *args, **kwargs):
         with self._lock:

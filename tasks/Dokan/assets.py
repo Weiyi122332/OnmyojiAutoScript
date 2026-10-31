@@ -1,4 +1,3 @@
-from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
@@ -48,7 +47,6 @@ class DokanAssets:
 	# 阴阳寮卡通人界面,左侧已开启的活动 列表 
 	I_RYOU_DOKAN_ACTIVATED = RuleImage(profile="High", roi_front=(0,150,200,400), roi_back=(0,150,200,400), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_activated.png")
 	# 是否已经成功进入道馆，上面中间的“道馆突破”文字 
-	I_RYOU_DOKAN_CHECK = _PageAssets.I_PAGE_DOKAN_RYOU_DOKAN_CHECK
 	# 道馆内式神录 
 	I_RYOU_DOKAN_SHIKIGAMI = RuleImage(profile="High", roi_front=(995,602,77,72), roi_back=(960,580,140,120), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_shikigami.png")
 	# 优先攻击选项 
@@ -64,9 +62,7 @@ class DokanAssets:
 	# 优先攻击: 黑脸 
 	I_RYOU_DOKAN_ATTACK_PRIORITY_4 = RuleImage(profile="High", roi_front=(1072,178,94,39), roi_back=(1072,178,94,39), threshold=0.8, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_priority_4.png")
 	# 正在查找道馆,还未选择 
-	I_RYOU_DOKAN_FINDING_DOKAN = _PageAssets.I_PAGE_DOKAN_RYOU_DOKAN_FINDING_DOKAN
 	# 已选择道馆 
-	I_RYOU_DOKAN_FOUND_DOKAN = _PageAssets.I_PAGE_DOKAN_RYOU_DOKAN_FOUND_DOKAN
 	# 状态：集结等待中。检查右下角的挑战是不是灰色的。FIXME 黄色和灰色的挑战截图总是傻傻分不清，先改用OCR 
 	I_RYOU_DOKAN_GATHERING = RuleImage(profile="High", roi_front=(653,76,46,26), roi_back=(653,76,46,26), threshold=0.85, method="Template matching", file="./tasks/Dokan/res/res_ryou_dokan_gathering.png")
 	# 状态：检查右下角有没有挑战？通常是失败了，并退出来到集结界面，可重新开始点击右下角挑战进入战斗 

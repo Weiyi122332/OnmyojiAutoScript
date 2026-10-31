@@ -1,6 +1,7 @@
 # This Python file uses the following encoding: utf-8
 """武道大会战斗任务。"""
 
+from tasks.GameUi.assets import GameUiAssets
 import time
 from datetime import datetime, timedelta
 
@@ -40,7 +41,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, BaseActivity, 
         if self.battle_type == 'ap':
             return self.I_MAR_FIRE_AP
         if self.battle_type == 'boss':
-            return any_of(self.I_CHECK_BATTLE_BOSS, self.I_CHECK_BATTLE_BOSS_MAIN)
+            return any_of(GameUiAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_BOSS, GameUiAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_BOSS_MAIN)
         return None
 
     def _resolve_battle_timeout(self, config: GeneralBattleConfig) -> int:
@@ -211,7 +212,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, BaseActivity, 
         timer = Timer(self.CLICK_WAIT_TIMEOUT).start()
         while not timer.reached():
             self.screenshot()
-            if self.appear(self.I_CHECK_BATTLE_BOSS_MAIN):
+            if self.appear(GameUiAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_BOSS_MAIN):
                 logger.info('Entered existing MartialArts boss challenge panel')
                 return True
             if self.appear_then_click(self.I_UI_CONFIRM_SAMLL, interval=1) or \
@@ -240,7 +241,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, BaseActivity, 
         max_attempts = max_attempts or self.SEARCH_BOSS_MAX_ATTEMPTS
         for attempt in range(1, max_attempts + 1):
             self.screenshot()
-            if self.appear(self.I_CHECK_BATTLE_BOSS_MAIN):
+            if self.appear(GameUiAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_BOSS_MAIN):
                 logger.info('MartialArts boss found, entered challenge panel')
                 return True
 
@@ -260,7 +261,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, BaseActivity, 
             wait_timer = Timer(self.CLICK_WAIT_TIMEOUT).start()
             while not wait_timer.reached():
                 self.screenshot()
-                if self.appear(self.I_CHECK_BATTLE_BOSS_MAIN):
+                if self.appear(GameUiAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_BOSS_MAIN):
                     logger.info('MartialArts boss found, entered challenge panel')
                     return True
                 if self.appear_then_click(self.I_UI_CONFIRM_SAMLL, interval=0.5) or \
@@ -446,7 +447,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, BaseActivity, 
         win = self.run_general_battle(
             battle_conf,
             battle_key='martial_arts_boss',
-            exit_matcher=any_of(self.I_CHECK_BATTLE_BOSS, self.I_CHECK_BATTLE_BOSS_MAIN),
+            exit_matcher=any_of(GameUiAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_BOSS, GameUiAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_BOSS_MAIN),
         )
         logger.info(f'MartialArts boss battle {self.current_count} result: {"win" if win else "lose"}')
         return True

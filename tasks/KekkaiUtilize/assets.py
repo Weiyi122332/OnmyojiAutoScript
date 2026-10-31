@@ -1,4 +1,3 @@
-from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
@@ -67,7 +66,6 @@ class KekkaiUtilizeAssets:
 	# 种树活动关闭标识 
 	I_PLANT_TREE_CLOSE = RuleImage(profile="High", roi_front=(777,91,36,34), roi_back=(711,52,169,125), threshold=0.8, method="Template matching", file="./tasks/KekkaiUtilize/realm/realm_plant_tree_close.png")
 	# 寮结界卡界面 
-	I_CHECK_GUILD_CARD = _PageAssets.I_PAGE_KEKKAIUTILIZE_CHECK_GUILD_CARD
 	# 智能放入 
 	I_AUTO_FILL = RuleImage(profile="High", roi_front=(1146,505,47,51), roi_back=(1114,478,115,107), threshold=0.8, method="Template matching", file="./tasks/KekkaiUtilize/realm/realm_auto_fill.png")
 	# 一键卸下 

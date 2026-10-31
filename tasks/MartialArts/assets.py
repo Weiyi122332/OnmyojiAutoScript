@@ -1,4 +1,3 @@
-from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.click import RuleClick
 from module.atom.long_click import RuleLongClick
@@ -85,16 +84,12 @@ class MartialArtsAssets:
 	# 武道大会活动主页标志（待裁模板） 
 	I_MAIN_GOTO_MAR = RuleImage(profile="High", roi_front=(1190,380,37,39), roi_back=(1162,193,87,328), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_main_goto_mar.png")
 	#  
-	I_CHECK_MAIN_MAR = _PageAssets.I_PAGE_MARTIALARTS_CHECK_MAIN_MAR
 	#  
 	I_TO_BATTLE_AP = RuleImage(profile="High", roi_front=(184,212,26,131), roi_back=(179,207,36,141), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_to_battle_ap.png")
 	#  
 	I_TO_BATTLE_BOSS = RuleImage(profile="High", roi_front=(1118,258,26,131), roi_back=(1113,253,36,141), threshold=0.8, method="Template matching", file="./tasks/MartialArts/mr/mr_to_battle_boss.png")
 	#  
-	I_CHECK_BATTLE_AP = _PageAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_AP
 	#  
-	I_CHECK_BATTLE_BOSS = _PageAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_BOSS
 	#  
-	I_CHECK_BATTLE_BOSS_MAIN = _PageAssets.I_PAGE_MARTIALARTS_CHECK_BATTLE_BOSS_MAIN
 
 

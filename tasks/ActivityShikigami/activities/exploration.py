@@ -169,7 +169,7 @@ class ExplorationAct:
                     cfg, battle_key=f'activity_exp_{mode}',
                     exit_matcher=lambda: (
                         (mode == 'encounter' and self.appear(self.I_EVENT_FIGHT))
-                        or (self.appear(self.I_EXP_CHECK_EXPLORATION)
+                        or (self.appear(GameUiAssets.I_PAGE_CHECK_ACT_GENERAL_1)
                             and not self._exp_normal_fight_appear()))
                     and not self.appear(self.I_SHIKIGAMI_HELP)
                     and not self.appear(self.I_UI_REWARD),
@@ -215,7 +215,7 @@ class ExplorationAct:
                     return
                 self.screenshot()
                 self._clear_exp_rewards()
-                if not self._wait_exp(lambda: self.appear(self.I_EXP_CHECK_EXPLORATION)):
+                if not self._wait_exp(lambda: self.appear(GameUiAssets.I_PAGE_CHECK_ACT_GENERAL_1)):
                     raise GameStuckError('Expected exploration main page before selecting entry')
                 if not self._enter_exp_entry(mode, rule):
                     break
@@ -230,7 +230,7 @@ class ExplorationAct:
     def _exp_main_ready(self):
         if self._clear_exp_rewards():
             return False
-        return (self.appear(self.I_EXP_CHECK_EXPLORATION)
+        return (self.appear(GameUiAssets.I_PAGE_CHECK_ACT_GENERAL_1)
                 and not self._exp_normal_fight_appear()
                 and not self.appear(self.I_EVENT_REWARD)
                 and not self.appear(self.I_EVENT_STORY)

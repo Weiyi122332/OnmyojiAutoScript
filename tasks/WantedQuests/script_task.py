@@ -58,6 +58,7 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
             raise TaskEnd('WantedQuests')
 
         error_count = 0
+        self._wq_skipped_progress_areas = set()
         while 1:
             self.screenshot()
             if not self.is_wq_remained():
@@ -87,16 +88,23 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
                 error_count += 1
                 # 当前画面没有可靠候选，保留原逻辑：手指上滑以继续浏览列表下方。
                 self.swipe(self.S_WQ_LIST_UP, interval=1)
+                self._wq_skipped_progress_areas.clear()
                 sleep(1)
                 continue
             if not self.open_wq_info():
                 error_count += 1
                 if error_count <= self.WQ_LIST_MAX_SCROLLS:
                     self.swipe(self.S_WQ_LIST_UP, interval=1)
+                    self._wq_skipped_progress_areas.clear()
                     sleep(1)
                 continue
-            error_count = 0
-            self.execute_mission(total - current)
+            result = self.execute_mission(total - current)
+            if result == 'skip_mystery':
+                # 只屏蔽当前列表视口中的这一条；翻页后坐标失效，重新识别。
+                self._wq_skipped_progress_areas.add(tuple(self.O_WQ_TEXT_ALL.area))
+            else:
+                error_count = 0
+                self._wq_skipped_progress_areas.clear()
             sleep(1.5)
         self.next_run()
         raise TaskEnd('WantedQuests')
@@ -266,10 +274,11 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
                                if name.strip() and name.strip() in target_text), None)
         self._wanted_target_text = target_text
         if '神秘妖怪' in target_text:
-            logger.info(f'Locked mystery target, close details: {target_text}')
-            self.ui_click_until_disappear(self.I_UI_BACK_RED)
+            # 未揭晓目标没有取消追踪按钮，由列表扫描跳过本条。
+            logger.info(f'Skip mystery wanted target without untracking: {target_text}')
+            self.ui_click_until_disappear(self.I_UI_BACK_RED, interval=1.5)
             self.goto_page(page_exploration)
-            return False
+            return 'skip_mystery'
         if '未知目标' in target_text or ignored_target:
             logger.info(f'Skip wanted target: {target_text}')
             self.ui_click(self.I_WQ_TRACE_ONE_ENABLE, self.I_WQ_TRACE_ONE_DISABLE)
@@ -700,6 +709,9 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         confirmed_candidates = []
         edge_candidates = []
         for text, progress_area in ocr_items:
+            if any(abs(progress_area[1] - area[1]) <= 12
+                   for area in getattr(self, '_wq_skipped_progress_areas', set())):
+                continue
             match = progress_pattern.search(text)
             if not match:
                 continue

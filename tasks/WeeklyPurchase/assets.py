@@ -1,4 +1,3 @@
-from tasks.GameUi.assets import GameUiAssets as _PageAssets
 from module.atom.image import RuleImage
 from module.atom.frame import RuleFrame, Image, Ocr, Click
 from module.atom.click import RuleClick
@@ -410,5 +409,3 @@ class WeeklyPurchaseAssets:
 	O_TT_NUMBER = RuleOcr(roi=(576,415,58,49), area=(576,415,58,49), mode="Digit", method="Default", keyword="", name="tt_number")
 
 
-	I_ITACHI_SHOP_CHECK = _PageAssets.I_PAGE_WEEKLYPURCHASE_ITACHI_SHOP_CHECK
-	I_RM_CHECK_GUILD_STORE = _PageAssets.I_PAGE_WEEKLYPURCHASE_RM_CHECK_GUILD_STORE

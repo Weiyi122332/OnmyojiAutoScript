@@ -70,13 +70,16 @@ class ImageExtractor:
         description: str = f'\t# {item["description"]} \n'
         profile = str(item.get("profile", "High"))
         profile_arg = f'profile="{profile}", ' if profile in ("Default", "High", "More") else ''
+        image_file = f'./{self.image_path}/{item["imageName"]}' if item.get('imageName') else ''
         name: str = f'\tI_{name_transform(item["itemName"])} = RuleImage(' \
                     f'roi_front=({item["roiFront"]}), ' \
                     f'roi_back=({item["roiBack"]}), ' \
                     f'threshold={item["threshold"]}, ' \
                     f'method="{item["method"]}", ' \
                     f'{profile_arg}' \
-                    f'file="./{self.image_path}/{item["imageName"]}")\n'
+                    f'file="{image_file}")\n'
+        if not image_file:
+            name += f'\tI_{name_transform(item["itemName"])}.name = "{name_transform(item["itemName"])}"\n'
         return description + name
 
 
@@ -106,7 +109,7 @@ class FrameExtractor(ImageExtractor):
         if item.get('badgeGrayscale', False):
             arguments['badge_grayscale'] = True
         return (f"\tF_{name} = RuleFrame(" + ', '.join(f'{k}={v!r}' for k,v in arguments.items()) +
-                ', range=[' + ', '.join(handlers) + '])\n' + f'\tI_{name} = F_{name}  # compatibility\n')
+                ', range=[' + ', '.join(handlers) + '])\n')
 
 
 class ClickExtractor:
@@ -339,8 +342,7 @@ class AssetsExtractor:
         :return: json文件（带后缀）列表
         """
         return [str(x) for x in self.task_path.rglob('*.json')
-                if 'temp' not in str(x) and 'test_fixtures' not in x.parts
-                and x.name not in ('page_asset_ownership.json', 'MINIMAL_RESOURCE_CLEANUP.json')]
+                if 'temp' not in str(x) and 'test_fixtures' not in x.parts]
 
     @classmethod
     def read_file(cls, file: str) -> list:
@@ -444,16 +446,6 @@ class AssetsExtractor:
         将自身的_resule写入文件
         :return:
         """
-        # Page checks have a single owner; regenerating a task must preserve its aliases.
-        ownership_file = Path.cwd() / 'tasks/GameUi/page_asset_ownership.json'
-        if ownership_file.is_file():
-            records = json.loads(ownership_file.read_text(encoding='utf-8'))
-            aliases = [r for r in records
-                       if (Path.cwd() / r['task_assets']).resolve() == self.assets_file.resolve()]
-            if aliases:
-                self._result = 'from tasks.GameUi.assets import GameUiAssets as _PageAssets\n' + self._result
-                self._result += ''.join('\t' + r['old_symbol'] + ' = _PageAssets.' + r.get('alias_target', r['new_symbol']) + '\n'
-                                        for r in aliases)
         with open(self.assets_file, 'w', encoding='utf-8', newline='\n') as f:
             f.write(self._result)
 

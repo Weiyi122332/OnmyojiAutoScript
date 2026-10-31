@@ -3,6 +3,7 @@
 # @author   jackyhwei
 # @note     draft version without full test
 # github    https://github.com/roarhill/oas
+from tasks.GameUi.assets import GameUiAssets
 from time import sleep
 
 from datetime import datetime
@@ -181,7 +182,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
             if self.appear(self.I_ABYSS_ENEMY_INFO_EXIT):
                 self.click(self.I_ABYSS_ENEMY_INFO_EXIT, interval=2)
                 continue
-            if not self.appear(self.I_ABYSS_NAVIGATION):
+            if not self.appear(GameUiAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION):
                 # 确定不在战报界面后依旧没有在某一区域，则返回None
                 return None
             if self.appear(self.I_PEACOCK_AREA):
@@ -205,7 +206,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
             if self.appear(self.I_CHECK_FINISH):
                 raise AbyssShadowsFinished
 
-            if self.appear(self.I_ABYSS_NAVIGATION) or self.appear(self.I_CHANGE_AREA):
+            if self.appear(GameUiAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION) or self.appear(self.I_CHANGE_AREA):
                 break
             #
             if self.appear(self.I_ABYSS_MAP_EXIT):
@@ -286,7 +287,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
                     logger.info(f"select boss: {area_name.name} failed")
                     return False
                 continue
-            if self.appear(self.I_ABYSS_NAVIGATION):
+            if self.appear(GameUiAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION):
                 break
         logger.info(f"select boss: {area_name.name} done")
         return True
@@ -310,7 +311,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
             if self.appear(self.I_ABYSS_FIRE):
                 break
             # 尝试使用左下方摇杆移动
-            if count_click_goto_enemy > 0 and self.appear(self.I_ABYSS_NAVIGATION):
+            if count_click_goto_enemy > 0 and self.appear(GameUiAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION):
                 self.move_a_little()
             # 打开导航页面
             self.open_navigation()
@@ -387,7 +388,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
                 return True
             if not timer_animation.reached():
                 continue
-            if self.appear(self.I_ABYSS_NAVIGATION, threshold=0.85):
+            if self.appear(GameUiAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION, threshold=0.85):
                 # 已返回主界面
                 logger.info("Return to main page while try to attack enemy")
                 return False
@@ -512,8 +513,8 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
                 raise AbyssShadowsFinished
             if self.appear(self.I_ABYSS_MAP):
                 break
-            if self.appear(self.I_ABYSS_NAVIGATION):
-                self.click(self.I_ABYSS_NAVIGATION, interval=1)
+            if self.appear(GameUiAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION):
+                self.click(GameUiAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION, interval=1)
                 continue
             if self.appear(self.I_ABYSS_FIRE) or self.appear(self.I_ABYSS_GOTO_ENEMY):
                 self.click(self.I_ABYSS_ENEMY_INFO_EXIT, interval=2)
@@ -642,7 +643,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
                 self.device.screenshot_interval_set()
                 need_check_damage = False
                 continue
-            if self.appear(self.I_ABYSS_NAVIGATION):
+            if self.appear(GameUiAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION):
                 self.device.screenshot_interval_set()
                 break
         if condition.is_passed() or (not _timer_battle.reached()):
@@ -660,9 +661,9 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
             self.screenshot()
             if self.appear(self.I_EXIT_ENSURE):
                 if self.click(self.I_EXIT_ENSURE, interval=1):
-                    self.wait_until_appear(self.I_ABYSS_NAVIGATION, wait_time=1)
+                    self.wait_until_appear(GameUiAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION, wait_time=1)
                 continue
-            if self.appear(self.I_ABYSS_NAVIGATION):
+            if self.appear(GameUiAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION):
                 break
             if self.appear(self.I_WIN):
                 self.click(self.I_WIN, interval=1)
@@ -781,8 +782,8 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, QuickLoadout, AbyssShadowsAs
         self.change_area(item_code.get_areatype())
 
         while True:
-            if self.appear(self.I_ABYSS_NAVIGATION):
-                self.click(self.I_ABYSS_NAVIGATION, interval=2)
+            if self.appear(GameUiAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION):
+                self.click(GameUiAssets.I_PAGE_ABYSSSHADOWS_ABYSS_NAVIGATION, interval=2)
                 continue
             if self.appear(self.I_ABYSS_MAP):
                 break

@@ -2,91 +2,91 @@
   {
     "itemName": "town_goto_main",
     "imageName": "page_town_goto_main.png",
-    "profile": "High",
     "roiFront": "1017,231,78,73",
     "roiBack": "302,216,868,127",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "description"
   },
   {
     "itemName": "town_goto_duel",
     "imageName": "page_town_goto_duel.png",
-    "profile": "High",
     "roiFront": "756,142,48,68",
     "roiBack": "357,126,657,100",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "description"
   },
   {
     "itemName": "town_goto_demon_encounter",
     "imageName": "page_town_goto_demon_encounter.png",
-    "profile": "High",
     "roiFront": "617,135,51,75",
     "roiBack": "232,121,873,100",
     "method": "Template matching",
     "threshold": 0.7,
+    "profile": "High",
     "description": "description"
   },
   {
     "itemName": "town_goto_hunt",
     "imageName": "page_town_goto_hunt.png",
-    "profile": "High",
     "roiFront": "475,138,46,69",
     "roiBack": "275,122,520,100",
     "method": "Template matching",
     "threshold": 0.7,
+    "profile": "High",
     "description": "description"
   },
   {
     "itemName": "town_goto_draft_duel",
     "imageName": "page_town_goto_draft_duel.png",
-    "profile": "High",
-    "roiFront": "335,159,55,72",
+    "roiFront": "344,154,38,39",
     "roiBack": "170,145,567,100",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "协同对弈"
   },
   {
     "itemName": "town_goto_hyakkisen",
     "imageName": "page_town_goto_hyakkisen.png",
-    "profile": "High",
     "roiFront": "192,145,48,67",
     "roiBack": "86,130,447,100",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "百鬼奕"
   },
   {
     "itemName": "town_goto_hyakkiyakou",
     "imageName": "page_town_goto_hyakkiyakou.png",
-    "profile": "High",
     "roiFront": "880,165,53,69",
     "roiBack": "827,149,148,100",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": "町中进入百鬼标志"
   },
   {
     "itemName": "town_goto_entertainment",
     "imageName": "page_town_goto_entertainment.png",
-    "profile": "High",
     "roiFront": "201,144,35,26",
     "roiBack": "201,144,35,26",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": ""
   },
   {
     "itemName": "entertainment_goto_chess",
     "imageName": "page_entertainment_goto_chess.png",
-    "profile": "High",
     "roiFront": "304,175,41,127",
     "roiBack": "304,175,41,127",
     "method": "Template matching",
     "threshold": 0.8,
+    "profile": "High",
     "description": ""
   }
 ]
