@@ -438,5 +438,131 @@
         "type": "click"
       }
     ]
+  },
+  {
+    "itemName": "chess_detail_monster",
+    "imageName": "item_6_badge_1.png",
+    "roiBack": "194,0,616,75",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "",
+    "roiBadge": "267,15,41,38",
+    "badgeSerial": 1,
+    "badgeGrayscale": false,
+    "roiRange": [
+      "497,2,30,26",
+      "706,3,28,26",
+      "736,2,34,29"
+    ],
+    "badges": [
+      {
+        "imageName": "item_6_badge_1.png"
+      }
+    ],
+    "rangeOperations": [
+      {
+        "type": "ocr",
+        "mode": "Digit",
+        "method": "Default",
+        "keyword": ""
+      },
+      {
+        "type": "ocr",
+        "mode": "Single",
+        "method": "Default",
+        "keyword": ""
+      },
+      {
+        "type": "ocr",
+        "mode": "Digit",
+        "method": "Default",
+        "keyword": ""
+      }
+    ]
+  },
+  {
+    "itemName": "chess_detail_normal",
+    "imageName": "item_7_badge_1.png",
+    "roiBack": "193,0,623,71",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "",
+    "roiBadge": "267,15,41,38",
+    "badgeSerial": 1,
+    "badgeGrayscale": false,
+    "roiRange": [
+      "460,4,32,23",
+      "740,3,26,25",
+      "767,2,33,27"
+    ],
+    "badges": [
+      {
+        "imageName": "item_7_badge_1.png"
+      }
+    ],
+    "rangeOperations": [
+      {
+        "type": "ocr",
+        "mode": "Digit",
+        "method": "Default",
+        "keyword": ""
+      },
+      {
+        "type": "ocr",
+        "mode": "Single",
+        "method": "Default",
+        "keyword": ""
+      },
+      {
+        "type": "ocr",
+        "mode": "Digit",
+        "method": "Default",
+        "keyword": ""
+      }
+    ]
+  },
+  {
+    "itemName": "chess_detail_hyakki",
+    "imageName": "c_stage_hyakki.png",
+    "roiBack": "193,0,623,71",
+    "method": "Template matching",
+    "threshold": 0.9,
+    "profile": "High",
+    "description": "百鬼阶段金色图标定位",
+    "roiBadge": "606,2,31,29",
+    "badgeSerial": 1,
+    "badgeGrayscale": false,
+    "roiRange": [
+      "460,4,32,23",
+      "740,3,26,25",
+      "767,2,33,27"
+    ],
+    "badges": [
+      {
+        "imageName": "c_stage_hyakki.png"
+      }
+    ],
+    "rangeOperations": [
+      {
+        "type": "ocr",
+        "mode": "Digit",
+        "method": "Default",
+        "keyword": ""
+      },
+      {
+        "type": "ocr",
+        "mode": "Single",
+        "method": "Default",
+        "keyword": ""
+      },
+      {
+        "type": "ocr",
+        "mode": "Digit",
+        "method": "Default",
+        "keyword": ""
+      }
+    ]
   }
 ]

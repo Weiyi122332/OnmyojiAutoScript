@@ -355,10 +355,18 @@ html[data-theme="light"] .roi .tag {
 .roi-test-range { border: 2px dashed #facc15; pointer-events: none; z-index: 25; }
 .roi-test-range .tag { background: #facc15; color: #222; }
 
-.frame-collections { grid-column: 1 / -1; display: grid; gap: 8px; }
+.frame-collections { grid-column: 1 / -1; display: grid; gap: 8px; container-type: inline-size; }
 .frame-collection-row { display: flex; gap: 5px; align-items: center; }
 .frame-collection-row input { min-width: 0; flex: 1; }
 .frame-collection-row button { flex-shrink: 0; }
+.frame-range-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) 88px 30px; gap: 6px; }
+.frame-range-row input { width: 100%; box-sizing: border-box; font-variant-numeric: tabular-nums; }
+.frame-range-row select { width: 88px; min-width: 88px; box-sizing: border-box; }
+@container (max-width: 370px) {
+  .frame-range-row { grid-template-columns: 72px minmax(0, 1fr) 30px; }
+  .frame-range-row input { grid-column: 2 / 4; }
+  .frame-range-row select { grid-column: 2; width: 100%; min-width: 88px; }
+}
 .frame-extra-range { pointer-events: none; }
 .frame-operation-fields { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 8px 12px; }
 .frame-operation-fields label { display: grid; gap: 4px; flex: 1; min-width: 120px; }

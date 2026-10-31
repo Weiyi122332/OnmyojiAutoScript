@@ -1666,7 +1666,7 @@
       };
       fields.appendChild(crop);
     } else if (spec.type === "ocr") {
-      field("mode", "OCR 模式", "Single", ["Single"]);
+      field("mode", "OCR 模式", "Single", ["Single", "Digit"]);
       field("method", "预处理", "Default");
     }
     panel.appendChild(fields);
@@ -1752,10 +1752,13 @@
     const rangeTitle = document.createElement("strong"); rangeTitle.textContent = "range 处理区域（未配置时默认 click）";
     panel.appendChild(rangeTitle);
     frameRanges(rule).forEach((range, index) => {
-      const row = document.createElement("div"); row.className = "frame-collection-row";
+      const row = document.createElement("div"); row.className = "frame-collection-row frame-range-row";
       const select = document.createElement("button"); select.type = "button"; select.textContent = `Range ${index + 1}`;
       select.onclick = () => { state.frameRangeIndex = index; refreshRoiLayoutFromRule(); };
       const input = document.createElement("input"); input.type = "text"; input.value = range;
+      input.title = "区域坐标与尺寸：x,y,宽,高";
+      input.placeholder = "x,y,宽,高";
+      input.setAttribute("aria-label", `Range ${index + 1} 坐标与尺寸`);
       input.onchange = () => {
         if (!parseRoiStrict(input.value)) { input.value = range; return; }
         rule.roiRange[index] = input.value; markDirty(); refreshRoiLayoutFromRule();
