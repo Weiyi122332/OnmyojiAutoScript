@@ -82,5 +82,7 @@
   "welfare_plugin_url": "Welfare plugin status URL",
   "welfare_plugin_url_help": "Full URL, e.g. http://server:2537/welfare-dojo/today. Use the http_port configured in the welfare detection plugin.",
   "welfare_plugin_token": "Plugin access token",
-  "welfare_plugin_token_help": "The api_token from the welfare detection plugin configuration."
+  "welfare_plugin_token_help": "The api_token from the welfare detection plugin configuration.",
+  "ResourceInventory": "Resource Inventory",
+  "resource_inventory": "Resource Inventory"
 }

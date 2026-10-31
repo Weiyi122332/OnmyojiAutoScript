@@ -55,6 +55,7 @@ class GroupTaskChoice(str, Enum):
     WantedQuests = 'WantedQuests'
     Tako = 'Tako'
     AutoCheckinBigGod = 'AutoCheckinBigGod'
+    ResourceInventory = 'ResourceInventory'
     # Liver Emperor Exclusive
     BondlingFairyland = 'BondlingFairyland'
     EvoZone = 'EvoZone'

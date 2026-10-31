@@ -40,6 +40,7 @@ from tasks.Delegation.config import Delegation
 from tasks.WantedQuests.config import WantedQuests
 from tasks.Tako.config import Tako
 from tasks.AutoCheckinBigGod.config import AutoCheckinBigGod
+from tasks.ResourceInventory.config import ResourceInventory
 # ----------------------------------------------------------------------------------------------------------------------
 from tasks.Orochi.config import Orochi
 from tasks.OrochiMoans.config import OrochiMoans
@@ -118,6 +119,7 @@ class ConfigModel(ConfigBase):
     wanted_quests: WantedQuests = Field(default_factory=WantedQuests)
     tako: Tako = Field(default_factory=Tako)
     auto_checkin_big_god: AutoCheckinBigGod = Field(default_factory=AutoCheckinBigGod)
+    resource_inventory: ResourceInventory = Field(default_factory=ResourceInventory)
 
     # 这些是刷御魂的
     orochi: Orochi = Field(default_factory=Orochi)

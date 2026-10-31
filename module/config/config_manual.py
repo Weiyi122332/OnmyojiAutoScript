@@ -8,7 +8,7 @@ class ConfigManual:
     """
 
     SCHEDULER_PRIORITY = """
-        Restart > TaskGroup1 > TaskGroup2 > TaskGroup3 > TaskGroup4 > TaskGroup5 > SoulsTidy
+        Restart > ResourceInventory > TaskGroup1 > TaskGroup2 > TaskGroup3 > TaskGroup4 > TaskGroup5 > SoulsTidy
         > KekkaiUtilize > KekkaiActivation > DemonEncounter
         > AreaBoss > GoldYoukai > ExperienceYoukai > Nian > Tako > AutoCheckinBigGod > RealmRaid > RyouToppa > DailyTrifles > Exploration
         > Dokan > AbyssShadows > Hunt > GuildBanquet > DemonRetreat > GuildActivityMonitor
