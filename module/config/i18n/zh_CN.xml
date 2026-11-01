@@ -669,6 +669,7 @@ Refresh：直接刷新，如果刷新操作进入CD，将标记为失败并退�
 	<message><source>buy_sale_ticket_help</source><translation>等凑够了再去换</translation></message>
 	<message><source>Scales</source><translation>御魂礼盒</translation></message>
 	<message><source>Orochi Scales</source><translation>朴素御魂</translation></message>
+	<message><source>buy_all_remaining_help</source><translation>开启后点击最大数量，买完实际剩余额度；游戏需要分批时继续购买。余额不足、数量识别失败或库存未减少时停止。旧配置中的正数自动转为开启，0转为关闭。</translation></message>
 	<message><source>orochi_scales_help</source><translation>可选[0~40]</translation></message>
 	<message><source>Demon Souls</source><translation>首领御魂</translation></message>
 	<message><source>demon_souls_help</source><translation>可选[0~50]</translation></message>

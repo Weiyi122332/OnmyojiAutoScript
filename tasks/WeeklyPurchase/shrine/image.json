@@ -74,7 +74,7 @@
   {
     "itemName": "s_confirm_white_four",
     "imageName": "shrine_s_confirm_white_four.png",
-    "roiFront": "548,486,176,62",
+    "roiFront": "554,551,78,58",
     "roiBack": "509,404,252,231",
     "method": "Template matching",
     "threshold": 0.8,

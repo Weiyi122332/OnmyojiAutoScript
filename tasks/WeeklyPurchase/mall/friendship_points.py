@@ -43,30 +43,13 @@ class FriendshipPoints(Special):
         :return:
         """
         logger.hr(buy_button.name, 3)
-        self.screenshot()
-        # 检查是否出现了购买按钮
-        if not self.appear(buy_button):
-            logger.warning('Buy button is not appear')
-            return False
-        # 是否检查剩余数量
-        _remain = self._special_check_remain(buy_button)
-        if _remain == 0:
-            logger.warning('Remain number is 0')
-            return False
-        # 检查总勋章
-        current_money = money_ocr.ocr(self.device.image)
-        if not isinstance(current_money, int):
-            logger.warning('Money ocr failed')
-            return False
-        money_enough = current_money >= buy_money
-        if not money_enough:
-            logger.warning(f'No enough money {current_money}')
-            return False
-        # 点击购买
-        return self.buy_one(buy_button, buy_check)
+        return self.buy_all_remaining(
+            buy_button, lambda: self._special_check_remain(buy_button),
+            money_ocr=money_ocr, unit_price=buy_money,
+            purchase=lambda button: self.buy_one(button, buy_check))
 
     def buy_mall_more(self, buy_button: RuleImage, remain_number: bool, money_ocr: RuleOcr,
-                      buy_number: int, buy_max: int, buy_money: int):
+                      buy_number: int, buy_max: int = 99, buy_money: int = 0):
         """
         针对可以买多个的
         :param money_ocr:  检查钱的第几个
@@ -88,13 +71,9 @@ class FriendshipPoints(Special):
             return
         # 是否检查剩余数量
         if remain_number:
-            _remain = self._special_check_remain(buy_button)
-            if _remain == 0:
-                logger.warning('Remain number is 0')
-                return
-            if _remain < buy_number:
-                logger.warning(f'Remain number is {_remain}, buy number is {buy_number}')
-                buy_number = _remain
+            return self.buy_all_remaining(
+                buy_button, lambda: self._special_check_remain(buy_button),
+                money_ocr=money_ocr, unit_price=buy_money)
         # 检查钱够不够
         current_money = money_ocr.ocr(self.device.image)
         if not isinstance(current_money, int):

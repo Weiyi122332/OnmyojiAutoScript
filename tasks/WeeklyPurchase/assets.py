@@ -350,7 +350,7 @@ class WeeklyPurchaseAssets:
 	# description 
 	I_S_CONFIRM_WHITE_FIVE = RuleImage(roi_front=(554,522,174,61), roi_back=(520,416,220,193), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_confirm_white_five.png")
 	# description 
-	I_S_CONFIRM_WHITE_FOUR = RuleImage(roi_front=(548,486,176,62), roi_back=(509,404,252,231), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_confirm_white_four.png")
+	I_S_CONFIRM_WHITE_FOUR = RuleImage(roi_front=(554,551,78,58), roi_back=(509,404,252,231), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_confirm_white_four.png")
 	# description 
 	I_S_CONFIRM_BLACK = RuleImage(roi_front=(547,496,180,62), roi_back=(532,426,214,184), threshold=0.8, method="Template matching", file="./tasks/WeeklyPurchase/shrine/shrine_s_confirm_black.png")
 	# description 

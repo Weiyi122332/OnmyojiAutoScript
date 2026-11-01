@@ -60,18 +60,9 @@ class Honor(Special):
             logger.info('Buy mystery amulet is disabled')
             return
 
-        # 检查剩余数量
-        remain_number = self._special_check_remain(self.I_HONOR_BLUE)
-        if not isinstance(remain_number, int):
-            logger.warning('Can not get remain number')
-            return
-        if remain_number == 0:
-            logger.warning(f'No blue honor {remain_number}')
-            return
-        if not self.mall_check_money(4, 1500):
-            logger.warning('No enough money')
-            return
-        self.buy_more(self.I_HONOR_BLUE)
+        return self.buy_all_remaining(
+            self.I_HONOR_BLUE, lambda: self._special_check_remain(self.I_HONOR_BLUE),
+            money_ocr=self.O_MALL_RESOURCE_4, unit_price=1500)
 
     def _honor_black_daruma_scrap(self, enable: bool=False):
         logger.hr('Buy black daruma scrap', 3)
@@ -79,19 +70,9 @@ class Honor(Special):
             logger.info('Buy black daruma scrap is disabled')
             return
 
-        # 检查剩余数量
-        remain_number = self._special_check_remain(self.I_HONOR_BLACK)
-        if not isinstance(remain_number, int):
-            logger.warning('Can not get remain number')
-            return
-        if remain_number == 0:
-            logger.warning(f'No black daruma scrap {remain_number}')
-            return
-        if not self.mall_check_money(4, 540):
-            logger.warning('No enough money')
-            return
-        # 使用动态位置点击购买
-        self.buy_more(self.I_HONOR_BLACK)
+        return self.buy_all_remaining(
+            self.I_HONOR_BLACK, lambda: self._special_check_remain(self.I_HONOR_BLACK),
+            money_ocr=self.O_MALL_RESOURCE_4, unit_price=540)
 
 
 if __name__ == '__main__':

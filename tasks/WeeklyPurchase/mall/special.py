@@ -59,94 +59,32 @@ class Special(Buy, MallNavbar):
         if not totem_pass:
             logger.info('Buy totem is disabled')
             return
-        # 检查剩余数量
-        buy_number = 40
-        remain_number = self._special_check_remain(self.I_SP_BUY_TOTEM)
-        if remain_number < buy_number:
-            logger.warning(f'Totem is not enough: {remain_number}')
-            if remain_number <= 0:
-                logger.warning('Totem remain is empty')
-                return
-            buy_number = remain_number
-        # 用金币买的没必要再检查金币
-        # 购买
-        self.buy_more(self.I_SP_BUY_TOTEM, buy_number)
-        time.sleep(1)
+        return self.buy_all_remaining(
+            self.I_SP_BUY_TOTEM, lambda: self._special_check_remain(self.I_SP_BUY_TOTEM))
 
-    def _special_medium(self, buy_number: int = 10):
+    def _special_medium(self, enabled: bool = True):
         """
         购买中级盘，要求必须下滑出现中级盘
         :return:
         """
         logger.hr('Buy medium', 3)
-        if buy_number <= 0:
+        if not enabled:
             logger.info('Buy medium is disabled')
             return
-        # 检查剩余数量
-        remain_number = self._special_check_remain(self.I_SP_BUY_MEDIUM)
-        if remain_number < buy_number:
-            logger.warning(f'Medium is not enough: {remain_number}')
-            if remain_number <= 0:
-                logger.warning('Medium remain is empty')
-                return
-            buy_number = remain_number
-        # 用金币买的没必要再检查金币
-        # 购买 , 中级盘一次最多购买20个
-        buy_max = 20
-        logger.info(f'Buy number is {buy_number}')
-        if buy_number >= buy_max:
-            buy_cycles_number = buy_number // buy_max
-            buy_res_number = buy_number % buy_max
-        else:
-            buy_cycles_number = None
-            buy_res_number = buy_number
+        return self.buy_all_remaining(
+            self.I_SP_BUY_MEDIUM, lambda: self._special_check_remain(self.I_SP_BUY_MEDIUM))
 
-        if buy_cycles_number:
-            for i in range(buy_cycles_number):
-                if self.buy_more(self.I_SP_BUY_MEDIUM, buy_max) is False:
-                    return False
-                time.sleep(0.5)
-        if buy_res_number:
-            self.buy_more(self.I_SP_BUY_MEDIUM, buy_res_number)
-            time.sleep(0.5)
-
-    def _special_low(self, buy_number: int = 10):
+    def _special_low(self, enabled: bool = True):
         """
         购买低级盘，要求必须下滑出现低级盘
         :return:
         """
         logger.hr('Buy low', 3)
-        if buy_number <= 0:
+        if not enabled:
             logger.info('Buy low is disabled')
             return
-        # 检查剩余数量
-        remain_number = self._special_check_remain(self.I_SP_BUY_LOW)
-        if remain_number < buy_number:
-            logger.warning(f'Low is not enough: {remain_number}')
-            if remain_number <= 0:
-                logger.warning('Low remain is empty')
-                return
-            buy_number = remain_number
-        # 用金币买的没必要再检查金币
-        # 当前百物式盘购买框一次最多购买50个。
-        buy_max = 50
-        logger.info(f'Buy number is {buy_number}')
-        if buy_number >= buy_max:
-            buy_cycles_number = buy_number // buy_max
-            buy_res_number = buy_number % buy_max
-        else:
-            buy_cycles_number = None
-            buy_res_number = buy_number
-        if buy_cycles_number:
-            for i in range(buy_cycles_number):
-                ret = self.buy_more(self.I_SP_BUY_LOW, buy_max)
-                # 溢出了就不买了
-                if ret is not None and not ret:
-                    return False
-                time.sleep(0.5)
-        if buy_res_number:
-            self.buy_more(self.I_SP_BUY_LOW, buy_res_number)
-            time.sleep(0.5)
+        return self.buy_all_remaining(
+            self.I_SP_BUY_LOW, lambda: self._special_check_remain(self.I_SP_BUY_LOW))
 
     def _special_check_remain(self, target: RuleImage):
         """

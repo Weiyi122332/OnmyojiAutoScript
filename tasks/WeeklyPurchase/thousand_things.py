@@ -73,6 +73,7 @@ class ThousandThings(GameUi, WeeklyPurchaseAssets):
             if self.ocr_appear_click(self.O_TT_BLUE_TICKET, interval=1):
                 continue
         logger.info('Buy mystery amulet')
+        self.appear_then_click(self.I_TT_BUY_UP, interval=0.5)
         self.tt_get_reward(self.I_TT_BUY_CONFIRM)
         logger.info('Buy mystery amulet success')
         time.sleep(0.5)
@@ -92,6 +93,7 @@ class ThousandThings(GameUi, WeeklyPurchaseAssets):
             if self.ocr_appear_click(self.O_TT_BLACK, interval=1):
                 continue
         logger.info('Buy black daruma scrap')
+        self.appear_then_click(self.I_TT_BUY_UP, interval=0.5)
         self.tt_get_reward(self.I_TT_BUY_CONFIRM)
         logger.info('Buy black daruma scrap success')
         time.sleep(0.5)
@@ -104,22 +106,14 @@ class ThousandThings(GameUi, WeeklyPurchaseAssets):
             return False
         if not self.tt_check_money(600):
             return False
-        self.O_TT_NUMBER.keyword = '2'
-        click_count = 0
         while 1:
             self.screenshot()
-            if self.ocr_appear(self.O_TT_NUMBER):
+            if self.appear(self.I_TT_BUY_UP):
                 break
-            appear_max = self.appear(self.I_TT_BUY_UP)
-            if click_count >= 4:
-                logger.warning('Buy ap failed')
-                break
-            if self.appear_then_click(self.I_TT_BUY_UP, interval=0.5):
-                click_count += 1
-                continue
-            if not appear_max and self.ocr_appear_click(self.O_TT_AP, interval=2.3):
+            if self.ocr_appear_click(self.O_TT_AP, interval=2.3):
                 continue
         logger.info('Buy ap')
+        self.appear_then_click(self.I_TT_BUY_UP, interval=0.5)
         self.tt_get_reward(self.I_TT_BUY_CONFIRM)
         logger.info('Buy ap success')
         time.sleep(0.5)

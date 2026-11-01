@@ -1584,8 +1584,8 @@
     "special_room": {
       "enable": false,
       "totem_pass": false,
-      "medium_bondling_discs": 0,
-      "low_bondling_discs": 0
+      "medium_bondling_discs": false,
+      "low_bondling_discs": false
     },
     "honor_room": {
       "enable": false,
@@ -1605,7 +1605,7 @@
       "ap_100": false,
       "random_soul": false,
       "white_daruma": false,
-      "challenge_pass": 0,
+      "challenge_pass": false,
       "red_daruma": 0,
       "broken_amulet": 0
     },
@@ -1627,20 +1627,20 @@
     },
     "scales": {
       "enable": false,
-      "orochi_scales": 40,
-      "demon_souls": 50,
+      "orochi_scales": true,
+      "demon_souls": true,
       "demon_class": "土蜘蛛",
       "demon_position": 1,
-      "picture_book_scrap": 30,
+      "picture_book_scrap": true,
       "enable_book_auto": false,
       "picture_book_rule": "auto"
     },
     "bondlings": {
       "enable": false,
-      "random_soul": 0,
-      "bondling_stone": 0,
-      "high_bondling_discs": 0,
-      "medium_bondling_discs": 0
+      "random_soul": false,
+      "bondling_stone": false,
+      "high_bondling_discs": false,
+      "medium_bondling_discs": false
     },
     "shrine": {
       "enable": false,
@@ -1653,7 +1653,7 @@
       "honor_gift": false,
       "mystery_amulet": false,
       "black_daruma_scrap": false,
-      "skin_ticket": 0
+      "skin_ticket": false
     }
   },
   "secret": {

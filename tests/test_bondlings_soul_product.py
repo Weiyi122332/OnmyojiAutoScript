@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 
+from module.atom.ocr import RuleOcr
 from tasks.Component.Buy.buy import Buy
 from tasks.WeeklyPurchase.assets import WeeklyPurchaseAssets
 from tasks.WeeklyPurchase.mall.bondlings import Bondlings
@@ -22,8 +23,9 @@ class BondlingsSoulProductTest(unittest.TestCase):
         self.task.I_BL_SOULS = deepcopy(WeeklyPurchaseAssets.I_BL_SOULS)
         self.task.I_BL_BUY_SOULS = deepcopy(WeeklyPurchaseAssets.I_BL_BUY_SOULS)
         self.task.O_BL_RES_SOULS = deepcopy(WeeklyPurchaseAssets.O_BL_RES_SOULS)
-        self.task.O_BL_RES_SOULS.ocr = Mock(return_value=100)
-        self.task.O_BL_CHECK_MONEY = SimpleNamespace(ocr=Mock(return_value=(1677, 2323, 4000)))
+        self.task.O_BL_RES_SOULS.ocr = Mock(side_effect=[100, 0])
+        self.task.O_BL_CHECK_MONEY = Mock(spec=RuleOcr)
+        self.task.O_BL_CHECK_MONEY.ocr.return_value = (4000, 0, 4000)
         self.task.appear = lambda rule: rule.template_match(self.frame)
         sleep = patch('tasks.WeeklyPurchase.mall.bondlings.time.sleep')
         sleep.start()
@@ -52,35 +54,35 @@ class BondlingsSoulProductTest(unittest.TestCase):
         original_button_roi = tuple(self.task.I_BL_BUY_SOULS.roi_back)
         original_remain_roi = list(self.task.O_BL_RES_SOULS.roi)
         self.task._bondlings_random_souls(1)
-        button, number = self.task.buy_more.call_args.args
-        self.assertEqual(number, 1)
+        button, = self.task.buy_more.call_args.args
         self.assertGreater(button.roi_front[0], 700)
         self.assertLess(button.roi_front[0], 850)
         self.assertEqual(tuple(self.task.I_BL_BUY_SOULS.roi_back), original_button_roi)
         self.assertEqual(self.task.O_BL_RES_SOULS.roi, original_remain_roi)
 
-    def test_configured_fifty_is_thirty_plus_twenty_instead_of_two_full_batches(self):
+    def test_actual_stock_is_bought_without_a_fixed_batch_or_total_limit(self):
         self.stock_shop(soul_column=0)
-        self.task._bondlings_random_souls(50)
-        self.assertEqual([call.args[1] for call in self.task.buy_more.call_args_list], [30, 20])
+        self.task.O_BL_RES_SOULS.ocr.side_effect = [100, 61, 13, 0]
+        self.task._bondlings_random_souls(True)
+        self.assertEqual(len(self.task.buy_more.call_args_list), 3)
+        self.assertTrue(all(len(call.args) == 1 for call in self.task.buy_more.call_args_list))
 
     def test_last_single_item_is_not_dropped(self):
         self.stock_shop(soul_column=0)
-        self.task._bondlings_random_souls(61)
-        self.assertEqual([call.args[1] for call in self.task.buy_more.call_args_list], [30, 30, 1])
+        self.task.O_BL_RES_SOULS.ocr.side_effect = [61, 1, 0]
+        self.task._bondlings_random_souls(True)
+        self.assertEqual(len(self.task.buy_more.call_args_list), 2)
+        self.assertTrue(all(len(call.args) == 1 for call in self.task.buy_more.call_args_list))
 
     def test_stock_and_currency_still_limit_the_purchase(self):
-        for stock, money, expected in ((7, 1677, 7), (100, 45, 2), (0, 1677, None)):
+        for stock, money, expected in (([7, 0], [1677], 1), ([100, 98], [45, 5], 1), ([0], [], 0)):
             with self.subTest(stock=stock, money=money):
                 self.stock_shop(soul_column=0)
                 self.task.buy_more.reset_mock()
-                self.task.O_BL_RES_SOULS.ocr.return_value = stock
-                self.task.O_BL_CHECK_MONEY.ocr.return_value = (money, 4000 - money, 4000)
-                self.task._bondlings_random_souls(50)
-                if expected is None:
-                    self.task.buy_more.assert_not_called()
-                else:
-                    self.assertEqual(self.task.buy_more.call_args.args[1], expected)
+                self.task.O_BL_RES_SOULS.ocr.side_effect = stock
+                self.task.O_BL_CHECK_MONEY.ocr.side_effect = [(value, 4000 - value, 4000) for value in money]
+                self.task._bondlings_random_souls(True)
+                self.assertEqual(self.task.buy_more.call_count, expected)
 
     def test_disabled_purchase_does_not_inspect_or_click_products(self):
         self.task._bondlings_random_souls(0)
@@ -89,11 +91,11 @@ class BondlingsSoulProductTest(unittest.TestCase):
 
 
 class BuyExactQuantityTest(unittest.TestCase):
-    def test_read_quantity_before_incrementing_including_a_single_item(self):
+    def test_read_quantity_and_use_the_maximum_button_before_correcting_the_remainder(self):
         for target in (1, 20, 30):
             with self.subTest(target=target):
                 task = Buy.__new__(Buy)
-                task.device = SimpleNamespace(image=None)
+                task.device = SimpleNamespace(image=None, click_record_clear=Mock())
                 task.screenshot = Mock()
                 task.appear = lambda rule, **kwargs: rule is task.I_BUY_PLUS
                 task.ui_reward_appear_click = Mock(return_value=True)
@@ -101,19 +103,23 @@ class BuyExactQuantityTest(unittest.TestCase):
                 task.O_BUY_NUMBER = SimpleNamespace(ocr=lambda image: quantity[0])
                 task._read_buy_quantity = lambda: quantity[0]
 
-                def increment(rule, **kwargs):
-                    self.assertIs(rule, task.I_BUY_ADD)
-                    quantity[0] += 1
+                def set_quantity(rule, **kwargs):
+                    if rule is task.I_BUY_PLUS:
+                        quantity[0] = 30
+                    else:
+                        self.assertIs(rule, task.I_BUY_SUB)
+                        quantity[0] -= 1
                     return True
 
-                task.appear_then_click = Mock(side_effect=increment)
+                task.appear_then_click = Mock(side_effect=set_quantity)
                 timer = SimpleNamespace(start=lambda: None, reached=lambda: True, reset=lambda: None)
                 timer.start = lambda: timer
                 with patch('tasks.Component.Buy.buy.Timer', return_value=timer), \
                         patch('tasks.Component.Buy.buy.time.sleep'):
                     task.buy_more(WeeklyPurchaseAssets.I_BL_BUY_SOULS, target)
                 self.assertEqual(quantity[0], target)
-                self.assertEqual(task.appear_then_click.call_count, target - 1)
+                expected = [] if target == 1 else [task.I_BUY_PLUS] + [task.I_BUY_SUB] * (30 - target)
+                self.assertEqual([call.args[0] for call in task.appear_then_click.call_args_list], expected)
 
 
 if __name__ == '__main__':

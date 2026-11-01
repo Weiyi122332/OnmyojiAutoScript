@@ -9,6 +9,7 @@ from tasks.GameUi.page import page_main, page_summon
 from tasks.GameUi.game_ui import GameUi
 from tasks.WeeklyPurchase.assets import WeeklyPurchaseAssets
 from tasks.WeeklyPurchase.config import Shrine as ConfigShrine
+from tasks.Component.Buy.assets import BuyAssets
 
 
 class Shrine(GameUi, WeeklyPurchaseAssets):
@@ -106,7 +107,7 @@ class Shrine(GameUi, WeeklyPurchaseAssets):
         if not self.appear(self.I_S_WHITE_FOUR):
             logger.info('White four is not available')
             return
-        if not self.shrine_check_money(400):
+        if not self.shrine_check_money(200):
             return
         self.ui_click(self.I_S_WHITE_FOUR, self.I_S_CHECK_WHITE_FOUR)
         self.screenshot()
@@ -115,6 +116,7 @@ class Shrine(GameUi, WeeklyPurchaseAssets):
             self.ui_click_until_disappear(self.I_UI_BACK_RED)
             time.sleep(1)
             return
+        self.appear_then_click(BuyAssets.I_BUY_PLUS, interval=0.4)
         self.ui_click(self.I_S_BUY_WHITE_FOUR, self.I_S_CONFIRM_WHITE_FOUR)
         self.ui_get_reward(self.I_S_CONFIRM_WHITE_FOUR)
         self.ui_click_until_disappear(self.I_UI_BACK_RED)

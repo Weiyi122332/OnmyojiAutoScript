@@ -59,63 +59,31 @@ class Guild(Buy, GameUi, WeeklyPurchaseAssets):
     def _guild_honor_gift(self):
         # 功勋礼包
         logger.hr('Guild honor gift', 2)
-        self.screenshot()
-        if not self.buy_check_money(self.O_GUILD_TOTAL, 210):
-            return False
-        number = self.check_remain(self.I_GUILD_HONOR_GIFT)
-        if number == 0:
-            logger.warning('No mystery amulet can buy')
-            return False
-        self.buy_more(self.I_GUILD_HONOR_GIFT)
-        time.sleep(0.5)
-        return True
+        return self.buy_all_remaining(
+            self.I_GUILD_HONOR_GIFT, lambda: self.check_remain(self.I_GUILD_HONOR_GIFT),
+            money_ocr=self.O_GUILD_TOTAL, unit_price=210)
 
     def _guild_mystery_amulet(self):
         # 蓝票
         logger.hr('Guild mystery amulet', 2)
-        self.screenshot()
-        if not self.buy_check_money(self.O_GUILD_TOTAL, 240):
-            return False
-        number = self.check_remain(self.I_GUILD_BLUE)
-        if number == 0:
-            logger.warning('No mystery amulet can buy')
-            return False
-        self.buy_more(self.I_GUILD_BLUE, number)
-        time.sleep(0.5)
-        return True
+        return self.buy_all_remaining(
+            self.I_GUILD_BLUE, lambda: self.check_remain(self.I_GUILD_BLUE),
+            money_ocr=self.O_GUILD_TOTAL, unit_price=240)
 
     def _guild_black_daruma_scrap(self):
         # 黑碎
         logger.hr('Guild black daruma scrap', 2)
-        self.screenshot()
-        if not self.buy_check_money(self.O_GUILD_TOTAL, 200):
-            return False
-        number = self.check_remain(self.I_GUILD_SCRAP)
-        if number == 0:
-            logger.warning('No black daruma can buy')
-            return False
-        self.buy_one(self.I_GUILD_SCRAP, self.I_GUILD_CHECK_SCRAP)
-        time.sleep(0.5)
-        return True
+        return self.buy_all_remaining(
+            self.I_GUILD_SCRAP, lambda: self.check_remain(self.I_GUILD_SCRAP),
+            money_ocr=self.O_GUILD_TOTAL, unit_price=200,
+            purchase=lambda button: self.buy_one(button, self.I_GUILD_CHECK_SCRAP))
 
-    def _guild_skin_ticket(self, num: int = 0):
+    def _guild_skin_ticket(self):
         # 皮肤券
         logger.hr('Guild skin ticket', 2)
-        if num == 0:
-            logger.warning('No buy skin ticket')
-            return False
-        self.screenshot()
-        if not self.buy_check_money(self.O_GUILD_TOTAL, 50):
-            return False
-        # 检查功勋商店皮肤券 本周剩余数量
-        number = self.check_remain(self.I_GUILD_SKIN)
-        if number == 0:
-            logger.warning('No skin ticket can buy')
-            return False
-        # 购买功勋商店皮肤券
-        self.buy_more(self.I_GUILD_SKIN, number)
-        time.sleep(0.5)
-        return True
+        return self.buy_all_remaining(
+            self.I_GUILD_SKIN, lambda: self.check_remain(self.I_GUILD_SKIN),
+            money_ocr=self.O_GUILD_TOTAL, unit_price=50)
 
     def check_remain(self, image: RuleImage) -> int:
         self.O_GUILD_REMAIN.roi[0] = image.roi_front[0] - 38

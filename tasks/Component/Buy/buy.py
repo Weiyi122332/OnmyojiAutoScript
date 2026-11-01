@@ -5,7 +5,7 @@ import time
 from copy import deepcopy
 
 from tasks.GameUi.page import random_click
-from typing import Union
+from typing import Callable, Union
 
 from module.atom.image import RuleImage
 from module.atom.ocr import RuleOcr
@@ -17,6 +17,35 @@ from tasks.base_task import BaseTask
 from tasks.Component.Buy.assets import BuyAssets
 
 class Buy(BaseTask, BuyAssets):
+
+    def buy_all_remaining(self, start_click, read_remaining: RuleOcr | Callable[[], int],
+                          money_ocr: RuleOcr = None, unit_price: int = 0,
+                          purchase: Callable = None) -> bool:
+        """每次拉满购买，重新读取限额；售罄、余额不足或库存未减少时退出。"""
+        previous = None
+        while True:
+            self.screenshot()
+            remaining = (read_remaining() if callable(read_remaining)
+                         else read_remaining.ocr(self.device.image))
+            if not isinstance(remaining, int) or remaining < 0:
+                logger.warning('Remaining purchase stock could not be read; stop purchase')
+                return False
+            if remaining == 0:
+                return True
+            if previous is not None and remaining >= previous:
+                logger.warning(f'Purchase stock did not decrease: {previous} -> {remaining}')
+                return False
+            if money_ocr is not None and not self.buy_check_money(money_ocr, unit_price):
+                return False
+            if not self.appear(start_click):
+                logger.warning(f'Purchase button is unavailable: {start_click}')
+                return False
+            if (purchase or self.buy_more)(start_click) is False:
+                if self.appear(self.I_BUY_PLUS):
+                    self._cancel_buy_dialog()
+                return False
+            previous = remaining
+            time.sleep(0.5)
 
     def _read_buy_quantity(self) -> int | None:
         """购买框随商品描述上下移动，数字区域跟随加号按钮定位。"""
@@ -33,6 +62,8 @@ class Buy(BaseTask, BuyAssets):
             return False
         failed_reads = 0
         number_record = []
+        maximum_tried = False
+        best_distance = None
         ocr_timer = Timer(0.4).start()
         while True:
             self.screenshot()
@@ -55,6 +86,18 @@ class Buy(BaseTask, BuyAssets):
                     logger.warning(f'Purchase quantity stopped at {current}, expected {number}')
                     return False
                 number_record.pop(0)
+            # 优先使用向上双箭头，配置数量低于上限时再校正。
+            if not maximum_tried and current < number:
+                maximum_tried = True
+                if self.appear_then_click(self.I_BUY_PLUS, interval=0.4):
+                    best_distance = None
+                    continue
+            distance = abs(current - number)
+            if best_distance is None or distance < best_distance:
+                if best_distance is not None:
+                    # 仅在已确认数量向目标推进后清理连点记录。
+                    self.device.click_record_clear()
+                best_distance = distance
             button = self.I_BUY_ADD if current < number else self.I_BUY_SUB
             self.appear_then_click(button, interval=0.4)
 
@@ -207,6 +250,10 @@ class Buy(BaseTask, BuyAssets):
             logger.error('Target is not RuleOcr')
             return False
         current = target.ocr(self.device.image)
+        if isinstance(current, tuple) and len(current) == 3:
+            amount, remain, total = current
+            current = (amount if all(isinstance(value, int) for value in current)
+                       and amount + remain == total else None)
         if not isinstance(current, int):
             logger.warning('OCR current money failed')
             return False
