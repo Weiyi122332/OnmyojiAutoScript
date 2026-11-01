@@ -16,7 +16,6 @@ from tasks.Chess.runtime.state import ChessGameState
 from tasks.Chess.script_task import ScriptTask
 
 
-DRAG = 'tasks.Chess.runtime.hand_operations.Press_and_Drag'
 SHOP_CLICK = RuleClick((100, 100, 20, 20), (100, 100, 20, 20), name='test_shop_slot')
 
 
@@ -53,7 +52,7 @@ class ChessCapacityFixTest(unittest.TestCase):
 
     def test_full_hand_defers_recall_without_dragging_or_stuck_error(self):
         task = self.task()
-        with patch(DRAG) as drag:
+        with patch.object(task.device, 'press_and_drag', create=True) as drag:
             self.assertIsNone(task._recall_one_system_board_card())
         task.emergency_cleanup_hand.assert_called_once()
         drag.assert_not_called()
@@ -64,14 +63,14 @@ class ChessCapacityFixTest(unittest.TestCase):
         task._hand_capacity_count.side_effect = [10, 9, 9]
         order = []
         task.emergency_cleanup_hand.side_effect = lambda: order.append('cleanup')
-        with patch(DRAG, side_effect=lambda *a, **k: order.append('drag')):
+        with patch.object(task.device, 'press_and_drag', side_effect=lambda *a, **k: order.append('drag')):
             self.assertEqual(task._recall_one_system_board_card(), 11)
         self.assertEqual(order, ['cleanup', 'drag'])
 
     def test_recall_with_space_preserves_existing_behavior(self):
         task = self.task()
         task._hand_capacity_count.return_value = 9
-        with patch(DRAG) as drag:
+        with patch.object(task.device, 'press_and_drag', create=True) as drag:
             self.assertEqual(task._recall_one_system_board_card(), 11)
         drag.assert_called_once()
         task.emergency_cleanup_hand.assert_not_called()
@@ -79,21 +78,21 @@ class ChessCapacityFixTest(unittest.TestCase):
     def test_phase_change_during_cleanup_stops_the_recall(self):
         task = self.task()
         task._is_preparation_mode.side_effect = [True, False]
-        with patch(DRAG) as drag:
+        with patch.object(task.device, 'press_and_drag', create=True) as drag:
             self.assertIsNone(task._recall_one_system_board_card())
         drag.assert_not_called()
 
     def test_bulk_recall_also_defers_if_cleanup_cannot_free_space(self):
         task = self.task()
         task._read_shikigami_count = Mock(return_value={'current': 3, 'total': 3})
-        with patch(DRAG) as drag:
+        with patch.object(task.device, 'press_and_drag', create=True) as drag:
             self.assertFalse(task.recall_all_board_cards())
         drag.assert_not_called()
 
     def test_board_card_registered_by_script_is_protected(self):
         task = self.task()
         task._player_deployed_positions = {11}
-        with patch(DRAG) as drag:
+        with patch.object(task.device, 'press_and_drag', create=True) as drag:
             self.assertIsNone(task._recall_one_system_board_card())
         task.emergency_cleanup_hand.assert_not_called()
         drag.assert_not_called()
@@ -163,19 +162,19 @@ class ChessStarConfirmationTest(unittest.TestCase):
 
     def test_hand_upgrade_with_same_count_needs_two_confirming_frames(self):
         task = self.task([(1,), (2,), (2,), (2,)])
-        with patch(DRAG):
+        with patch.object(task.device, 'press_and_drag', create=True):
             self.assertTrue(task.deploy_shikigami_hand_card('kujira', (425, 620)))
         self.assertEqual(task.observed_confirmation, [False, True])
 
     def test_board_upgrade_can_confirm_without_hand_count_decrease(self):
         task = self.task([(1,)] * 4, [1, 2, 2])
-        with patch(DRAG):
+        with patch.object(task.device, 'press_and_drag', create=True):
             self.assertTrue(task.deploy_shikigami_hand_card('kujira', (425, 620)))
         self.assertEqual(task.observed_confirmation, [False, True])
 
     def test_a_single_star_spike_does_not_confirm_deployment(self):
         task = self.task([(1,)] * 5, [1, 2, 1, 1, 1])
-        with patch(DRAG):
+        with patch.object(task.device, 'press_and_drag', create=True):
             self.assertFalse(task.deploy_shikigami_hand_card('kujira', (425, 620)))
         self.assertEqual(task.observed_confirmation, [False] * 4)
 

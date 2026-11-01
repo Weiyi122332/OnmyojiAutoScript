@@ -8,7 +8,6 @@ from tasks.Chess.runtime.state import ChessGameState
 from tasks.Chess.script_task import ScriptTask
 
 
-DRAG = 'tasks.Chess.runtime.hand_operations.Press_and_Drag'
 
 
 class ChessPreparationTransitionTest(unittest.TestCase):
@@ -33,7 +32,7 @@ class ChessPreparationTransitionTest(unittest.TestCase):
     def test_no_drag_if_preparation_ends_after_the_board_snapshot(self):
         task, phase = self.task()
         task.screenshot.side_effect = lambda: phase.update(preparation=False)
-        with patch(DRAG) as drag:
+        with patch.object(task.device, 'press_and_drag', create=True) as drag:
             self.assertIsNone(task._recall_one_system_board_card())
         drag.assert_not_called()
 
@@ -47,7 +46,7 @@ class ChessPreparationTransitionTest(unittest.TestCase):
             self.assertTrue(condition())
             return True
         task._wait_chess_action_state = Mock(side_effect=wait)
-        with patch(DRAG) as drag:
+        with patch.object(task.device, 'press_and_drag', create=True) as drag:
             self.assertIsNone(task._recall_one_system_board_card())
         drag.assert_called_once()
         task._board_set_is_empty.assert_not_called()
@@ -60,7 +59,7 @@ class ChessPreparationTransitionTest(unittest.TestCase):
         task._wait_chess_action_state = Mock(return_value=False)
         task._handle_goldfish_after_board_action_failure.side_effect = (
             lambda *a, **k: phase.update(preparation=False) or False)
-        with patch(DRAG) as drag:
+        with patch.object(task.device, 'press_and_drag', create=True) as drag:
             self.assertIsNone(task._recall_one_system_board_card())
         drag.assert_called_once()
 

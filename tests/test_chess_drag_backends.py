@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 from module.device.method.scrcpy.core import ScrcpyCore
 from module.device.method.scrcpy.control import ControlSender
-from tasks.Chess.runtime import press_and_drag as drag
+from module.device import press_and_drag as drag
 
 
 class ChessDragBackendsTest(unittest.TestCase):
@@ -69,8 +69,8 @@ class ChessDragBackendsTest(unittest.TestCase):
                                  handle_control_check=Mock(), _invalidate_image_batch_cache=Mock(),
                                  _format_action_duration=lambda value: '')
         with patch.object(drag, '_press_and_drag_scrcpy') as send:
-            drag.Press_and_Drag(device, (500, 600), (90, 650))
-            drag.Press_and_Drag(device, (500, 600), (90, 650), retry=True)
+            drag.press_and_drag(device, (500, 600), (90, 650))
+            drag.press_and_drag(device, (500, 600), (90, 650), retry=True)
         fast, retry = [call.kwargs for call in send.call_args_list]
         self.assertLess(fast['hold_duration'], .06)
         self.assertGreaterEqual(retry['hold_duration'], .12)

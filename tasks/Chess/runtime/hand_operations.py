@@ -15,7 +15,6 @@ from module.atom.click import RuleClick
 from module.atom.image import RuleImage
 from module.exception import GameStuckError
 from module.logger import logger
-from tasks.Chess.runtime.press_and_drag import Press_and_Drag
 from tasks.Chess.runtime.cache import same_frame, economy_action_allowed, timed_action
 from tasks.Chess.strategy.grigri import (
     grigri_bond_name,
@@ -139,7 +138,7 @@ class ChessHandOperationsMixin:
         name = kwargs['name']
         kwargs['retry'] = kwargs.get('retry', False) or name in self.chess_state.drag_pending
         self.chess_state.drag_pending.add(name)
-        Press_and_Drag(self.device, **kwargs)
+        self.device.press_and_drag(**kwargs)
 
     def _confirm_chess_drag(self, name):
         self.chess_state.drag_pending.discard(name)

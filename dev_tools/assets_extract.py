@@ -70,13 +70,16 @@ class ImageExtractor:
         description: str = f'\t# {item["description"]} \n'
         profile = str(item.get("profile", "Default"))
         profile_arg = f'profile="{profile}", ' if profile in ("High", "More") else ''
+        image_file = f'./{self.image_path}/{item["imageName"]}' if item.get('imageName') else ''
         name: str = f'\tI_{name_transform(item["itemName"])} = RuleImage(' \
                     f'roi_front=({item["roiFront"]}), ' \
                     f'roi_back=({item["roiBack"]}), ' \
                     f'threshold={item["threshold"]}, ' \
                     f'method="{item["method"]}", ' \
                     f'{profile_arg}' \
-                    f'file="./{self.image_path}/{item["imageName"]}")\n'
+                    f'file="{image_file}")\n'
+        if not image_file:
+            name += f'\tI_{name_transform(item["itemName"])}.name = "{name_transform(item["itemName"])}"\n'
         return description + name
 
 
@@ -106,7 +109,7 @@ class FrameExtractor(ImageExtractor):
         if item.get('badgeGrayscale', False):
             arguments['badge_grayscale'] = True
         return (f"\tF_{name} = RuleFrame(" + ', '.join(f'{k}={v!r}' for k,v in arguments.items()) +
-                ', range=[' + ', '.join(handlers) + '])\n' + f'\tI_{name} = F_{name}  # compatibility\n')
+                ', range=[' + ', '.join(handlers) + '])\n')
 
 
 

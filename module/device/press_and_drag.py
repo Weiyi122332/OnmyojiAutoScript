@@ -1,4 +1,4 @@
-"""百鬼棋局运行时专用的按住并拖动操作。"""
+"""多个任务共用的按住并拖动操作，由 Device.press_and_drag 调用。"""
 
 import time
 
@@ -14,7 +14,7 @@ from module.base.utils import (
 from module.logger import logger
 
 
-def Press_and_Drag(
+def press_and_drag(
     device,
     p1,
     p2,
@@ -24,7 +24,7 @@ def Press_and_Drag(
     name='Press_and_Drag',
     retry=False,
 ):
-    """在起点按住后拖到终点；仅供 Chess 手牌、棋盘和御魂操作。"""
+    """在起点按住后连续拖至终点，支持不同触摸通道；结果由调用任务确认。"""
     device.handle_control_check(name)
     p1, p2 = ensure_int(p1, p2)
     hold_duration = ensure_time(hold_duration if hold_duration is not None
@@ -125,7 +125,7 @@ def _best_effort_release(release):
     try:
         release()
     except Exception as exc:
-        logger.warning(f'Chess drag emergency release failed: {exc}')
+        logger.warning(f'Press-and-drag emergency release failed: {exc}')
 
 
 def _press_and_drag_minitouch(device, p1, p2, hold_duration, point_random,

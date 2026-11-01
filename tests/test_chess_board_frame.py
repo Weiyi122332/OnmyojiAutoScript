@@ -85,8 +85,7 @@ class ChessGoldfishAndEquipmentTest(unittest.TestCase):
 
     def test_preferred_emblem_reserves_a_slot_before_soul_equipping(self):
         task = self.task()
-        strategy = dict(task.get_lineup_strategy(), secondary_bond='回响')
-        task.get_lineup_strategy = Mock(return_value=strategy)
+        self.assertEqual(task.get_lineup_strategy()['secondary_bond'], '回响')
         task._board_lineup_names = {'arakawa_no_nushi'}
         task._shikigami_attributes = Mock(return_value=(None, 'poshi', None))
         task._set_position = Mock(return_value=(795, 505))
@@ -108,7 +107,7 @@ class ChessGoldfishAndEquipmentTest(unittest.TestCase):
         task._board_actual_positions = {'kujira': 7}
         task._player_deployed_positions = {7}
         task._record_arakawa_goldfish_position(6, identified=True)
-        with patch('tasks.Chess.runtime.hand_operations.Press_and_Drag') as drag:
+        with patch.object(task.device, 'press_and_drag', create=True) as drag:
             self.assertTrue(task._move_arakawa_goldfish(6))
         drag.assert_called_once()
         self.assertEqual(task._board_actual_positions['kujira'], 6)
@@ -118,7 +117,8 @@ class ChessGoldfishAndEquipmentTest(unittest.TestCase):
     def test_goldfish_waits_for_preparation_before_moving(self):
         task = self.task()
         task._is_preparation_mode = Mock(return_value=False)
-        with patch('tasks.Chess.runtime.hand_operations.Press_and_Drag') as drag:
+        task.device = Mock()
+        with patch.object(task.device, 'press_and_drag', create=True) as drag:
             self.assertFalse(task._move_arakawa_goldfish(6))
         self.assertTrue(task._goldfish_relocation_pending)
         drag.assert_not_called()

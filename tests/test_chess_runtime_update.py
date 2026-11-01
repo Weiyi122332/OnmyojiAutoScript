@@ -173,7 +173,8 @@ class ChessConfirmationAndNavigationTest(unittest.TestCase):
         task._inspect_arakawa_goldfish = Mock(return_value=False)
         task.screenshot = Mock()
         task._record_arakawa_goldfish_position(6, identified=True)
-        with patch('tasks.Chess.runtime.hand_operations.Press_and_Drag'):
+        task.device = Mock()
+        with patch.object(task.device, 'press_and_drag'):
             self.assertFalse(task._move_arakawa_goldfish(6))
         self.assertEqual(task._arakawa_goldfish_current_position, 6)
         self.assertEqual(task._board_actual_positions, {'kujira': 7})
