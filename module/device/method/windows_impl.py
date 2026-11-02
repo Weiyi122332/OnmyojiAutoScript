@@ -266,6 +266,41 @@ class Window(Handle):
         end_lparam = MAKELONG(trace[-1][0], trace[-1][1])
         PostMessage(handleNum, WM_LBUTTONUP, 0, end_lparam)
 
+    def press_and_drag_window_message(self, p1, p2, steps, hold_duration, release_duration) -> None:
+        """模拟器窗口消息按住、停顿、连续移动并抬起；异常路径也尝试松手。"""
+        hwnd = None
+        if self.emulator_family == EmulatorFamily.FAMILY_MUMU:
+            hwnd = self.control_handle_list[1]
+        elif self.emulator_family == EmulatorFamily.FAMILY_NOX:
+            hwnd = self.control_handle_list[3]
+        elif self.emulator_family == EmulatorFamily.FAMILY_LD:
+            hwnd = self.control_handle_list[0]
+        if hwnd is None:
+            logger.warning('Window message drag is not supported by this emulator, skip')
+            return
+        start = MAKELONG(p1[0], p1[1])
+        SendMessage(hwnd, WM_NCHITTEST, 0, start)
+        SendMessage(hwnd, WM_SETCURSOR, hwnd, MAKELONG(HTCLIENT, WM_LBUTTONDOWN))
+        PostMessage(hwnd, WM_MOUSEMOVE, 0, start)
+
+        def to_lparam(point):
+            return MAKELONG(point[0], point[1])
+        last = to_lparam(p1)
+        released = False
+        try:
+            PostMessage(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, last)
+            time.sleep(hold_duration)
+            for (point, wait) in steps:
+                last = to_lparam(point)
+                PostMessage(hwnd, WM_MOUSEMOVE, MK_LBUTTON, last)
+                time.sleep(wait)
+            time.sleep(release_duration)
+            PostMessage(hwnd, WM_LBUTTONUP, 0, last)
+            released = True
+        finally:
+            if not released:
+                PostMessage(hwnd, WM_LBUTTONUP, 0, last)
+
     def swipe_vector_window_message2(self, startPos: list, endPos: list) -> None:
         """
         后台滑动, 直线滑动

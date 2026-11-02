@@ -27,6 +27,16 @@ class ChessSelectiveOcrTest(unittest.TestCase):
             'store', None, text, [(0.95, 'hakurou'), (0.94, 'onikiri')])
         self.assertEqual((name, score), ('onikiri', 0.94))
 
+    def test_arakawa_native_echo_resolves_portrait_ambiguity_before_conflicting_name(self):
+        task = self.task()
+        task.frame_card_library['cards']['store'].update({
+            'enma': {'name': '阎魔'}, 'arakawa_no_nushi': {'name': '荒川之主'},
+        })
+        name, score = task._frame_card_identity(
+            'store', None, ['阎魔', '荒川', '回响', '荒川之主'],
+            [(0.95, 'enma'), (0.94, 'arakawa_no_nushi')])
+        self.assertEqual((name, score), ('arakawa_no_nushi', 0.94))
+
     def test_unique_portrait_and_no_candidates_skip_all_ocr(self):
         for candidates, expected in (([(0.95, 'onikiri')], 'onikiri'), ([], None)):
             with self.subTest(candidates=candidates):

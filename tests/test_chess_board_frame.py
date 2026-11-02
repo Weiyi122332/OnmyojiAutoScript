@@ -85,14 +85,29 @@ class ChessGoldfishAndEquipmentTest(unittest.TestCase):
 
     def test_preferred_emblem_reserves_a_slot_before_soul_equipping(self):
         task = self.task()
-        self.assertEqual(task.get_lineup_strategy()['secondary_bond'], '回响')
+        strategy = task.get_lineup_strategy()
+        units = {name: dict(config) for name, config in strategy['shikigami'].items()}
+        units['kaoru'].update(preferred_souls=('wangqie',), preferred_emblems=('回响纹章',))
+        task.get_lineup_strategy = Mock(return_value=dict(strategy, shikigami=units))
+        task._board_lineup_names = {'kaoru'}
+        task._shikigami_attributes = Mock(return_value=(None, 'poshi', None))
+        task._set_position = Mock(return_value=(795, 505))
+        self.assertTrue(task._keep_lineup_emblem('回响纹章'))
+        self.assertEqual(task._soul_targets('wangqie', 'attack', {'kaoru'}), [])
+        self.assertEqual(task._emblem_targets('回响纹章', {'kaoru'}), [('kaoru', 2)])
+        task._shikigami_attributes.return_value = (None, None, None)
+        self.assertEqual(task._soul_targets('wangqie', 'attack', {'kaoru'}), [(2, (795, 500))])
+
+    def test_native_echo_frees_arakawa_equipment_slot_without_equipping_echo_emblem(self):
+        task = self.task()
+        strategy = task.get_lineup_strategy()
+        self.assertEqual(strategy['secondary_bond'], '回响')
+        self.assertEqual(strategy['shikigami']['arakawa_no_nushi']['preferred_emblems'], ())
         task._board_lineup_names = {'arakawa_no_nushi'}
         task._shikigami_attributes = Mock(return_value=(None, 'poshi', None))
         task._set_position = Mock(return_value=(795, 505))
         self.assertTrue(task._keep_lineup_emblem('回响纹章'))
-        self.assertEqual(task._soul_targets('wangqie', 'attack', {'arakawa_no_nushi'}), [])
-        self.assertEqual(task._emblem_targets('回响纹章', {'arakawa_no_nushi'}), [('arakawa_no_nushi', 11)])
-        task._shikigami_attributes.return_value = (None, None, None)
+        self.assertEqual(task._emblem_targets('回响纹章', {'arakawa_no_nushi'}), [])
         self.assertEqual(task._soul_targets('wangqie', 'attack', {'arakawa_no_nushi'}), [(11, (795, 505))])
 
     def test_goldfish_move_updates_swapped_unit_and_preserves_non_population_flag(self):

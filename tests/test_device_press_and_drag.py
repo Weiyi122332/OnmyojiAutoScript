@@ -32,7 +32,7 @@ class PressAndDragChecks(unittest.TestCase):
         self.assertIs(Device.press_and_drag, Control.press_and_drag)
 
     def test_complete_gesture_on_each_touch_transport(self):
-        for method in ('minitouch', 'uiautomator2', 'scrcpy'):
+        for method in ('minitouch', 'uiautomator2', 'scrcpy', 'window_message'):
             with self.subTest(method=method):
                 device = self.device(method)
                 self.drag(device)
@@ -50,11 +50,18 @@ class PressAndDragChecks(unittest.TestCase):
                     self.assertEqual(touch.mock_calls[0], call.down(100, 100))
                     self.assertEqual(touch.mock_calls[-1], call.up(400, 300))
                     self.assertGreater(touch.move.call_count, 1)
-                else:
+                elif method == 'scrcpy':
                     events = device._scrcpy_control.touch.call_args_list
                     self.assertEqual(events[0], call(100, 100, const.ACTION_DOWN))
                     self.assertEqual(events[-1], call(400, 300, const.ACTION_UP))
                     self.assertTrue(all(c.args[-1] == const.ACTION_MOVE for c in events[1:-1]))
+                else:
+                    device.press_and_drag_window_message.assert_called_once()
+                    args, kwargs = device.press_and_drag_window_message.call_args
+                    self.assertEqual(args[:2], ((100, 100), (400, 300)))
+                    self.assertEqual(args[2][-1][0], [400, 300])
+                    self.assertGreater(kwargs['hold_duration'], 0)
+                    self.assertGreater(kwargs['release_duration'], 0)
 
     def test_transport_failure_releases_without_replaying_drag(self):
         for method in ('minitouch', 'uiautomator2', 'scrcpy'):
