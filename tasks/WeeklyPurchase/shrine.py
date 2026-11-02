@@ -10,6 +10,7 @@ from tasks.GameUi.game_ui import GameUi
 from tasks.WeeklyPurchase.assets import WeeklyPurchaseAssets
 from tasks.WeeklyPurchase.config import Shrine as ConfigShrine
 from tasks.Component.Buy.assets import BuyAssets
+from tasks.Component.Buy.buy import wait_for_purchase_ready
 
 
 class Shrine(GameUi, WeeklyPurchaseAssets):
@@ -66,7 +67,7 @@ class Shrine(GameUi, WeeklyPurchaseAssets):
         self.screenshot()
         if not self.shrine_check_money(1500):
             return
-        if not self.appear(self.I_S_BLACK):
+        if wait_for_purchase_ready(self, self.I_S_BLACK) is None:
             logger.info('Already bought black daruma')
             return
         self.ui_click(self.I_S_BLACK, self.I_S_CHECK_BLACK)
@@ -84,7 +85,7 @@ class Shrine(GameUi, WeeklyPurchaseAssets):
     def shrine_white_five(self):
         logger.hr('Shrine white five', 2)
         self.screenshot()
-        if not self.appear(self.I_S_WHITE_FIVE):
+        if wait_for_purchase_ready(self, self.I_S_WHITE_FIVE) is None:
             logger.info('White five is not available')
             return
         if not self.shrine_check_money(1200):
@@ -104,7 +105,7 @@ class Shrine(GameUi, WeeklyPurchaseAssets):
     def shrine_white_four(self):
         logger.hr('Shrine white four', 2)
         self.screenshot()
-        if not self.appear(self.I_S_WHITE_FOUR):
+        if wait_for_purchase_ready(self, self.I_S_WHITE_FOUR) is None:
             logger.info('White four is not available')
             return
         if not self.shrine_check_money(200):

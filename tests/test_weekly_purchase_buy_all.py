@@ -48,6 +48,11 @@ class BuyRemainingStockTest(unittest.TestCase):
         patcher = patch('tasks.Component.Buy.buy.time.sleep')
         patcher.start()
         self.addCleanup(patcher.stop)
+        timer = SimpleNamespace(reached=lambda: True)
+        timer.start = lambda: timer
+        timer_patcher = patch('tasks.Component.Buy.buy.Timer', return_value=timer)
+        timer_patcher.start()
+        self.addCleanup(timer_patcher.stop)
 
     def test_failed_or_non_decreasing_stock_does_not_repeat_a_purchase(self):
         for readings, expected_calls in (([None], 0), ([-1], 0), (['40'], 0),

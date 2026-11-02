@@ -16,19 +16,35 @@ from module.base.timer import Timer
 from tasks.base_task import BaseTask
 from tasks.Component.Buy.assets import BuyAssets
 
+
+def wait_for_purchase_ready(task, target: RuleImage,
+                           read_remaining: RuleOcr | Callable[[], int | None] = None):
+    """连续截图识别至多3秒；商品恢复可见后，才按最新位置读取库存。"""
+    timer = Timer(3).start()
+    while True:
+        task.screenshot()
+        if task.appear(target):
+            if read_remaining is None:
+                return True
+            remaining = (read_remaining() if callable(read_remaining)
+                         else read_remaining.ocr(task.device.image))
+            if isinstance(remaining, int) and remaining >= 0:
+                return remaining
+        if timer.reached():
+            logger.warning(f'Purchase item or stock unavailable after 3s: {target}')
+            return None
+
+
 class Buy(BaseTask, BuyAssets):
 
-    def buy_all_remaining(self, start_click, read_remaining: RuleOcr | Callable[[], int],
+    def buy_all_remaining(self, start_click, read_remaining: RuleOcr | Callable[[], int | None],
                           money_ocr: RuleOcr = None, unit_price: int = 0,
                           purchase: Callable = None) -> bool:
         """每次拉满购买，重新读取限额；售罄、余额不足或库存未减少时退出。"""
         previous = None
         while True:
-            self.screenshot()
-            remaining = (read_remaining() if callable(read_remaining)
-                         else read_remaining.ocr(self.device.image))
-            if not isinstance(remaining, int) or remaining < 0:
-                logger.warning('Remaining purchase stock could not be read; stop purchase')
+            remaining = wait_for_purchase_ready(self, start_click, read_remaining)
+            if remaining is None:
                 return False
             if remaining == 0:
                 return True
@@ -36,9 +52,6 @@ class Buy(BaseTask, BuyAssets):
                 logger.warning(f'Purchase stock did not decrease: {previous} -> {remaining}')
                 return False
             if money_ocr is not None and not self.buy_check_money(money_ocr, unit_price):
-                return False
-            if not self.appear(start_click):
-                logger.warning(f'Purchase button is unavailable: {start_click}')
                 return False
             if (purchase or self.buy_more)(start_click) is False:
                 if self.appear(self.I_BUY_PLUS):
@@ -114,11 +127,15 @@ class Buy(BaseTask, BuyAssets):
         :param start_click: 开始点击
         :return:
         """
+        open_timer = Timer(3).start()
         while 1:
             self.screenshot()
 
             if self.appear(check_image):
                 break
+            if open_timer.reached():
+                logger.warning('Single purchase dialog unavailable after 3s')
+                return False
 
             if isinstance(start_click, RuleImage):
                 if self.appear_then_click(start_click, interval=1):
@@ -174,15 +191,16 @@ class Buy(BaseTask, BuyAssets):
         :return:
         """
         try_click_count = 0
+        open_timer = Timer(3).start()
         while 1:
             self.screenshot()
 
             if self.appear(self.I_BUY_PLUS):
                 break
-            if try_click_count >= 5:
+            if try_click_count >= 5 or open_timer.reached():
                 logger.warning(f'Buy_more failed, try_click_count: {try_click_count}')
                 logger.warning('Close the purchase')
-                return
+                return False
 
             if isinstance(start_click, RuleImage):
                 if self.appear_then_click(start_click, interval=1):

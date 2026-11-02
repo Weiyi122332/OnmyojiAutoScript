@@ -8,6 +8,7 @@ from module.atom.image import RuleImage
 from module.atom.ocr import RuleOcr
 
 from tasks.WeeklyPurchase.mall.special import Special
+from tasks.Component.Buy.buy import wait_for_purchase_ready
 from tasks.WeeklyPurchase.config import FriendshipPoints as FriendshipPointsConfig
 import re
 
@@ -64,16 +65,13 @@ class FriendshipPoints(Special):
         if buy_number == 0:
             logger.info('Buy number is 0')
             return
-        self.screenshot()
-        # 检查是否出现了购买按钮
-        if not self.appear(buy_button):
-            logger.warning('Buy button is not appear')
-            return
         # 是否检查剩余数量
         if remain_number:
             return self.buy_all_remaining(
                 buy_button, lambda: self._special_check_remain(buy_button),
                 money_ocr=money_ocr, unit_price=buy_money)
+        if wait_for_purchase_ready(self, buy_button) is None:
+            return False
         # 检查钱够不够
         current_money = money_ocr.ocr(self.device.image)
         if not isinstance(current_money, int):

@@ -101,9 +101,11 @@ class Special(Buy, MallNavbar):
         # logger.info(f'上中点是：{upper_midpoint}')
         # logger.info(f'数字的ROI是: {self.O_SP_RES_NUMBER.roi}')
         txt = self.O_SP_RES_NUMBER.ocr(self.device.image)
+        if not isinstance(txt, str):
+            return None
         txt = txt.replace('？', '2').replace('?', '2').replace(':', '；').replace('火', '次').replace('教', '数').replace('刺', '剩').replace('头', '买')
         match = re.search(r'(\d+)', txt)
-        result = int(match.group(1)) if match else 0
+        result = int(match.group(1)) if match else None
         logger.info(f'Remain [{result}]')
         return result
 

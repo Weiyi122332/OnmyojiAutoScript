@@ -74,6 +74,7 @@ class PurchaseLimitsTest(unittest.TestCase):
             self.assertIs(rule, task.C_BUY_MORE)
             self.assertEqual(state.quantity, 40)
             state.purchased = True
+            state.open = False
             return True
 
         task.appear = Mock(side_effect=appear)

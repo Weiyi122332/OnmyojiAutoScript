@@ -5,7 +5,7 @@ import time
 
 from module.logger import logger
 
-from tasks.Component.Buy.buy import Buy
+from tasks.Component.Buy.buy import Buy, wait_for_purchase_ready
 # from tasks.WeeklyPurchase.assets import WeeklyPurchaseAssets
 from tasks.WeeklyPurchase.mall.navbar import MallNavbar
 from tasks.WeeklyPurchase.config import Consignment as ConsignmentStore
@@ -30,11 +30,12 @@ class Consignment(Buy, MallNavbar):
         self._enter_consignment()
         self.ui_click(self.I_CON_ENTER, self.I_CON_ENTER_CHECK)
         time.sleep(0.5)
-        self.screenshot()
+        remain_number = wait_for_purchase_ready(self, self.I_CON_TICKET, self.O_CON_NUMBER)
+        if remain_number is None:
+            return False
         if not self.mall_check_money(3, 100):
             logger.warning('Consignment money is not enough')
             return
-        remain_number = self.O_CON_NUMBER.ocr(self.device.image)
         if remain_number == 0:
             logger.warning('Consignment number is 0')
             return

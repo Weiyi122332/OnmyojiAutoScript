@@ -9,6 +9,7 @@ from tasks.GameUi.page import page_main, page_travel
 from tasks.GameUi.game_ui import GameUi
 from tasks.WeeklyPurchase.assets import WeeklyPurchaseAssets
 from tasks.WeeklyPurchase.config import ThousandThings as ConfigThousandThings
+from tasks.Component.Buy.buy import wait_for_purchase_ready
 
 class ThousandThings(GameUi, WeeklyPurchaseAssets):
 
@@ -61,7 +62,7 @@ class ThousandThings(GameUi, WeeklyPurchaseAssets):
         :return: 成功购买返回True，找不到或者是钱不够返回False
         """
         self.screenshot()
-        if not self.appear(self.I_TT_TICKET_BULE):
+        if wait_for_purchase_ready(self, self.I_TT_TICKET_BULE) is None:
             logger.info('No mystery amulet')
             return False
         if not self.tt_check_money(2000):
@@ -81,7 +82,7 @@ class ThousandThings(GameUi, WeeklyPurchaseAssets):
 
     def tt_buy_black_daruma_scrap(self):
         self.screenshot()
-        if not self.appear(self.I_TT_BLACK):
+        if wait_for_purchase_ready(self, self.I_TT_BLACK) is None:
             logger.info('No black daruma scrap')
             return False
         if not self.tt_check_money(350):
@@ -101,7 +102,7 @@ class ThousandThings(GameUi, WeeklyPurchaseAssets):
 
     def tt_buy_ap(self):
         self.screenshot()
-        if not self.appear(self.I_TT_AP):
+        if wait_for_purchase_ready(self, self.I_TT_AP) is None:
             logger.info('No ap')
             return False
         if not self.tt_check_money(600):
