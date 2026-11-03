@@ -144,6 +144,12 @@ class ChessSharedUiMixin:
         return completed
 
     def _burst(self):
+        # 棋局每次截图都优先检查叉号，准备、对局和结算阶段使用同一入口。
+        if self.appear(ChessAssets.I_SHARE_CLOSE):
+            if self.click(ChessAssets.I_SHARE_CLOSE, interval=0.8):
+                logger.info('Chess: globally close top-right X')
+            # 点击被间隔限制时也要刷新截图，不把弹窗交给后续操作。
+            return True
         if super()._burst():
             return True
         if self.appear_then_click(self._chess_close_red, interval=0.8):

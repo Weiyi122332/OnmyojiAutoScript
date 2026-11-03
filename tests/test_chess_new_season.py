@@ -156,6 +156,7 @@ class ChessFrameIntegrationTest(unittest.TestCase):
 class ChessFlowIntegrationTest(unittest.TestCase):
     def test_missing_global_red_cross_uses_the_chess_copy(self):
         task = ScriptTask.__new__(ScriptTask)
+        task.appear = Mock(return_value=False)
         task.appear_then_click = Mock(return_value=True)
         with patch.object(BaseTask, '_burst', return_value=False), \
                 patch.object(GameUiAssets, 'I_CLOSE_RED', None, create=True):
@@ -165,6 +166,7 @@ class ChessFlowIntegrationTest(unittest.TestCase):
 
     def test_red_cross_keeps_using_the_chess_copy_if_global_rule_is_added(self):
         task = ScriptTask.__new__(ScriptTask)
+        task.appear = Mock(return_value=False)
         task.appear_then_click = Mock(return_value=True)
         global_rule = object()
         with patch.object(BaseTask, '_burst', return_value=False), \

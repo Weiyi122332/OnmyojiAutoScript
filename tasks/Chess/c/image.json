@@ -308,5 +308,15 @@
     "threshold": 0.8,
     "profile": "High",
     "description": "小怪阶段"
+  },
+  {
+    "itemName": "share_close",
+    "imageName": "c_share_close.png",
+    "roiFront": "1202,33,40,40",
+    "roiBack": "1175,5,105,100",
+    "method": "Template matching",
+    "threshold": 0.85,
+    "profile": "High",
+    "description": "百鬼棋局全局识别的右上角关闭叉号"
   }
 ]

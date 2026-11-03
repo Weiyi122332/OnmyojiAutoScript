@@ -111,6 +111,8 @@ class ChessAssets:
 	I_STAGE_DEMON = RuleImage(roi_front=(708,0,31,29), roi_back=(702,0,44,34), threshold=0.9, method="Template matching", profile="High", file="./tasks/Chess/c/c_stage_demon.png")
 	# 小怪阶段
 	I_STAGE_MONSTER = RuleImage(roi_front=(624,1,31,29), roi_back=(499,0,268,31), threshold=0.8, method="Template matching", profile="High", file="./tasks/Chess/c/c_stage_monster.png")
+	# 百鬼棋局全局识别的右上角关闭叉号
+	I_SHARE_CLOSE = RuleImage(roi_front=(1202,33,40,40), roi_back=(1175,5,105,100), threshold=0.85, method="Template matching", profile="High", file="./tasks/Chess/c/c_share_close.png")
 
 
 	# Ocr Rule Assets
