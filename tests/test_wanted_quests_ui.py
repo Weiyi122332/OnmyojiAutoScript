@@ -2,8 +2,9 @@
 
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
+from module.exception import TaskEnd
 from tasks.WantedQuests.config import CooperationType, WantedQuestsConfig, WQType
 from tasks.WantedQuests.script_task import ScriptTask
 
@@ -92,6 +93,49 @@ class WantedQuestsUiTest(unittest.TestCase):
         task.click = Mock()
         self.assertTrue(task.open_wq_info())
         task.click.assert_not_called()
+
+    def test_skipped_quest_closes_detail_before_scanning_next_quest(self):
+        task = self.make_task()
+        config = WantedQuestsConfig()
+        task.config = SimpleNamespace(model=SimpleNamespace(
+            wanted_quests=SimpleNamespace(wanted_quests_config=config),
+        ))
+        task.switch_soul_presets = Mock()
+        task.pre_work = Mock(return_value=True)
+        task.appear = Mock(return_value=False)
+        task.is_wq_remained = Mock(side_effect=[True, True, False])
+        task.next_run = Mock()
+        state = {'detail_open': False, 'missions': 0}
+
+        def find(*args, **kwargs):
+            self.assertFalse(state['detail_open'], 'Quest list is obscured by its detail dialog')
+            return 0, 1, 2, [37, 305, 37, 22]
+
+        def open_detail():
+            state['detail_open'] = True
+            return True
+
+        def execute(number):
+            state['missions'] += 1
+            if state['missions'] == 1:
+                return False
+            state['detail_open'] = False
+
+        task.find_wq = Mock(side_effect=find)
+        task.open_wq_info = Mock(side_effect=open_detail)
+        task.execute_mission = Mock(side_effect=execute)
+        task.ui_click_until_smt_disappear = Mock(
+            side_effect=lambda *args, **kwargs: state.update(detail_open=False),
+        )
+        with patch('tasks.WantedQuests.script_task.sleep'), self.assertRaises(TaskEnd):
+            task.run()
+
+        self.assertEqual(state['missions'], 2)
+        task.ui_click_until_smt_disappear.assert_called_once_with(
+            task.C_WQ_TRACE_ONE_CLOSE,
+            stop=task.I_WQ_TRACE_ONE_CHECK_OPENED,
+            interval=1.5,
+        )
 
 
 if __name__ == '__main__':

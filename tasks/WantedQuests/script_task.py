@@ -94,7 +94,12 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
                     sleep(1)
                 continue
             error_count = 0
-            self.execute_mission(total - current)
+            if self.execute_mission(total - current) is False:
+                self.ui_click_until_smt_disappear(
+                    self.C_WQ_TRACE_ONE_CLOSE,
+                    stop=self.I_WQ_TRACE_ONE_CHECK_OPENED,
+                    interval=1.5,
+                )
             sleep(1.5)
         self.next_run()
         raise TaskEnd('WantedQuests')
