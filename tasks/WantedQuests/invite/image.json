@@ -2,8 +2,8 @@
   {
     "itemName": "wq_invite_1",
     "imageName": "invite_wq_invite_1.png",
-    "roiFront": "154,400,39,35",
-    "roiBack": "90,387,260,54",
+    "roiFront": "117,400,35,35",
+    "roiBack": "109,392,51,51",
     "method": "Template matching",
     "threshold": 0.8,
     "description": "新版悬赏第 1 张卡片邀请好友"
@@ -11,8 +11,8 @@
   {
     "itemName": "wq_invite_2",
     "imageName": "invite_wq_invite_2.png",
-    "roiFront": "438,400,39,35",
-    "roiBack": "374,387,260,54",
+    "roiFront": "387,400,35,35",
+    "roiBack": "379,392,51,51",
     "method": "Template matching",
     "threshold": 0.8,
     "description": "新版悬赏第 2 张卡片邀请好友"
@@ -20,8 +20,8 @@
   {
     "itemName": "wq_invite_3",
     "imageName": "invite_wq_invite_3.png",
-    "roiFront": "722,400,39,35",
-    "roiBack": "658,387,260,54",
+    "roiFront": "657,400,35,35",
+    "roiBack": "649,392,51,51",
     "method": "Template matching",
     "threshold": 0.8,
     "description": "新版悬赏第 3 张卡片邀请好友"
@@ -29,8 +29,8 @@
   {
     "itemName": "wq_invite_4",
     "imageName": "invite_wq_invite_4.png",
-    "roiFront": "1006,400,39,35",
-    "roiBack": "942,387,260,54",
+    "roiFront": "927,400,35,35",
+    "roiBack": "919,392,51,51",
     "method": "Template matching",
     "threshold": 0.8,
     "description": "新版悬赏第 4 张卡片邀请好友"
