@@ -1,5 +1,5 @@
 {
-  "source_revision": "e12e5c9237cf785e74b3ab406dd65b50b7783b84",
+  "source_revision": "9c4f3f9ccd9abb8652a7e8032d9150c83c6bb26c",
   "source_remote": "git@github.com:xylolit-mu/OnmyojiAutoScript-private.git",
   "source_branch": "dev",
   "rules": [
@@ -130,6 +130,14 @@
       "asset": "I_SHARED_MAIN_SCROLL_CLOSE",
       "source": "tasks/GameUi/page/page_main_scroll_close.png",
       "sha256": "8c308834f8c002a029d82892a6cca3b8fee62e60b37cea65b3ee0f1047ef4a24"
+    },
+    {
+      "module": "tasks.Component.Costume.assets",
+      "owner": "CostumeAssets",
+      "symbol": "I_MAIN_GOTO_TOWN_17",
+      "asset": "I_SHARED_MAIN_GOTO_TOWN_17",
+      "source": "tasks/Component/Costume/main17/main17_main_goto_town_17.png",
+      "sha256": "10070105a98ff7476977af1ea3e17a85c34c2bf518b108c7d6dedd9f6fa91739"
     }
   ]
 }

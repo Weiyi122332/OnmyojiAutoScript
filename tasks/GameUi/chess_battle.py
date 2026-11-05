@@ -42,6 +42,17 @@ class ChessBattleNavigationMixin:
             self.screenshot()
         raise GameStuckError('Chess: six-realms selection did not disappear after choosing a field')
 
+    def _close_unknown_chess_result_page(self) -> bool:
+        """结算返回流程的未知页面：尝试红色返回，交由下一张截图重新分流。"""
+        if self.chess_result_flow_visible() or self.appear(ChessAssets.I_RESTART_AGAIN):
+            return False
+        if not self.appear(ChessAssets.I_BACK_RED):
+            return False
+        logger.warning('Chess result flow: unknown page with back red; close and recheck page')
+        self._chess_share_advancing = False
+        self.click(ChessAssets.I_BACK_RED, interval=0.8)
+        return True
+
     def _advance_chess_result_stage(self) -> bool:
         """优先处理奖励和分享阶段，避免背景被识别成大厅。"""
         if self.appear(GlobalGameAssets.I_UI_REWARD):
@@ -62,6 +73,8 @@ class ChessBattleNavigationMixin:
             )):
                 self._chess_share_advancing = False
         if getattr(self, '_chess_share_advancing', False):
+            if self._close_unknown_chess_result_page():
+                return True
             # 分享标志消失后仍推进未知过渡画面。保持规则名称和点击
             # 记录不变，让设备层的过多点击检查正常生效。
             from tasks.GameUi.default_pages import random_click
@@ -94,8 +107,6 @@ class ChessBattleNavigationMixin:
         deadline = time.monotonic() + self.CHESS_EXIT_TIMEOUT
         share_seen = False
         exit_clicked = False
-        safe_clicks = 0
-        rank_recovery_started = False
         next_rank_safe_click_at = 0.0
         fallback_exit_at = time.monotonic() + 1.5
 
@@ -109,14 +120,13 @@ class ChessBattleNavigationMixin:
                 time.sleep(self.CHESS_EXIT_SCREENSHOT_INTERVAL)
                 continue
 
-            if rank_recovery_started and self.appear(self.I_CHECK_CHESS):
-                logger.debug('Global Chess result flow: lobby reached from rank page')
+            if self.appear(self.I_CHECK_CHESS):
+                logger.debug('Global Chess result flow: lobby reached')
                 return True
 
             rank_page = self.appear(self.I_CHECK_CHESS_RANK)
             rank_button = self.appear(self.I_CHESS_RANK_GOTO_LOBBY)
             if rank_page or rank_button:
-                rank_recovery_started = True
                 if rank_button:
                     self.appear_then_click(
                         self.I_CHESS_RANK_GOTO_LOBBY,
@@ -129,8 +139,11 @@ class ChessBattleNavigationMixin:
                         'safe click'
                     )
                     self.click(GeneralBattleAssets.C_RANDOM_LEFT)
-                    safe_clicks += 1
                     next_rank_safe_click_at = time.monotonic() + 1.5
+                time.sleep(self.CHESS_EXIT_SCREENSHOT_INTERVAL)
+                continue
+
+            if self._close_unknown_chess_result_page():
                 time.sleep(self.CHESS_EXIT_SCREENSHOT_INTERVAL)
                 continue
 
@@ -174,14 +187,6 @@ class ChessBattleNavigationMixin:
                 time.sleep(self.CHESS_EXIT_SCREENSHOT_INTERVAL)
                 continue
 
-            if self.appear(self.I_CHECK_CHESS):
-                logger.debug(
-                    'Global Chess result flow: lobby reached after share, '
-                    f'safe_clicks={safe_clicks}'
-                )
-                return True
-
-            safe_clicks += 1
             from tasks.GameUi.default_pages import random_click
             self.click(random_click(), interval=1.5)
             time.sleep(self.CHESS_EXIT_SCREENSHOT_INTERVAL)

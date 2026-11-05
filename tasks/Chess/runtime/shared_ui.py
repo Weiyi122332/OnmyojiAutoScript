@@ -10,6 +10,7 @@ from module.exception import GameStuckError
 from module.logger import logger
 from tasks.ActivityShikigami.assets import ActivityShikigamiAssets
 from tasks.Chess.assets import ChessAssets
+from tasks.Component.Costume.assets import CostumeAssets
 from tasks.Component.GeneralBattle.assets import GeneralBattleAssets
 from tasks.GameUi.assets import GameUiAssets
 from tasks.GlobalGame.assets import GlobalGameAssets
@@ -33,6 +34,7 @@ SHARED_UI_BINDINGS = (
     (GlobalGameAssets, 'I_CLIENT_CLEAR', 'I_SHARED_CLIENT_CLEAR'),
     # 当前未知页关闭列表使用活动组件；棋局增加来源跳过模板作为首选。
     (ActivityShikigamiAssets, 'I_SKIP_BUTTON', 'I_SHARED_ACTIVITY_SKIP'),
+    (CostumeAssets, 'I_MAIN_GOTO_TOWN_17', 'I_SHARED_MAIN_GOTO_TOWN_17'),
 )
 
 
@@ -66,8 +68,16 @@ class ChessSharedUiMixin:
     def _chess_ui_frame(self):
         return getattr(self.device, 'image_frame_id', None) or id(self.device.image)
 
+    def _chess_ui_variants_for(self, target):
+        # 庭院皮肤会在原导航规则上替换图片，识别 17 号入口时兼容两张模板。
+        town_17 = CostumeAssets.I_MAIN_GOTO_TOWN_17
+        if target is GameUiAssets.I_MAIN_GOTO_TOWN and target.file == town_17.file:
+            variant, _ = self._chess_ui_variants[id(town_17)]
+            return variant, target
+        return self._chess_ui_variants.get(id(target))
+
     def appear(self, target, interval=None, threshold=None):
-        variants = self._chess_ui_variants.get(id(target))
+        variants = self._chess_ui_variants_for(target)
         if variants is None:
             return super().appear(target, interval=interval, threshold=threshold)
         hits = self.__dict__.setdefault('_chess_ui_hits', {})
@@ -79,7 +89,7 @@ class ChessSharedUiMixin:
         return False
 
     def _chess_click_rule(self, target):
-        variants = self._chess_ui_variants.get(id(target))
+        variants = self._chess_ui_variants_for(target)
         if variants is None:
             return target
         hit = self.__dict__.get('_chess_ui_hits', {}).get(id(target))
@@ -89,7 +99,7 @@ class ChessSharedUiMixin:
 
     def appear_then_click(self, target, action=None, interval=None,
                           threshold=None, duration=None):
-        if id(target) not in self._chess_ui_variants:
+        if self._chess_ui_variants_for(target) is None:
             return super().appear_then_click(
                 target, action=action, interval=interval, threshold=threshold, duration=duration,
             )
@@ -114,7 +124,7 @@ class ChessSharedUiMixin:
     def prepare_appear_cache(self, targets):
         expanded = []
         for target in targets:
-            expanded.extend(self._chess_ui_variants.get(id(target), (target,)))
+            expanded.extend(self._chess_ui_variants_for(target) or (target,))
         return super().prepare_appear_cache(expanded)
 
     def _recover_town_navigation(self, transition):

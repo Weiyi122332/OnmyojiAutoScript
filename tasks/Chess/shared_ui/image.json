@@ -48,7 +48,7 @@
   {
     "itemName": "shared_g_cat_food",
     "description": "棋局专用兼容：GlobalGameAssets.I_G_CAT_FOOD",
-    "roiFront": "666,499,59,65",
+    "roiFront": "664,475,59,65",
     "roiBack": "543,421,205,176",
     "threshold": 0.8,
     "method": "Template matching",
@@ -58,7 +58,7 @@
   {
     "itemName": "shared_g_dog_food",
     "description": "棋局专用兼容：GlobalGameAssets.I_G_DOG_FOOD",
-    "roiFront": "575,510,63,54",
+    "roiFront": "585,494,63,54",
     "roiBack": "543,421,205,176",
     "threshold": 0.8,
     "method": "Template matching",
@@ -68,8 +68,8 @@
   {
     "itemName": "shared_g_jade",
     "description": "棋局专用兼容：GlobalGameAssets.I_G_JADE",
-    "roiFront": "676,512,43,46",
-    "roiBack": "650,489,94,100",
+    "roiFront": "676,480,43,46",
+    "roiBack": "646,457,94,100",
     "threshold": 0.8,
     "method": "Template matching",
     "imageName": "gg_g_jade.png",
@@ -135,7 +135,7 @@
   {
     "itemName": "shared_g_ignore",
     "roiFront": "792,86,21,21",
-    "roiBack": "777,65,48,48",
+    "roiBack": "777,49,154,64",
     "threshold": 0.8,
     "method": "Template matching",
     "imageName": "gg_g_ignore.png",
@@ -151,5 +151,15 @@
     "threshold": 0.8,
     "profile": "High",
     "description": "棋局专用兼容：GameUiAssets.I_MAIN_SCROLL_CLOSE"
+  },
+  {
+    "itemName": "shared_main_goto_town_17",
+    "description": "棋局专用兼容：CostumeAssets.I_MAIN_GOTO_TOWN_17",
+    "roiFront": "1013,339,21,49",
+    "roiBack": "941,262,200,190",
+    "threshold": 0.8,
+    "method": "Template matching",
+    "imageName": "main17_main_goto_town_17.png",
+    "profile": "High"
   }
 ]

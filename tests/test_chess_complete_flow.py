@@ -1,5 +1,6 @@
 """棋局共用资源的实例隔离、坐标衔接及恢复流程。"""
 
+from copy import copy
 from datetime import datetime
 import hashlib
 import json
@@ -20,6 +21,7 @@ from tasks.Chess.config import ChessConfig
 from tasks.Chess.runtime.shared_ui import ChessNetworkRecoveryRequired
 from tasks.Chess.runtime.state import ChessGameState
 from tasks.Chess.script_task import ChessLegacyScriptTask, ScriptTask
+from tasks.Component.Costume.assets import CostumeAssets
 from tasks.Component.GeneralBattle.assets import GeneralBattleAssets
 from tasks.GameUi.default_pages import page_chess, page_main, page_reward
 from tasks.GameUi.assets import GameUiAssets
@@ -59,7 +61,7 @@ class ChessScopedRecognitionTest(unittest.TestCase):
     def test_shared_resource_manifest_matches_copied_files(self):
         root = Path(__file__).resolve().parents[1]
         manifest = json.loads((root / 'tasks/Chess/shared_ui/bindings.json').read_text(encoding='utf-8'))
-        self.assertEqual(len(manifest['rules']), 16)
+        self.assertEqual(len(manifest['rules']), 17)
         for entry in manifest['rules']:
             with self.subTest(rule=entry['symbol']):
                 rule = getattr(ChessAssets, entry['asset'])
@@ -76,6 +78,31 @@ class ChessScopedRecognitionTest(unittest.TestCase):
         self.assertTrue(720 <= x < 827 and 430 <= y < 476)
         self.assertEqual((original.file, tuple(original.roi_front), tuple(original.roi_back),
                           original.threshold, original.method), before)
+
+    def test_unknown_result_red_back_matches_beyond_the_old_search_area(self):
+        task = self.task_with_image(ChessAssets.I_BACK_RED, (1160, 110))
+        self.assertTrue(task._close_unknown_chess_result_page())
+        task.device.click.assert_called_once()
+        click = task.device.click.call_args
+        self.assertTrue(1160 <= click.kwargs['x'] < 1201)
+        self.assertTrue(110 <= click.kwargs['y'] < 156)
+        self.assertEqual(click.kwargs['control_name'], ChessAssets.I_BACK_RED.name)
+
+    def test_courtyard_17_town_transition_uses_both_templates(self):
+        local = CostumeAssets.I_MAIN_GOTO_TOWN_17
+        active = copy(local)
+        active.roi_front = list(local.roi_front)
+        with patch.object(GameUiAssets, 'I_MAIN_GOTO_TOWN', active):
+            for rule in (ChessAssets.I_SHARED_MAIN_GOTO_TOWN_17, local):
+                with self.subTest(template=rule.file):
+                    task = self.task_with_image(rule, (1020, 340))
+                    self.assertTrue(task.appear_then_click(active))
+                    task.device.click.assert_called_once()
+                    x, y = task.device.click.call_args.args
+                    height, width = rule.image.shape[:2]
+                    self.assertTrue(1020 <= x < 1020 + width)
+                    self.assertTrue(340 <= y < 340 + height)
+                    self.assertEqual(task._chess_click_rule(active).file, rule.file)
 
     def test_new_invitation_buttons_match_and_click_their_scoped_regions(self):
         for name in ('G_ACCEPT', 'G_REJECT', 'G_IGNORE'):

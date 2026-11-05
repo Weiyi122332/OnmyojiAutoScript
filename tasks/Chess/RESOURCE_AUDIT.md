@@ -1,12 +1,10 @@
 # 百鬼棋局资源与全局依赖核对
 
-核对日期：2026-11-02。来源目录：`D:/OnmyojiAutoScript-xylolit-mu`，版本 `e12e5c92`；目标项目：`D:/OAS/OnmyojiAutoScript`。
+2026-11-05 核对 `D:/OnmyojiAutoScript-xylolit-mu` 的 `9c4f3f9c`，移植至 `D:/OAS/OnmyojiAutoScript`。
 
 ## 私有远端复核
 
-2026-11-02 已使用参考仓库现有的 `config/git_ssh.key`，通过 SSH 443 端口成功拉取 `git@github.com:xylolit-mu/OnmyojiAutoScript-private.git`。仅以私有远端为本轮及后续同步来源。
-
-私有远端 `dev` 最新为 `e12e5c9237cf785e74b3ab406dd65b50b7783b84`（2026-11-02 00:26 +08:00），已确认本地参考分支与其一致。当前项目本轮核对 `f11569ce..e12e5c92` 的增量。默认 `master` 为较旧的 `00c083e8`（2026-10-03），不作为新版棋局来源。
+2026-11-05 已通过 SSH 443 端口拉取私有远端 `git@github.com:xylolit-mu/OnmyojiAutoScript-private.git`。私有 `dev` 最新为 `9c4f3f9ccd9abb8652a7e8032d9150c83c6bb26c`（2026-11-05 11:10 +08:00），本地参考工作树已快进至该版本。本轮核对 `e12e5c92..9c4f3f9c` 的 8 个提交。
 
 ## 历史公开快照核对
 
@@ -18,7 +16,7 @@
 
 ## 完整流程移植结果
 
-本次按“保留现有脚本功能”的要求，维护 16 项棋局专用公共识别副本于 `tasks/Chess/shared_ui`，由 `runtime/shared_ui.py` 在棋局实例内部使用。公共规则定义、公共页面图、其他任务和调度器没有修改。
+`tasks/Chess/shared_ui` 维护 17 项棋局专用公共识别副本，由 `runtime/shared_ui.py` 在棋局实例内部使用。
 
 - 来源模板优先，当前模板作为回退；按原始规则的对象身份映射，避免规则同名时互相覆盖。每个棋局实例拥有独立的来源规则对象。
 - 共用页面图仍通过原 `GameUi` 进入庭院、町中、娱乐和棋局；模板选择同时覆盖页面识别、按钮点击及批量匹配缓存。点击使用当前帧实际命中的模板坐标，跨帧不沿用旧命中记录。
@@ -47,6 +45,14 @@
 - Frame 布局指纹忽略默认的 `badgeGrayscale: false`，头像索引只同步对应指纹，保留头像及本项目的标注格式。
 - 本次参考提交另有契灵协同收尾及公共协作完成协议改动，没有棋局调用依赖，未移植。
 - 棋局 97 项测试通过，包含新增的购买确认、真实 Frame 点击区域、累计三次点击、详情页豁免、棋盘未知状态与阵容迁移回归检查；尚未进行模拟器完整对局验证。
+
+## 2026-11-05 同步记录（私有远端 dev / 9c4f3f9c）
+
+- 同步 `5be83166` 的结算异常恢复。扩大 `I_BACK_RED` 的搜索区域至 `[954, 37, 266, 182]`，在分享过渡、返回大厅和“再来一局”流程中优先处理未知页的红色返回。已知结算标志继续按对应流程处理，识别到大厅后结束返回流程。
+- 同步勾玉、猫粮、狗粮及忽略按钮的四项区域调整，生成对应棋局副本。17 号庭院的本地图与私有参考图匹配度低于 0.8，町中入口按实际启用的皮肤兼容两张图，并使用同帧匹配坐标。
+- 同步 Frame 生成器保留显式 `file` 的行为，验证嵌入模板可生成并构建运行时识别规则。现有棋局 Frame 布局和位置参数继续通过测试。
+- 58 项来源棋局资产定义、428 张来源图片、17 项公共副本、25 个 Frame 相关方法与来源配套。446 张棋局 PNG 可解码，837 处棋局方法调用参数兼容。
+- 将来源的 5 项结算恢复检查接入项目测试，另验证扩大搜索区域后的真实模板定位和两张町中模板的点击。相关 160 项、全套 672 项测试通过，实机完整对局待验证。
 
 ## 2026-11-03 本地修复：棋局全局关闭右上角叉号
 
@@ -118,8 +124,8 @@
 
 - 移植范围为 `tasks/Chess` 的新版本代码、规则、模板、`config/template.json` 的棋局配置项及对应测试；中文翻译仅涉及 `hyakki_draft_enabled`。
 - 检查棋局直接引用、字符串生成的阶段标志、Frame 相对区域及索引、动态扫描的头像/符咒/御魂目录，并向外追踪共用棋局退出、导航入口、公共奖励处理、未知页面恢复和邀请处理。来源的网络恢复规则另列为公共框架能力。
-- 共核对 445 张棋局 PNG，均存在且可解码，含与来源逐张一致的 428 张任务图片、16 张共用模板副本和 1 张本地右上角叉号模板；64 个手牌身份、63 个商店身份、19 个纹章/复制术身份、200 张符咒图、20 种普通手牌御魂及 18 种百鬼投掷御魂有实际文件。
-- 合并来源与当前项目的调用链，核对 61 项公共定义：39 项完全一致，7 项仅目录迁移，12 项图片或参数不同，1 项仅在来源存在，另 2 项仅在当前项目存在。12 项差异与来源红叉均在 16 项棋局副本范围内；当前活动跳过映射到来源跳过模板，一键返回保留当前项目实现。
+- 共核对 446 张棋局 PNG，含与来源逐张一致的 428 张任务图片、17 张共用模板副本和 1 张本地右上角叉号模板。64 个手牌身份、63 个商店身份、19 个纹章/复制术身份、200 张符咒图、20 种普通手牌御魂及 18 种百鬼投掷御魂有实际文件。
+- 调用链涉及 62 项公共定义，其中 38 项完全一致，7 项仅目录迁移，14 项图片或参数不同，1 项仅在来源存在，2 项仅在当前项目存在。14 项差异和来源红叉由棋局专用副本适配，活动跳过映射到来源跳过模板。
 - “存在差异”表示公共定义与来源版本不同，不能据此认定当前全局规则在实机上失效。棋局适配使用独立副本，公共定义继续供其他任务使用。
 
 ## 完整棋局流程
@@ -135,7 +141,7 @@
 | 百鬼阶段 | 黄色昵称框定位本人→确认锁消失→等待约六秒→匹配御魂→再次截图复核→补偿移动后投掷，每回合最多两次 | OCR 检测框；本阶段图标均位于 `Chess/resource/hyakki_soul` |
 | 大蛇/逢魔回合 | 激活金色阶段标志出现过后，使用首领专用棋盘 Frame 判定站位和落点 | 图像服务 |
 | 符咒选择 | 图标/索引优先；三选项均不明时重新截图一次后兜底 | 截图与图像服务 |
-| 结束和下一局 | 局内标志连续消失确认→奖励/分享→排名 OCR→返回大厅或再来一局 | `I_UI_REWARD`、全局棋局排名及返回按钮 |
+| 结束和下一局 | 局内标志连续消失确认→奖励/分享→排名 OCR→返回大厅或再来一局。遇未知页时识别红色返回并刷新截图 | `I_UI_REWARD`、全局棋局排名及返回按钮、`I_BACK_RED` |
 | 保段位/满币结束 | 保段位退出两局；遵守局数/时长；满币后安排下周任务 | 共用退出确认、当前项目 cron 调度接口 |
 
 ## 棋局内部资源结果
@@ -150,7 +156,7 @@
 | `resource/board` | 3 | 三种棋盘勾玉可读取；表情锚点移至 c/board，普通/首领 Frame 配套 |
 | `resource/soul` | 20 | 普通手牌御魂模板可读取 |
 | `resource/hyakki_soul` | 18 | 百鬼投掷模板可读取；仍缺下述两种 |
-| `shared_ui` | 16 | 退出、奖励、庭院、红叉、协作、跳过及网络识别副本，文件指纹与来源一致 |
+| `shared_ui` | 17 | 退出、奖励、庭院、町中入口、红叉、协作、跳过及网络识别副本，文件指纹与来源一致 |
 
 ### 来源本身缺少的投掷模板
 
@@ -167,7 +173,7 @@
 
 ## 全局差异及棋局适配
 
-棋局保留 16 项来源副本，覆盖当前 12 项公共定义差异及公共红叉缺项。已与当前公共定义一致的副本仍保留，所有副本与参考快照的图片和区域一致。
+棋局的 17 项来源副本覆盖 14 项公共定义差异及来源红叉，图片和识别区域均与参考快照一致。
 
 识别先尝试来源模板，再回退当前模板；点击使用同帧实际命中的坐标。以下“当前”指本项目公共定义。
 
@@ -199,17 +205,17 @@
 ### `GlobalGameAssets.I_G_CAT_FOOD`
 
 - 当前：`tasks/GlobalGame/gg/gg_g_cat_food.png`；裁剪 `[565, 463, 59, 65]`；搜索 `[543, 421, 205, 176]`。
-- 来源：`tasks/GlobalGame/gg/gg_g_cat_food.png`；裁剪 `[666, 499, 59, 65]`；搜索 `[543, 421, 205, 176]`；阈值 `0.8`。
+- 来源 `tasks/GlobalGame/gg/gg_g_cat_food.png` 的裁剪为 `[664, 475, 59, 65]`，搜索为 `[543, 421, 205, 176]`，阈值为 `0.8`。
 
 ### `GlobalGameAssets.I_G_DOG_FOOD`
 
 - 当前：`tasks/GlobalGame/gg/gg_g_dog_food.png`；裁剪 `[565, 464, 60, 63]`；搜索 `[543, 421, 205, 176]`。
-- 来源：`tasks/GlobalGame/gg/gg_g_dog_food.png`；裁剪 `[575, 510, 63, 54]`；搜索 `[543, 421, 205, 176]`；阈值 `0.8`。
+- 来源 `tasks/GlobalGame/gg/gg_g_dog_food.png` 的裁剪为 `[585, 494, 63, 54]`，搜索为 `[543, 421, 205, 176]`，阈值为 `0.8`。
 
 ### `GlobalGameAssets.I_G_JADE`
 
 - 当前：`tasks/GlobalGame/gg/gg_g_jade.png`；裁剪 `[661, 466, 43, 46]`；搜索 `[543, 421, 205, 176]`。
-- 来源：`tasks/GlobalGame/gg/gg_g_jade.png`；裁剪 `[676, 512, 43, 46]`；搜索 `[650, 489, 94, 100]`；阈值 `0.8`。
+- 来源 `tasks/GlobalGame/gg/gg_g_jade.png` 的裁剪为 `[676, 480, 43, 46]`，搜索为 `[646, 457, 94, 100]`，阈值为 `0.8`。
 
 ### `GlobalGameAssets.I_G_REJECT`
 
@@ -244,14 +250,19 @@
 ### `GlobalGameAssets.I_G_IGNORE`
 
 - 当前：`tasks/GlobalGame/gg/gg_g_ignore.png`；裁剪 `[792, 86, 21, 21]`；搜索 `[777, 65, 48, 48]`。
-- 来源：`tasks/GlobalGame/gg/gg_g_ignore.png`；裁剪 `[792, 86, 21, 21]`；搜索 `[777, 65, 48, 48]`；阈值 `0.8`。
+- 来源 `tasks/GlobalGame/gg/gg_g_ignore.png` 的裁剪为 `[792, 86, 21, 21]`，搜索为 `[777, 49, 154, 64]`，阈值为 `0.8`。
 
 ### `GameUiAssets.I_MAIN_SCROLL_CLOSE`
 
 - 当前：`tasks/GameUi/page/page_main_scroll_close.png`；裁剪 `[1181, 634, 28, 39]`；搜索 `[1162, 595, 77, 112]`。
 - 来源：`tasks/GameUi/page/page_main_scroll_close.png`；裁剪 `[1181, 634, 28, 39]`；搜索 `[1162, 595, 77, 112]`；阈值 `0.8`。
 
-## 全部 61 项共用规则
+### `CostumeAssets.I_MAIN_GOTO_TOWN_17`
+
+- 来源 `tasks/Component/Costume/main17/main17_main_goto_town_17.png` 的裁剪为 `[1013, 339, 21, 49]`，搜索为 `[941, 262, 200, 190]`，阈值为 `0.8`，profile 为 `High`。
+- 棋局使用该来源副本和现有 17 号庭院模板匹配同一个导航动作。命中后使用该模板的坐标和原动作的点击间隔。
+
+## 全部 62 项共用规则
 
 以下为来源和当前调用链的合并清单。公共定义保留原样；差异项由棋局专用副本适配。
 
@@ -261,6 +272,12 @@
 | 规则 | 对比 | 当前文件 | 来源文件 | 调用路径 |
 | --- | --- | --- | --- | --- |
 | `I_SKIP_BUTTON` | 来源无此项，棋局映射来源跳过模板 | `tasks/ActivityShikigami/as/page/as_skip_button.png` | 无此规则 | 公共导航恢复/未知页关闭 |
+
+### `tasks.Component.Costume.assets.CostumeAssets`
+
+| 规则 | 对比 | 当前文件 | 来源文件 | 调用路径 |
+| --- | --- | --- | --- | --- |
+| `I_MAIN_GOTO_TOWN_17` | 图片及参数不同 | `tasks/Component/Costume/main17/main17_main_goto_town_17.png` | `tasks/Component/Costume/main17/main17_main_goto_town_17.png` | 17 号庭院进入町中 |
 
 ### `tasks.Component.GeneralBattle.assets.GeneralBattleAssets`
 
@@ -333,7 +350,7 @@
 | `I_G_ACCEPT` | 一致 | `tasks/GlobalGame/gg/gg_g_accept.png` | `tasks/GlobalGame/gg/gg_g_accept.png` | 公共邀请处理、棋局直接调用 |
 | `I_G_CAT_FOOD` | 参数不同 | `tasks/GlobalGame/gg/gg_g_cat_food.png` | `tasks/GlobalGame/gg/gg_g_cat_food.png` | 公共邀请处理、棋局直接调用 |
 | `I_G_DOG_FOOD` | 图片及参数不同 | `tasks/GlobalGame/gg/gg_g_dog_food.png` | `tasks/GlobalGame/gg/gg_g_dog_food.png` | 公共邀请处理、棋局直接调用 |
-| `I_G_IGNORE` | 一致 | `tasks/GlobalGame/gg/gg_g_ignore.png` | `tasks/GlobalGame/gg/gg_g_ignore.png` | 公共邀请处理、棋局直接调用 |
+| `I_G_IGNORE` | 参数不同 | `tasks/GlobalGame/gg/gg_g_ignore.png` | `tasks/GlobalGame/gg/gg_g_ignore.png` | 公共邀请处理、棋局直接调用 |
 | `I_G_JADE` | 图片及参数不同 | `tasks/GlobalGame/gg/gg_g_jade.png` | `tasks/GlobalGame/gg/gg_g_jade.png` | 公共邀请处理、棋局直接调用 |
 | `I_G_REJECT` | 一致 | `tasks/GlobalGame/gg/gg_g_reject.png` | `tasks/GlobalGame/gg/gg_g_reject.png` | 公共邀请处理、棋局直接调用 |
 | `I_NETWORK_ABNORMAL` | 图片及参数不同 | `tasks/GlobalGame/gg/gg_network_abnormal.png` | `tasks/GlobalGame/gg/gg_network_abnormal.png` | 棋局网络恢复、棋局直接调用 |
