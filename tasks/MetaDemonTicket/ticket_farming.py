@@ -41,9 +41,6 @@ def metademon_tickets_full(task) -> bool:
 
 
 class TicketRewardMixin:
-    def room_check_can_fire(self, config):
-        return super().room_check_can_fire(config) and self._cooperation_rooms_ready()
-
     def screenshot(self):
         result = super().screenshot()
         peer = getattr(self, '_ticket_peer', '')
@@ -169,7 +166,8 @@ def run_ticket_farming(owner, mode) -> bool:
             if runtime.matches_meta_demon_tickets(target):
                 peer = target
             else:
-                logger.info(f'超鬼王门票刷取协同配置不匹配，跳过唤醒 {target}')
+                logger.warning(f'超鬼王门票刷取协同配置不匹配：{target}，跳过本轮，避免按本号满票提前退出')
+                return False
     local_full = tickets_full_before_farming(owner)
     if local_full and not peer:
         logger.info('超鬼王门票已满，跳过门票刷取')
