@@ -104,5 +104,7 @@ class ScriptTask(GameUi):
         try:
             result = runner.run()
         except TaskEnd:
-            return config.success is True
+            # TaskEnd is the child task's own completion boundary. Its scheduling
+            # success flag must not decide whether the sequence advances.
+            return True
         return config.success is True if config.success is not None else result is not False
