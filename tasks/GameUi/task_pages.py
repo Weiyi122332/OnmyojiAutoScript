@@ -716,17 +716,19 @@ from tasks.MetaDemon.assets import MetaDemonAssets
 page_act_list_meta_demon = Page(GameUiAssets.I_PAGE_METADEMON_CHECK_ACT_LIST_METADEMON_ACT, key='page_act_list_meta_demon', name='page_act_list_meta_demon', category='meta_demon')
 page_act_list_meta_demon.connect(page_main, GlobalGameAssets.I_UI_BACK_YELLOW, key="page_act_list_meta_demon->page_main")
 
-page_meta_demon = Page(GameUiAssets.I_PAGE_METADEMON_MD_CHECK_MAIN_PAGE, key='page_meta_demon', name='page_meta_demon', category='meta_demon')
-page_meta_demon.add_enter_success_hooks(MetaDemonAssets.I_MD_GET_YESTERDAY_REWARD, MetaDemonAssets.I_MD_CLOSE_POPUP)
-page_meta_demon.add_enter_failure_hooks(find_activity_entry, handle_activity_reward, handle_activity_close)
-# 与式神活动共用庭院侧栏入口及栏目切换恢复逻辑，直接进入超鬼王主页。
-page_main.connect(page_meta_demon, GameUiAssets.I_MAIN_GOTO_ACTIVITY, key="page_main->page_meta_demon")
-page_meta_demon.connect(page_main, GlobalGameAssets.I_UI_BACK_YELLOW, key="page_meta_demon->page_main")
+from tasks.GameUi.default_pages import page_activity
+
+def enter_meta_demon_boss(task) -> bool:
+    """活动主页进入鬼王战斗页的两个可替代按钮。"""
+    return (
+        task.appear_then_click(GameUiAssets.I_PAGE_METADEMON_MD_CHECK_MAIN_PAGE, interval=0.8)
+        or task.appear_then_click(GameUiAssets.I_PAGE_METADEMON_MD_CHECK_MAIN_PAGE_BACKUP, interval=0.8)
+    )
 
 page_meta_demon_boss = Page(GameUiAssets.I_PAGE_METADEMON_CHECK_BOSS_PAGE, key='page_meta_demon_boss', name='page_meta_demon_boss', category='meta_demon')
 page_meta_demon_boss.add_enter_success_hooks(MetaDemonAssets.I_MD_CLOSE_POPUP)
-page_meta_demon_boss.connect(page_meta_demon, GlobalGameAssets.I_UI_BACK_YELLOW, key="page_meta_demon_boss->page_meta_demon")
-page_meta_demon.connect(page_meta_demon_boss, GameUiAssets.I_PAGE_METADEMON_MD_CHECK_MAIN_PAGE, key="page_meta_demon->page_meta_demon_boss")
+page_meta_demon_boss.connect(page_activity, GlobalGameAssets.I_UI_BACK_YELLOW, key="page_meta_demon_boss->page_activity")
+page_activity.connect(page_meta_demon_boss, enter_meta_demon_boss, key="page_activity->page_meta_demon_boss")
 
 page_reward.connect(
     page_meta_demon_boss,

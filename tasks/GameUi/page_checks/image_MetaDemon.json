@@ -27,6 +27,16 @@
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "High",
-    "description": "超鬼王主界面"
+    "description": "超鬼王战斗页入口"
+  },
+  {
+    "itemName": "page_metademon_md_check_main_page_backup",
+    "imageName": "page_checks_page_metademon_md_check_main_page_backup.png",
+    "roiFront": "907,60,76,208",
+    "roiBack": "869,14,171,288",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "超鬼王战斗页备用入口"
   }
 ]

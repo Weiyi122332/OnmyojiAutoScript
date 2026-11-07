@@ -14,6 +14,7 @@ def handle_activity_overlays(task) -> bool:
         MetaDemonAssets.I_MD_GET_YESTERDAY_REWARD,
         GameUiAssets.I_ACTIVITY_SKIP_ENSURE,
         GameUiAssets.I_ACTIVITY_SKIP,
+        MetaDemonAssets.I_MD_CLOSE_POPUP,
         GameUiAssets.I_ACTIVITY_GENERAL_CLOSE_RED,
     )
     clicked = False

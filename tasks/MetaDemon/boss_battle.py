@@ -94,7 +94,7 @@ class BossBattle(GeneralBattle, SwitchSoul, QuickLoadout, GameUi, MetaDemonAsset
             self.screenshot()
             current_page = self.get_current_page()
             match current_page:
-                case ipages.page_meta_demon:
+                case ipages.page_activity:
                     self.goto_page(ipages.page_meta_demon_boss)
                 case ipages.page_meta_demon_boss:
                     if self.check_and_prepare_battle():
