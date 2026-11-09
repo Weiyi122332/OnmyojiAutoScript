@@ -54,19 +54,20 @@ class ScriptTask(BaseExploration):
         self.post_process()
 
     def exec_exp_page(self):
-        pages.page_battle_team_exit = self.navigator.resolve_page(pages.page_battle_team_exit)
-        pages.page_battle_team_exit.connect(pages.page_exp_entrance, self.I_UI_CONFIRM, key="page_battle_team_exit->page_exp_entrance")
+        team_exit = self.navigator.resolve_page(pages.page_battle_team_exit)
+        entrance = self.navigator.resolve_page(pages.page_exp_entrance)
+        team_exit.connect(entrance, self.I_UI_CONFIRM, key="page_battle_team_exit->page_exp_entrance")
         while True:
             self.screenshot()
             if self.close_chat_sidebar_first():
                 continue
             current_page = self.get_current_page()
-            if current_page is None:
-                time.sleep(0.5)
-                continue
             if self.check_exit(current_page):
                 self.appear_then_click(self.I_UI_CANCEL, interval=0.8)  # 处理队长结束的邀请弹窗
                 break
+            if current_page is None:
+                time.sleep(0.5)
+                continue
             handle = self.exp_page_handle_dict.get(current_page, None)
             if handle is None:
                 self.goto_page(pages.page_mainline)
@@ -88,10 +89,15 @@ class ScriptTask(BaseExploration):
         return False
 
     def run_on_exp_main(self):
+        if self.need_exit:
+            self.appear_then_click(self.I_UI_BACK_YELLOW, interval=0.8)
+            return
         if self.pre_page and self.pre_page != pages.page_exp_main:
             # 防止因延迟过大, 一直在主界面和奖励页面切换导致too many click
             self.device.click_record_clear()
         if self.collect_reward():
+            return
+        if self.ensure_exploration_team_locked():
             return
         if self.user_status != UserStatus.ALONE:
             if self.fire_monster_type == 'boss':
@@ -123,6 +129,9 @@ class ScriptTask(BaseExploration):
             case UserStatus.MEMBER:
                 self.check_then_accept()
                 self.device.stuck_record_clear()
+
+    def ensure_exploration_team_locked(self) -> bool:
+        return False
 
     def run_on_exp(self):
         self.fire_monster_type = ''  # 入口处重置怪物类型

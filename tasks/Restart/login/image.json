@@ -169,5 +169,15 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "取消返回百鬼棋局，进入棋局结算流程"
+  },
+  {
+    "itemName": "login_scrooll_open_decade",
+    "imageName": "login_login_scrooll_open_decade.png",
+    "roiFront": "1213,626,28,39",
+    "roiBack": "1186,608,77,112",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
   }
 ]

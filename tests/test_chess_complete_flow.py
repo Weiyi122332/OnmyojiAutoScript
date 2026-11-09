@@ -28,6 +28,7 @@ from tasks.GameUi.assets import GameUiAssets
 from tasks.GameUi.game_ui import GameUi
 from tasks.GlobalGame.assets import GlobalGameAssets
 from tasks.GlobalGame.config_emergency import FriendInvitation
+from tasks.Restart.assets import RestartAssets
 
 
 class ChessScopedRecognitionTest(unittest.TestCase):
@@ -156,18 +157,32 @@ class ChessScopedRecognitionTest(unittest.TestCase):
         x, y = task.device.click.call_args.kwargs['x'], task.device.click.call_args.kwargs['y']
         self.assertTrue(480 <= x < 720 and 160 <= y < 225)
 
-    def test_chess_navigation_opens_the_courtyard_scroll_with_the_source_template(self):
-        rule = ChessAssets.I_SHARED_MAIN_SCROLL_CLOSE
+    def test_chess_navigation_opens_the_courtyard_scroll_with_its_template(self):
+        for template, expected in (
+            (ChessAssets.I_SHARED_MAIN_SCROLL_CLOSE, GameUiAssets.I_MAIN_SCROLL_CLOSE),
+            (GameUiAssets.I_MAIN_SCROLL_CLOSE_DECADE, GameUiAssets.I_MAIN_SCROLL_CLOSE_DECADE),
+        ):
+            with self.subTest(template=template.name):
+                task = self.task_with_image(template, template.roi_front[:2])
+                opened = RestartAssets.I_LOGIN_SCROOLL_OPEN_DECADE
+                opened_frame = self.task_with_image(opened, opened.roi_front[:2]).device.image
+                task.screenshot = Mock()
+
+                def open_scroll(*args, **kwargs):
+                    task.device.image = opened_frame
+                    task.device.image_frame_id = 'scroll-opened'
+
+                task.device.click.side_effect = open_scroll
+                self.assertTrue(task._ensure_main_scroll_open())
+                task.device.click.assert_called_once()
+                self.assertEqual(task.device.click.call_args.kwargs['control_name'], expected.name)
+
+    def test_chess_navigation_leaves_an_open_courtyard_scroll_open(self):
+        rule = RestartAssets.I_LOGIN_SCROOLL_OPEN_DECADE
         task = self.task_with_image(rule, rule.roi_front[:2])
         task.screenshot = Mock()
-        def open_scroll(*args, **kwargs):
-            task.device.image = np.zeros((720, 1280, 3), dtype=np.uint8)
-            task.device.image_frame_id = 'scroll-opened'
-        task.device.click.side_effect = open_scroll
-        self.assertTrue(task._ensure_main_scroll_open())
-        task.device.click.assert_called_once()
-        self.assertEqual(task.device.click.call_args.kwargs['control_name'],
-                         GameUiAssets.I_MAIN_SCROLL_CLOSE.name)
+        self.assertFalse(task._ensure_main_scroll_open())
+        task.device.click.assert_not_called()
 
     def test_a_new_frame_does_not_reuse_the_previous_fallback_click(self):
         task = self.task_with_image(GlobalGameAssets.I_UI_REWARD, (480, 160))

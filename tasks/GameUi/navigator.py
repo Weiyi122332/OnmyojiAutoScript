@@ -30,6 +30,7 @@ from tasks.GameUi.matcher import collect_rule_images
 from tasks.GameUi.page_definition import Page, Transition, sort_pages_by_priority
 from tasks.GameUi.registry import PageRegistry
 from tasks.GameUi.session import NavigatorSession
+from tasks.Restart.assets import RestartAssets
 from tasks.SixRealms.assets import SixRealmsAssets
 from tasks.base_task import BaseTask
 
@@ -774,15 +775,20 @@ class GameUi(ChessBattleNavigationMixin, BaseTask, GameUiAssets):
         """在确认位于庭院时，展开收起的导航卷轴。"""
 
         self.screenshot()
-        if not self.appear(self.I_MAIN_SCROLL_CLOSE):
-            return False
+        closed = self.I_MAIN_SCROLL_CLOSE_DECADE
+        if not self.appear(closed):
+            if self.appear(RestartAssets.I_LOGIN_SCROOLL_OPEN_DECADE):
+                return False
+            closed = self.I_MAIN_SCROLL_CLOSE
+            if not self.appear(closed):
+                return False
 
         logger.info("Main scroll is closed; opening it before navigation")
-        self.click(self.I_MAIN_SCROLL_CLOSE)
+        self.click(closed)
         timer = Timer(3).start()
         while not timer.reached():
             self.screenshot()
-            if not self.appear(self.I_MAIN_SCROLL_CLOSE):
+            if not self.appear(closed):
                 return True
         raise GamePageUnknownError("Main scroll did not open")
 

@@ -88,7 +88,8 @@ class GeneralInvite(BaseTask, GeneralInviteAssets):
 
             # 点击挑战
             if self.room_check_can_fire(config):
-                self.click_fire()
+                if self.click_fire() is False:
+                    continue
                 return True
             if self.timer_invite and self.timer_invite.reached():
                 if is_first:
@@ -241,6 +242,8 @@ class GeneralInvite(BaseTask, GeneralInviteAssets):
         return False
 
     def click_fire(self):
+        if getattr(self, '_ticket_peer', '') and not self._cooperation_rooms_ready():
+            return False
         while 1:
             self.screenshot()
             if not self.is_in_room(False):

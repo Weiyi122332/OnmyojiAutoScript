@@ -88,6 +88,7 @@ class GroupTaskChoice(str, Enum):
     # Activity Task
     ActivityShikigami = 'ActivityShikigami'
     MartialArts = 'MartialArts'
+    MetaDemonTicket = 'MetaDemonTicket'
     MetaDemon = 'MetaDemon'
     FrogBoss = 'FrogBoss'
     FloatParade = 'FloatParade'

@@ -1,5 +1,6 @@
 # This Python file uses the following encoding: utf-8
 # @author AzurTian
+import re
 import time
 import numpy as np
 from cached_property import cached_property
@@ -65,7 +66,7 @@ class BaseExploration(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, Replace
             self.run_switch_soul_by_name(self._config.switch_soul_config.group_name,
                                          self._config.switch_soul_config.team_name)
         # 开启加成
-        con = self.config.exploration.exploration_config
+        con = self._config.exploration_config
         if con.buff_gold_50_click or con.buff_gold_100_click or con.buff_exp_50_click or con.buff_exp_100_click:
             self.goto_page(pages.page_main)
             self.open_buff()
@@ -98,37 +99,35 @@ class BaseExploration(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, Replace
     # 打开指定的章节：
     def open_expect_level(self):
         swipeCount = 0
-        config_exploration_level = self.config.exploration.exploration_config.exploration_level
+        config_exploration_level = self._config.exploration_config.exploration_level
+        target_index = config_exploration_level.get_index()
         while True:
             # 判断有无目标章节
             self.screenshot()
             # 获取当前章节名
             results = self.O_E_EXPLORATION_LEVEL_NUMBER.detect_and_ocr(self.device.image)
             text1 = [result.ocr_text for result in results]
-            exp_level_enum_list = []
+            visible_indices = []
             for txt in text1:
-                try:
-                    exp_level_enum_list.append(ExplorationLevel(txt))
-                except ValueError as e:
-                    logger.warning(f'convert {txt} failed')
-            sorted(exp_level_enum_list, key=lambda x: x.get_index())  # Sort by index
-            # 判断当前章节有无目标章节
-            result = set(text1).intersection({config_exploration_level})
-            # 有则跳出检测
-            if self.appear(self.I_E_EXPLORATION_CLICK) or result and len(result) > 0:
+                for chapter in re.findall(r'第[一二三四五六七八九十]+章', txt):
+                    try:
+                        visible_indices.append(ExplorationLevel(chapter).get_index())
+                    except ValueError:
+                        logger.warning(f'convert {chapter} failed')
+            if self.appear(self.I_E_EXPLORATION_CLICK) or target_index in visible_indices:
                 break
             if self.appear_then_click(self.I_UI_CONFIRM, interval=1):
                 continue
             if self.appear_then_click(self.I_UI_CONFIRM_SAMLL, interval=1):
                 continue
             self.device.click_record_clear()
-            if len(exp_level_enum_list) > 0:
-                min_level = exp_level_enum_list[0]
-                max_level = exp_level_enum_list[-1]
-                if config_exploration_level.get_index() < min_level.get_index():
-                    self.swipe(self.S_SWIPE_LEVEL_UP)
-                elif config_exploration_level.get_index() > max_level.get_index():
+            if visible_indices:
+                if target_index > max(visible_indices):
+                    logger.info(f'向下翻找章节：{config_exploration_level.value}')
                     self.swipe(self.S_SWIPE_LEVEL_DOWN)
+                elif target_index < min(visible_indices):
+                    logger.info(f'向上翻找章节：{config_exploration_level.value}')
+                    self.swipe(self.S_SWIPE_LEVEL_UP)
             swipeCount += 1
             debug_info = f"Swiped {swipeCount} times, current exploration level: {text1}"
             logger.info(debug_info)
@@ -314,9 +313,8 @@ class BaseExploration(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, Replace
         while max_tries > 0 and not timeout_timer.reached():
             self.screenshot()
             cur_page = self.get_current_page()
-            # 退出动画期间可能再次识别到怪物开始攻击, 因此取消退出
+            # 保留主动退出标记；未请求退出的误触弹窗仍由页面处理器取消。
             if cur_page == pages.page_exp_exit:
-                self.need_exit = False
                 return True
             if cur_page in (pages.page_battle_prepare, pages.page_battle):
                 return True

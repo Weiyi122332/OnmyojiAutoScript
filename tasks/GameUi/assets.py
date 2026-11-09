@@ -1,4 +1,5 @@
 from module.atom.image import RuleImage
+from module.atom.frame import RuleFrame, Image, Ocr, Click
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
 from module.atom.long_click import RuleLongClick
@@ -216,6 +217,8 @@ class GameUiAssets:
 	I_GUILD_TO_SHRIN = RuleImage(roi_front=(877,629,49,53), roi_back=(840,602,302,113), threshold=0.8, method="Template matching", file="./tasks/GameUi/page/page_guild_to_shrin.png")
 	# 闲庭设置
 	I_CHECK_MAIN_SET = RuleImage(roi_front=(255,37,41,36), roi_back=(214,6,120,100), threshold=0.8, method="Template matching", file="./tasks/GameUi/page/page_check_main_set.png")
+	#
+	I_MAIN_SCROLL_CLOSE_DECADE = RuleImage(roi_front=(1198,634,28,39), roi_back=(1167,595,77,112), threshold=0.8, method="Template matching", profile="High", file="./tasks/GameUi/page/page_main_scroll_close_decade.png")
 
 
 	# Image Rule Assets

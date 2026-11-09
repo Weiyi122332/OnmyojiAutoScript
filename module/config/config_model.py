@@ -60,6 +60,7 @@ from tasks.GuildActivityMonitor.config import GuildActivityMonitor
 from tasks.ActivityShikigami.config import ActivityShikigami
 from tasks.MartialArts.config import MartialArts
 from tasks.MetaDemon.config import MetaDemon
+from tasks.MetaDemonTicket.config import MetaDemonTicket, split_legacy_meta_demon
 from tasks.FrogBoss.config import FrogBoss
 from tasks.FloatParade.config import FloatParade
 from tasks.LBS.config import LBS
@@ -134,6 +135,7 @@ class ConfigModel(ConfigBase):
     activity_shikigami: ActivityShikigami = Field(default_factory=ActivityShikigami)
     martial_arts: MartialArts = Field(default_factory=MartialArts)
     meta_demon: MetaDemon = Field(default_factory=MetaDemon)
+    meta_demon_ticket: MetaDemonTicket = Field(default_factory=MetaDemonTicket)
     frog_boss: FrogBoss = Field(default_factory=FrogBoss)
     float_parade: FloatParade = Field(default_factory=FloatParade)
     lbs: LBS = Field(default_factory=LBS)
@@ -232,7 +234,7 @@ class ConfigModel(ConfigBase):
                 activity['scheduler'] = legacy_scheduler
         data['activity_shikigami'] = activity
 
-        return data
+        return split_legacy_meta_demon(data)
 
     def __setattr__(self, key, value):
         """
@@ -399,6 +401,9 @@ class ConfigModel(ConfigBase):
                 item["title"] = value["title"] if "title" in value else inflection.underscore(key)
                 if "description" in value:
                     item["description"] = value["description"]
+                for name in ('ui_exclusive_groups', 'ui_hidden'):
+                    if name in value:
+                        item[name] = value[name]
                 item["default"] = value["default"]
                 item["value"] = jsons[key] if key in jsons else value["default"]
                 item["type"] = value["type"] if "type" in value else "enum"
@@ -437,6 +442,10 @@ class ConfigModel(ConfigBase):
 
         if isinstance(task, Chess):
             result = task.oasx_args(result)
+        if isinstance(task, (MetaDemon, MetaDemonTicket)):
+            from module.config.settings_presentation import present_settings
+            result['settings_layout_config'][0]['ui_layout'] = {'version': 1, 'sections': task.settings_layout}
+            result = present_settings(task, result)
         return result
 
     def script_set_arg(self, task: str, group: str, argument: str, value) -> bool:

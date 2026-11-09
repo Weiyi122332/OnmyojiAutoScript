@@ -23,6 +23,7 @@ from threading import Thread
 from multiprocessing.queues import Queue
 from module.config.utils import convert_to_underscore
 from module.config.config import Config, Function
+from module.cooperation import Cooperation, META_DEMON_TASKS
 from module.device.env import IS_WINDOWS
 from module.task_loader import load_task_script, task_script_path
 from module.base.decorator import del_cached_property
@@ -315,6 +316,24 @@ class Script:
             result[key] = item
         return json.dumps(result)
 
+    def _meta_cooperation_runtime(self):
+        runtime = self.__dict__.get('_meta_cooperation')
+        if runtime is not None:
+            return runtime
+        config = self.config
+        if not isinstance(config, Config):
+            return None
+        from tasks.MetaDemon.config import MetaDemonMode
+        boss = config.meta_demon
+        ticket = config.meta_demon_ticket
+        if not (boss.scheduler.enable and MetaDemonMode.BOSS_ASSIST in boss.meta_demon_config.mode
+                or ticket.scheduler.enable and ticket.general_config.user_status != 'alone'):
+            return None
+        runtime = Cooperation(self.config_name)
+        runtime.start()
+        self._meta_cooperation = runtime
+        return runtime
+
     def wait_until(self, future):
         """
         Wait until a specific time.
@@ -339,6 +358,13 @@ class Script:
                 update_until = self.runtime.server_update_wait_until
                 waiting_for_update = update_until is not None and datetime.now() < update_until
                 if not waiting_for_update and self._antiban_wake_time(datetime.now()) is None:
+                    return False
+            cooperation = self.__dict__.get('_meta_cooperation')
+            if cooperation is not None and cooperation.requested():
+                now = datetime.now()
+                update_until = self.runtime.server_update_wait_until
+                if ((update_until is None or now >= update_until)
+                        and self._antiban_wake_time(now) is None):
                     return False
             if datetime.now() > future:
                 return True
@@ -527,6 +553,13 @@ class Script:
         :return:
         """
         while True:
+            cooperation = self._meta_cooperation_runtime()
+            if cooperation is not None:
+                now = datetime.now()
+                update_until = self.runtime.server_update_wait_until
+                if ((update_until is None or now >= update_until)
+                        and self._antiban_wake_time(now) is None):
+                    cooperation.wake_next(self.config)
             task = self.config.get_next()
             task = self._select_dokan_qq_task(task)
             self.config.task = task
@@ -619,7 +652,15 @@ class Script:
         from module.atom.click import RuleClick
         RuleClick.reset_task_points()
         set_ocr_logging_enabled(self.config.global_game.ocr.save_ocr_log)
+        cooperation = self.__dict__.get('_meta_cooperation')
+        previous_task = None
         try:
+            if command in META_DEMON_TASKS:
+                cooperation = self._meta_cooperation_runtime()
+            if cooperation is not None:
+                previous_task = cooperation.active_task
+                cooperation.publish(command)
+                self.config.cooperation_runtime = cooperation
             self.device.screenshot()
             module_path = task_script_path(command)
             logger.info(f'module_path: {module_path}, module_name: script_task')
@@ -627,9 +668,22 @@ class Script:
             task_module.ScriptTask(config=self.config, device=self.device).run()
         except Exception as e:
             return self._handle_task_exception(e, command)
+        finally:
+            if cooperation is not None and previous_task is not None:
+                cooperation.publish(previous_task)
+                if command in META_DEMON_TASKS:
+                    cooperation.finish(command)
         return False
 
     def loop(self):
+        try:
+            return self._run_scheduler_loop()
+        finally:
+            cooperation = self.__dict__.pop('_meta_cooperation', None)
+            if cooperation is not None:
+                cooperation.close()
+
+    def _run_scheduler_loop(self):
         """
         Main loop of scheduler.
         :return:

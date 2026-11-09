@@ -738,20 +738,26 @@ class BaseTask(GlobalGameAssets, CostumeBase):
         """
         _timer = Timer(10)
         _timer.start()
+        find_shikigami = getattr(self, 'O_FIND_SHIKIGAMI', None)
+
+        def click_discovery():
+            return find_shikigami is not None and self.appear_then_click(find_shikigami, interval=1)
+
         while 1:
             self.screenshot()
 
-            if self.ui_reward_appear_click():
+            if self.ui_reward_appear_click() or click_discovery():
                 sleep(0.5)
                 while 1:
                     self.screenshot()
                     # 等待动画结束
-                    if not self.appear(self.I_UI_REWARD, threshold=0.6):
+                    if not (self.appear(self.I_UI_REWARD, threshold=0.6)
+                            or (find_shikigami is not None and self.ocr_appear(find_shikigami))):
                         logger.info('Get reward success')
                         break
 
                     # 一直点击
-                    if self.ui_reward_appear_click():
+                    if self.ui_reward_appear_click() or click_discovery():
                         continue
                 break
             if _timer.reached():

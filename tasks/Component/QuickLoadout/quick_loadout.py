@@ -44,6 +44,10 @@ class QuickLoadoutLayout:
     group_swipe_down: RuleSwipe
     preset_swipe_to_top: RuleSwipe
     preset_swipe_down: RuleSwipe
+    scale_x: float = 1.0
+
+    def column(self, offset: int) -> int:
+        return self.panel[0] + round(offset * self.scale_x)
 
 
 class QuickLoadout(BaseTask, SwitchSoulAssets):
@@ -197,10 +201,6 @@ class QuickLoadout(BaseTask, SwitchSoulAssets):
         return config.model_copy(update=updates), self._normalize_name(best_name)
 
     @staticmethod
-    def _offset_roi(panel: tuple[int, int, int, int], relative: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
-        return panel[0] + relative[0], panel[1] + relative[1], relative[2], relative[3]
-
-    @staticmethod
     def _result_center_y(result, roi_top: int) -> int:
         return int(round(float(np.mean(result.box[:, 1])))) + roi_top
 
@@ -222,20 +222,35 @@ class QuickLoadout(BaseTask, SwitchSoulAssets):
         anchor_x, anchor_y = fight_anchor.roi_front[:2]
         dx, dy, panel_width, panel_height = self.PANEL_FROM_FIGHT
         panel = anchor_x + dx, anchor_y + dy, panel_width, panel_height
-        x, y, width, height = panel
-        if x < 0 or y < 0 or x + width > 1280 or y + height > 720:
-            raise ValueError(f'Quick loadout panel is outside screen: {panel}')
+        return self._quick_loadout_layout_at(panel)
 
-        group_roi = self._offset_roi(panel, self.GROUP_OCR_ROI)
-        preset_roi = self._offset_roi(panel, self.PRESET_OCR_ROI)
+    def _quick_loadout_layout_at(self, panel, *, reference_size=None, screen_size=(1280, 720)) -> QuickLoadoutLayout:
+        x, y, width, height = panel
+        if x < 0 or y < 0 or min(width, height) <= 0 or x + width > screen_size[0] or y + height > screen_size[1]:
+            raise ValueError(f'Quick loadout panel is outside screen: {panel}')
+        ref_width, ref_height = reference_size or (width, height)
+        sx, sy = width / ref_width, height / ref_height
+
+        def roi(relative):
+            rx, ry, rw, rh = relative
+            return x + round(rx * sx), y + round(ry * sy), max(1, round(rw * sx)), max(1, round(rh * sy))
+
+        group_roi = roi(self.GROUP_OCR_ROI)
+        preset_roi = roi(self.PRESET_OCR_ROI)
         group_ocr = QuickLoadoutOcr(roi=group_roi, area=group_roi, mode='Full', method='Default', keyword='', name='quick_loadout_group_name')
         preset_ocr = QuickLoadoutOcr(roi=preset_roi, area=preset_roi, mode='Full', method='Default', keyword='', name='quick_loadout_preset_name')
 
-        group_swipe_to_top = RuleSwipe(roi_front=(x + 55, y + 105, 25, 20), roi_back=(x + 55, y + 285, 25, 20), mode='default', name='quick_loadout_group_to_top')
-        group_swipe_down = RuleSwipe(roi_front=(x + 55, y + 285, 25, 20), roi_back=(x + 55, y + 105, 25, 20), mode='default', name='quick_loadout_group_down')
-        preset_swipe_to_top = RuleSwipe(roi_front=(x + 355, y + 105, 30, 20), roi_back=(x + 355, y + 280, 30, 20), mode='default', name='quick_loadout_preset_to_top')
-        preset_swipe_down = RuleSwipe(roi_front=(x + 355, y + 280, 30, 20), roi_back=(x + 355, y + 105, 30, 20), mode='default', name='quick_loadout_preset_down')
-        return QuickLoadoutLayout(panel, group_ocr, preset_ocr, group_swipe_to_top, group_swipe_down, preset_swipe_to_top, preset_swipe_down)
+        def swipe(name, front, back):
+            return RuleSwipe(roi_front=roi(front), roi_back=roi(back), mode='default', name=name)
+
+        return QuickLoadoutLayout(
+            panel, group_ocr, preset_ocr,
+            swipe('quick_loadout_group_to_top', (55, 105, 25, 20), (55, 285, 25, 20)),
+            swipe('quick_loadout_group_down', (55, 285, 25, 20), (55, 105, 25, 20)),
+            swipe('quick_loadout_preset_to_top', (355, 105, 30, 20), (355, 280, 30, 20)),
+            swipe('quick_loadout_preset_down', (355, 280, 30, 20), (355, 105, 30, 20)),
+            scale_x=sx,
+        )
 
     def _open_quick_loadout(self, entry: RuleImage, fight_anchor: RuleImage) -> bool:
         logger.info('Open quick loadout panel')
@@ -299,7 +314,7 @@ class QuickLoadout(BaseTask, SwitchSoulAssets):
 
     def _find_visible_preset_number_y(self, layout: QuickLoadoutLayout, target: int) -> int | None:
         """逐行识别预设左上角菱形编号，避免整块名称 OCR 丢弃小数字。"""
-        panel_x, panel_y, _, _ = layout.panel
+        panel_y = layout.panel[1]
         number_width, number_height = self.PRESET_NUMBER_SIZE
         for slot in range(self.PRESET_VISIBLE_SLOTS):
             roi = (
@@ -325,7 +340,7 @@ class QuickLoadout(BaseTask, SwitchSoulAssets):
         panel_x, panel_y, _, _ = layout.panel
         if config.mode == QuickLoadoutMode.NUMBER:
             y = panel_y + self.GROUP_FIRST_Y + (config.group_number - 1) * self.GROUP_ROW_HEIGHT
-            self.device.click(panel_x + self.GROUP_CLICK_X, y, control_name='QUICK_LOADOUT_GROUP')
+            self.device.click(layout.column(self.GROUP_CLICK_X), y, control_name='QUICK_LOADOUT_GROUP')
             sleep(0.6)
             return True
 
@@ -338,7 +353,7 @@ class QuickLoadout(BaseTask, SwitchSoulAssets):
             y, score = self._find_name_y(layout.group_ocr, config.group_name, results)
             if y is not None and score >= 0.55:
                 logger.info(f'Quick loadout group OCR matched {config.group_name} [{score:.2f}]')
-                self.device.click(panel_x + self.GROUP_CLICK_X, y, control_name='QUICK_LOADOUT_GROUP_OCR')
+                self.device.click(layout.column(self.GROUP_CLICK_X), y, control_name='QUICK_LOADOUT_GROUP_OCR')
                 sleep(0.6)
                 return True
             stable_count = stable_count + 1 if current and current == previous else 0
@@ -381,8 +396,7 @@ class QuickLoadout(BaseTask, SwitchSoulAssets):
         return None
 
     def _equip_quick_loadout_souls(self, layout: QuickLoadoutLayout, row_y: int) -> None:
-        panel_x = layout.panel[0]
-        self.device.click(panel_x + self.PRESET_EQUIP_X, row_y, control_name='QUICK_LOADOUT_EQUIP_SOUL')
+        self.device.click(layout.column(self.PRESET_EQUIP_X), row_y, control_name='QUICK_LOADOUT_EQUIP_SOUL')
         timer = Timer(self.CONFIRM_TIMEOUT).start()
         while not timer.reached():
             self.screenshot()

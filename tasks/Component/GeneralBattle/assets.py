@@ -189,6 +189,8 @@ class GeneralBattleAssets:
 	O_BATTLE_AUTO = RuleOcr(roi=(37,642,51,36), area=(0,589,133,128), mode="Single", method="Default", keyword="自动", name="battle_auto")
 	# 战斗页面手动标志 
 	O_BATTLE_HAND = RuleOcr(roi=(35,644,52,34), area=(0,589,136,129), mode="Single", method="Default", keyword="手动", name="battle_hand")
+	# 超鬼王门票
+	O_METADEMON_PASS = RuleOcr(roi=(1126,3,95,39), area=(1126,3,95,39), mode="DigitCounter", method="Default", keyword="", name="metademon_pass")
 
 
 	# Scatter Rule Assets

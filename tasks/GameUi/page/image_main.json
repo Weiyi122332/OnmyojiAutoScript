@@ -298,5 +298,15 @@
     "threshold": 0.8,
     "profile": "Default",
     "description": "闲庭设置"
+  },
+  {
+    "itemName": "main_scroll_close_decade",
+    "imageName": "page_main_scroll_close_decade.png",
+    "roiFront": "1198,634,28,39",
+    "roiBack": "1167,595,77,112",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": ""
   }
 ]

@@ -16,5 +16,50 @@
     "method": "Default",
     "keyword": "",
     "description": "好友列表"
+  },
+  {
+    "itemName": "synthesis_level",
+    "roiFront": "747,424,181,34",
+    "roiBack": "747,424,181,34",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "",
+    "description": "合成目标星级"
+  },
+  {
+    "itemName": "boss_name",
+    "roiFront": "515,132,33,203",
+    "roiBack": "515,132,33,203",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "",
+    "description": ""
+  },
+  {
+    "itemName": "metademon_pass_exp",
+    "roiFront": "919,16,114,34",
+    "roiBack": "919,16,114,34",
+    "mode": "DigitCounter",
+    "method": "Default",
+    "keyword": "",
+    "description": "探索页面超鬼王门票获得数量"
+  },
+  {
+    "itemName": "md_help_solo",
+    "roiFront": "134,374,111,28",
+    "roiBack": "22,358,309,280",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "已分享：1人",
+    "description": ""
+  },
+  {
+    "itemName": "find_shikigami",
+    "roiFront": "561,558,138,38",
+    "roiBack": "538,547,188,72",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "妖怪发现",
+    "description": "发现妖怪"
   }
 ]

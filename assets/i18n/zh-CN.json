@@ -421,5 +421,7 @@
   "custom_lineup": "自定义阵容标识",
   "custom_lineup_help": "在棋局阵容工具中保存并应用的阵容标识",
   "ResourceInventory": "资源识别",
-  "resource_inventory": "资源识别"
+  "resource_inventory": "资源识别",
+  "MetaDemonTicket": "鬼王门票",
+  "cooperation_script_help": "留空关闭。仅填写一个本地实例配置名（不是好友名）。双方同名任务必须启用，身份为一名队长和一名队员。唤醒可提前计划运行时间；对方执行其他任务或未运行时，本任务等待并按该任务的失败重试间隔推迟，之后仍可被提前唤醒。需先启动两个实例。"
 }
