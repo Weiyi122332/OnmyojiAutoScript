@@ -19,6 +19,87 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
         ocrRes = self.O_SA_LOGIN_FORM_SVR_NAME.ocr(self.device.image)
         return ocrRes
 
+    def _saved_role_panel(self):
+        for expanded, collapsed, close in (
+            (self.I_SA_CHECK_SELECT_SVR_2_BATCH, self.I_SA_CHECK_SELECT_SVR_1_BATCH,
+             self.C_SA_LOGIN_FORM_CANCEL_SVR_SELECT_BATCH),
+            (self.I_SA_CHECK_SELECT_SVR_2, self.I_SA_CHECK_SELECT_SVR_1,
+             self.C_SA_LOGIN_FORM_CANCEL_SVR_SELECT),
+        ):
+            if self.appear(expanded):
+                return close, True
+            if self.appear(collapsed):
+                return close, False
+        if self.ocr_appear(self.O_SA_CHECK_SELECT_SVR_BATCH):
+            return self.C_SA_LOGIN_FORM_CANCEL_SVR_SELECT_BATCH, False
+        return None, False
+
+    def _open_saved_roles(self) -> bool:
+        deadline = time.monotonic() + 12
+        while time.monotonic() < deadline:
+            self.screenshot()
+            close, expanded = self._saved_role_panel()
+            if expanded:
+                return True
+            if close is self.C_SA_LOGIN_FORM_CANCEL_SVR_SELECT:
+                self.click(self.C_SA_SELECT_SVR_CHARACTER_LIST, interval=1.5)
+            elif close is None and self.appear(self.I_CHECK_LOGIN_FORM):
+                button = (self.C_SA_LOGIN_FORM_SWITCH_SVR_BTN_BATCH if time.monotonic() < deadline - 6
+                          else self.C_SA_LOGIN_FORM_SWITCH_SVR_BTN)
+                self.click(button, interval=1.5)
+            self.device.sleep(0.2)
+        logger.warning('等待已有角色列表就绪超时')
+        return False
+
+    def _confirm_saved_role(self, card) -> bool:
+        from tasks.Restart.assets import RestartAssets
+
+        deadline = time.monotonic() + 12
+        while time.monotonic() < deadline:
+            close, _ = self._saved_role_panel()
+            if close is not None:
+                self.click(card, interval=1.5)
+            elif (self.ocr_appear(RestartAssets.O_LOGIN_ENTER_GAME)
+                  or self.ocr_appear(RestartAssets.O_LOGIN_ENTER_GAME_OLD)):
+                return True
+            self.device.sleep(0.2)
+            self.screenshot()
+        logger.warning('选择已有角色后等待登录按钮超时')
+        return False
+
+    def select_saved_role(self, account: AccountInfo) -> bool:
+        """按精确的角色名或区服名选择卡片，识别不明确时停止。"""
+        if not self._open_saved_roles():
+            return False
+        name = account.character or account.svr
+        ocr = self.O_SA_SELECT_SVR_CHARACTER_LIST
+        previous = None
+        for _ in range(12):
+            self.screenshot()
+            results = ocr.detect_and_ocr(self.device.image)
+            names = [row.ocr_text.strip() for row in results]
+            matches = [row for row, text in zip(results, names) if text == name]
+            if len(matches) == 1:
+                box = matches[0].box
+                x, y, _, _ = ocr.roi
+                card = RuleClick(roi_back=ocr.roi,
+                                 roi_front=(x + box[0][0], y + box[0][1], box[1][0] - box[0][0],
+                                            box[2][1] - box[1][1]),
+                                 name='sa_saved_role')
+                if self._confirm_saved_role(card):
+                    return True
+                break
+            if matches or names == previous:
+                break
+            previous = names
+            self.swipe(self.S_SA_ACCOUNT_LIST_UP)
+            self.device.sleep(1.5)
+        close, _ = self._saved_role_panel()
+        if close is not None:
+            self.click(close)
+        logger.warning('未能确认唯一的已有角色，请核对服务器和角色配置')
+        return False
+
     def switch_svr(self, svrName: str):
         """
             需保证账号已登录 且处于登录界面
@@ -217,7 +298,7 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
     #         self.ui_click_until_disappear(self.I_SA_LOGIN_FORM_ANDROID, 1)
     #     return True
 
-    def login(self, accountInfo: AccountInfo) -> bool:
+    def login(self, accountInfo: AccountInfo, *, saved_roles=False) -> bool:
         """
 
         @param accountInfo:
@@ -240,8 +321,13 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
         while 1:
             self.screenshot()
             # 处于 选择服务器界面 直接点击空白区域退出该界面 进入切换账号流程
-            if self.appear(self.I_SA_CHECK_SELECT_SVR_1) or self.appear(self.I_SA_CHECK_SELECT_SVR_2):
-                self.click(self.C_SA_LOGIN_FORM_CANCEL_SVR_SELECT)
+            close = None
+            if saved_roles:
+                close, _ = self._saved_role_panel()
+            elif self.appear(self.I_SA_CHECK_SELECT_SVR_1) or self.appear(self.I_SA_CHECK_SELECT_SVR_2):
+                close = self.C_SA_LOGIN_FORM_CANCEL_SVR_SELECT
+            if close is not None:
+                self.click(close)
                 continue
 
             # 处于选择 苹果安卓界面
@@ -259,7 +345,9 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
                 if not self.ocr_appear(self.O_SA_ACCOUNT_ACCOUNT_SELECTED):
                     # 没有找到account
                     if not self.selectAccount(accountInfo):
-                        self.ui_click_until_disappear(self.C_SA_LOGIN_FORM_ACCOUNT_CLOSE_BTN,
+                        close = (self.C_SA_LOGIN_FORM_ACCOUNT_CLOSE_BTN_BATCH if saved_roles
+                                 else self.C_SA_LOGIN_FORM_ACCOUNT_CLOSE_BTN)
+                        self.ui_click_until_disappear(close,
                                                       stop=self.I_SA_NETEASE_GAME_LOGO)
                         return False
                     # selectAccount 后更新图片
@@ -290,7 +378,7 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
                     continue
 
                 # 已登录 查找对应角色
-                if not isCharacterSelected and self.switch_character(accountInfo.character):
+                if not saved_roles and not isCharacterSelected and self.switch_character(accountInfo.character):
                     isCharacterSelected = True
                     continue
                 break
@@ -298,7 +386,9 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
 
         # 切换角色失败 /未找到该角色
         # 尝试使用 选择服务器方式
-        if isAccountLogon and not isCharacterSelected and accountInfo.svr is not None and accountInfo.svr != "":
+        if isAccountLogon and saved_roles:
+            isCharacterSelected = self.select_saved_role(accountInfo)
+        elif isAccountLogon and not isCharacterSelected and accountInfo.svr is not None and accountInfo.svr != "":
             logger.info("try to find character with svrName %s", accountInfo.svr)
             isCharacterSelected = self.switch_svr(accountInfo.svr)
         if isAccountLogon and isCharacterSelected:

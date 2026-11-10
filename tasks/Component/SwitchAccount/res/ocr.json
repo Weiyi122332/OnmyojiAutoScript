@@ -70,5 +70,14 @@
     "method": "Default",
     "keyword": "",
     "description": ""
+  },
+  {
+    "itemName": "sa_check_select_svr_batch",
+    "roiFront": "220,145,128,36",
+    "roiBack": "220,145,128,36",
+    "mode": "Single",
+    "method": "Default",
+    "keyword": "已有角色",
+    "description": "判断是否在 选择服务器 界面的文本特质"
   }
 ]

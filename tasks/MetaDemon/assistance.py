@@ -10,10 +10,11 @@ import numpy as np
 
 from module.atom.click import RuleClick
 from module.atom.swipe import RuleSwipe
-from module.cooperation import Cooperation
+from module.cooperation import Cooperation, META_DEMON_BATCH_ROUND
 from module.exception import RequestHumanTakeover, ScriptError, TaskEnd
 from module.image.rpc import get_image_client
 from module.logger import logger
+from tasks.MetaDemon.batch_assistance import BatchAssistance
 from tasks.MetaDemon.config import AssistanceRole, BossType, MetaDemonMode
 import tasks.MetaDemon.page as pages
 
@@ -21,12 +22,22 @@ import tasks.MetaDemon.page as pages
 class AssistanceLink:
     CHANNEL = 'MetaDemonAssistance'
 
-    def __init__(self, task):
+    def __init__(self, task, *, batch_session=None):
         self.task = task
         settings = task.conf.assistance_config
         self.peer = settings.cooperation_script
-        self.runtime = getattr(task.config, 'cooperation_runtime', None) or Cooperation(task.config.config_name)
+        self.runtime = getattr(task.config, 'cooperation_runtime', None)
         self.session = uuid4().hex
+        self.batch = None
+        self.channel = self.CHANNEL
+        if settings.batch_cooperation:
+            if self.runtime is None:
+                raise ScriptError('整批鬼王协同需要通过调度器启动')
+            self.batch = BatchAssistance(task, self.runtime, self.peer, batch_session)
+            self.channel = META_DEMON_BATCH_ROUND
+            return
+        if self.runtime is None:
+            self.runtime = Cooperation(task.config.config_name)
         other_role = AssistanceRole.ASSIST if settings.role == AssistanceRole.OFFERING else AssistanceRole.OFFERING
         if not self.peer:
             peers = []
@@ -36,6 +47,7 @@ class AssistanceLink:
                 other = self.runtime.read(path.stem).get('meta_demon', {})
                 other_settings = other.get('assistance_config', {})
                 if (other.get('scheduler', {}).get('enable')
+                        and not other_settings.get('batch_cooperation', False)
                         and other_settings.get('role') == other_role
                         and other_settings.get('cooperation_script') == self.runtime.name):
                     peers.append(path.stem)
@@ -46,6 +58,7 @@ class AssistanceLink:
             other = self.runtime.read(self.peer).get('meta_demon', {})
             other_settings = other.get('assistance_config', {})
             if (self.peer == self.runtime.name or other_settings.get('role') != other_role
+                    or other_settings.get('batch_cooperation', False)
                     or MetaDemonMode.BOSS_ASSIST not in other.get('meta_demon_config', {}).get('mode', [])
                     or other_settings.get('cooperation_script', '') not in ('', self.runtime.name)):
                 raise ScriptError('鬼王协同脚本应为匹配的上供和协助实例')
@@ -55,38 +68,47 @@ class AssistanceLink:
             if portrait:
                 self.session = uuid4().hex
             remaining = (self.task.limit_time - (datetime.now() - self.task.start_time)).total_seconds()
-            self.runtime.publish_battle_state(self.CHANNEL, self.peer, self.session, {
+            payload = {
                 'portrait': portrait,
                 'expires': time.time() + max(0, remaining),
-            })
+            }
+            if self.batch:
+                payload['batch'] = self.batch.session
+            self.runtime.publish_battle_state(self.channel, self.peer, self.session, payload)
 
     def target(self):
-        state = self.runtime.peer_battle_state(self.CHANNEL, self.peer)
+        state = self.runtime.peer_battle_state(self.channel, self.peer)
         if not state:
             return None
         payload = state['payload']
+        if self.batch and payload.get('batch') != self.batch.session:
+            return None
         portrait = payload.get('portrait')
         if portrait and payload.get('expires', 0) > time.time():
             return state['session'], state['updated'], portrait
         return None
 
     def confirm(self, target, *, settled=False):
-        self.runtime.publish_battle_state(self.CHANNEL, self.peer, target[0], {
+        self.runtime.publish_battle_state(self.channel, self.peer, target[0], {
             'matched': True, 'settled': settled,
         })
 
     def confirmed(self):
-        state = self.runtime.peer_battle_state(self.CHANNEL, self.peer)
+        state = self.runtime.peer_battle_state(self.channel, self.peer)
         return bool(state and state['session'] == self.session and state['payload'].get('matched'))
 
     def peer_settled(self):
-        state = self.runtime.peer_battle_state(self.CHANNEL, self.peer)
+        state = self.runtime.peer_battle_state(self.channel, self.peer)
         return bool(state and state['session'] == self.session and state['payload'].get('settled'))
 
     def peer_in_task(self):
+        if self.batch:
+            return self.batch.assistant_ready()
         return self.runtime.runner_task(self.peer) == 'MetaDemon'
 
     def wait_for_peer(self):
+        if self.batch:
+            return self.batch.wait_for_peer()
         task = 'MetaDemon'
         if not self.runtime.prepare(self.task.config, task, self.peer, defer=False):
             return False
@@ -383,6 +405,8 @@ class GhostAssistant:
                                  mode='default', name='metademon_assist_list_to_top')
 
     def within_limit(self):
+        if self.link.batch:
+            return self.link.batch.offering_status() == 'active'
         t = self.task
         t.update_global_state()
         return not t.State.done
@@ -480,8 +504,13 @@ class GhostAssistant:
     def run(self):
         self.task.goto_page(pages.page_meta_demon_boss)
         waiting_logged = False
-        while self.within_limit():
-            if not self.link.peer_in_task():
+        while self.link.batch or self.within_limit():
+            if self.link.batch:
+                status = self.link.batch.offering_status()
+                if status != 'active':
+                    logger.info(f'上供端任务组已结束：{status}')
+                    return status == 'complete'
+            elif not self.link.peer_in_task():
                 logger.info('上供端已离开超鬼王，结束本轮协助')
                 return False
             self.task.device.stuck_record_clear()
@@ -512,20 +541,25 @@ def run_offering(task, link):
             success = False
             logger.warning('鬼王上供流程未完成，结束本次运行')
             break
+        if link.batch and not offering.within_limit():
+            break
         remaining = max(0, (task.limit_time - (datetime.now() - task.start_time)).total_seconds())
         interval = 0.5 if offering.waiting and not offering.settled else offering.settings.poll_interval
         time.sleep(min(interval, remaining))
+    if success and link.batch and offering.shared_generation is not None:
+        logger.warning('本账号上供时间已用尽，仍有鬼王未完成结算')
+        return False
     return success
 
 
-def run_assistance(task):
+def run_assistance(task, *, grouped=False, batch_session=None):
     settings = task.config.meta_demon.assistance_config
     offering = settings.role == AssistanceRole.OFFERING
     if offering and not settings.friends:
         raise RequestHumanTakeover('鬼王上供需要填写分享好友名字')
     task.before_run()
     try:
-        link = AssistanceLink(task)
+        link = AssistanceLink(task, batch_session=batch_session)
         if not link.peer and not offering:
             raise RequestHumanTakeover('鬼王协助需要关联对端脚本，以传送截图和确认分享')
         ready = bool(link.peer and link.wait_for_peer())
@@ -535,6 +569,8 @@ def run_assistance(task):
         logger.info(f'鬼王上供协同未匹配：{exc}')
         ready = False
     if not ready:
+        if grouped:
+            return False
         task.set_next_run(task='MetaDemon', success=False)
         if offering:
             logger.info('未匹配到可用的鬼王协助脚本，跳过本次上供')
@@ -542,12 +578,19 @@ def run_assistance(task):
         task.finish_task()
         return
     if settings.role == AssistanceRole.ASSIST:
-        success = GhostAssistant(task, link).run()
+        try:
+            success = GhostAssistant(task, link).run()
+        finally:
+            if link.batch:
+                link.batch.close()
     else:
         link.publish()
         try:
             success = run_offering(task, link)
         finally:
             link.publish()
+    if grouped:
+        task.goto_page(pages.page_main)
+        return success
     task.set_next_run(task='MetaDemon', success=success)
     task.finish_task()

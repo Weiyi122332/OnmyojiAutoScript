@@ -43,6 +43,7 @@ from module.script import ScriptRuntimeController, ScriptRuntimeDecision
 from tasks.Restart.server_update import delay_pending_tasks_for_server_update, is_server_update_window
 from module.server.log_service import build_error_log_dir_name
 from tasks.Dokan.qq_monitor import DokanQQMonitor, fingerprint, local_now
+from tasks.MetaDemon.batch_assistance import BATCH_GROUPS, batch_settings
 
 _log_switch_lock = threading.Lock()#线程锁
 
@@ -316,7 +317,7 @@ class Script:
             result[key] = item
         return json.dumps(result)
 
-    def _meta_cooperation_runtime(self):
+    def _meta_cooperation_runtime(self, command=None):
         runtime = self.__dict__.get('_meta_cooperation')
         if runtime is not None:
             return runtime
@@ -326,7 +327,16 @@ class Script:
         from tasks.MetaDemon.config import MetaDemonMode
         boss = config.meta_demon
         ticket = config.meta_demon_ticket
+        batch = batch_settings(config.model)
+        group_enabled = False
+        if batch is not None:
+            for name in BATCH_GROUPS:
+                group = getattr(config.model, convert_to_underscore(name))
+                if (group.scheduler.enable or command == name) and 'MetaDemon' in group.group_config.task_list:
+                    group_enabled = True
+                    break
         if not (boss.scheduler.enable and MetaDemonMode.BOSS_ASSIST in boss.meta_demon_config.mode
+                or batch is not None and (group_enabled or command == 'MetaDemon')
                 or ticket.scheduler.enable and ticket.general_config.user_status != 'alone'):
             return None
         runtime = Cooperation(self.config_name)
@@ -655,8 +665,8 @@ class Script:
         cooperation = self.__dict__.get('_meta_cooperation')
         previous_task = None
         try:
-            if command in META_DEMON_TASKS:
-                cooperation = self._meta_cooperation_runtime()
+            if command in META_DEMON_TASKS or command in BATCH_GROUPS:
+                cooperation = self._meta_cooperation_runtime(command)
             if cooperation is not None:
                 previous_task = cooperation.active_task
                 cooperation.publish(command)

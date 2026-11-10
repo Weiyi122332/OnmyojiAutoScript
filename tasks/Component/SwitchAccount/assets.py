@@ -19,16 +19,22 @@ class SwitchAccountAssets:
 	C_SA_LOGIN_FORM_USER_CENTER = RuleClick(roi_front=(1210,230,40,40), roi_back=(1210,230,40,40), name="sa_login_form_user_center")
 	# 登录界面-切换服务器按钮 
 	C_SA_LOGIN_FORM_SWITCH_SVR_BTN = RuleClick(roi_front=(534,167,47,299), roi_back=(534,167,47,299), name="sa_login_form_switch_svr_btn")
+	# 登录界面-切换服务器按钮
+	C_SA_LOGIN_FORM_SWITCH_SVR_BTN_BATCH = RuleClick(roi_front=(513,506,272,41), roi_back=(513,506,272,41), name="sa_login_form_switch_svr_btn_batch")
 	# 登录界面-进入游戏按钮 
 	C_SA_LOGIN_FORM_ENTER_GAME_BTN = RuleClick(roi_front=(594,549,94,96), roi_back=(589,544,104,106), name="sa_login_form_enter_game_btn")
 	# 登录界面-选择服务器-底部账号信息展开后的区域 
 	C_SA_LOGIN_FORM_CHARACTER_AREA = RuleClick(roi_front=(260,450,760,160), roi_back=(260,450,760,160), name="sa_login_form_character_area")
 	# 登录界面-选择服务器-点击关闭选择服务器界面的空白区域 
 	C_SA_LOGIN_FORM_CANCEL_SVR_SELECT = RuleClick(roi_front=(50,70,60,360), roi_back=(50,70,60,360), name="sa_login_form_cancel_svr_select")
+	# 登录界面-选择服务器-点击关闭选择服务器界面的红叉
+	C_SA_LOGIN_FORM_CANCEL_SVR_SELECT_BATCH = RuleClick(roi_front=(1081,91,45,44), roi_back=(1081,91,45,44), name="sa_login_form_cancel_svr_select_batch")
 	# 登录界面-用户中心-右上角关闭按钮 
 	C_SA_LOGIN_FORM_USER_CENTER_CLOSE_BTN = RuleClick(roi_front=(1055,120,20,20), roi_back=(1055,120,20,20), name="sa_login_form_user_center_close_btn")
 	# 登录界面-账号选择界面-右上角关闭按钮 
 	C_SA_LOGIN_FORM_ACCOUNT_CLOSE_BTN = RuleClick(roi_front=(895,165,40,40), roi_back=(895,165,40,40), name="sa_login_form_account_close_btn")
+	# 登录界面-账号选择界面-右上角关闭按钮
+	C_SA_LOGIN_FORM_ACCOUNT_CLOSE_BTN_BATCH = RuleClick(roi_front=(1044,104,40,40), roi_back=(1044,104,40,40), name="sa_login_form_account_close_btn_batch")
 	# 游戏庭院内 左上角 头像 
 	C_SA_EG_PROFILE_PHOTO = RuleClick(roi_front=(35,35,55,55), roi_back=(35,35,55,55), name="sa_eg_profile_photo")
 	# 选择服务器界面 底部角色名 列表---与ocr.json中同名对象区域一致 
@@ -62,8 +68,12 @@ class SwitchAccountAssets:
 	I_SA_LOGIN_FORM_ANDROID = RuleImage(roi_front=(671,353,100,100), roi_back=(670,352,100,100), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchAccount/res/res_sa_login_form_android.png")
 	# 判断是否在 选择服务器 界面的标志物 角色的服务器图标还未显示时 
 	I_SA_CHECK_SELECT_SVR_1 = RuleImage(roi_front=(213,133,181,60), roi_back=(210,128,185,68), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchAccount/res/res_sa_check_select_svr_1.png")
+	# 判断是否在 选择服务器 界面的标志物 角色的服务器图标还未显示时
+	I_SA_CHECK_SELECT_SVR_1_BATCH = RuleImage(roi_front=(194,130,181,60), roi_back=(187,121,197,79), threshold=0.8, method="Template matching", profile="High", file="./tasks/Component/SwitchAccount/res/res_sa_check_select_svr_1_batch.png")
 	# 判断是否在 选择服务器 界面的标志物 角色的服务器图标已经显示时 
 	I_SA_CHECK_SELECT_SVR_2 = RuleImage(roi_front=(209,131,184,64), roi_back=(207,127,187,70), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchAccount/res/res_sa_check_select_svr_2.png")
+	# 判断是否在 选择服务器 界面的标志物 角色的服务器图标已经显示时
+	I_SA_CHECK_SELECT_SVR_2_BATCH = RuleImage(roi_front=(194,130,181,60), roi_back=(187,121,197,79), threshold=0.8, method="Template matching", profile="High", file="./tasks/Component/SwitchAccount/res/res_sa_check_select_svr_2_batch.png")
 
 
 	# Ocr Rule Assets
@@ -81,6 +91,8 @@ class SwitchAccountAssets:
 	O_SA_LOGIN_FORM_USER_CENTER_ACCOUNT = RuleOcr(roi=(290,185,290,50), area=(290,185,290,50), mode="Single", method="Default", keyword="", name="sa_login_form_user_center_account")
 	# 判断是否在 选择服务器 界面的文本特质 
 	O_SA_CHECK_SELECT_SVR = RuleOcr(roi=(252,145,97,32), area=(248,141,102,38), mode="Single", method="Default", keyword="已有角色", name="sa_check_select_svr")
+	# 判断是否在 选择服务器 界面的文本特质
+	O_SA_CHECK_SELECT_SVR_BATCH = RuleOcr(roi=(220,145,128,36), area=(220,145,128,36), mode="Single", method="Default", keyword="已有角色", name="sa_check_select_svr_batch")
 	#  
 	O_SA_LOGIN_FORM_SVR_NAME_OLD = RuleOcr(roi=(545,510,140,40), area=(545,510,140,40), mode="Single", method="Default", keyword="", name="sa_login_form_svr_name_old")
 

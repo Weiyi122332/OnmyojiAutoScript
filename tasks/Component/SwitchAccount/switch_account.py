@@ -31,7 +31,7 @@ class SwitchAccount(LoginAccount, ExitGame, GameUi, SwitchAccountAssets):
         self.to_account_info = to
         self.from_account_info = frm
 
-    def switchAccount(self):
+    def switchAccount(self, *, saved_roles=False):
         logger.info("start switchAccount %s-%s", self.to_account_info.character, self.to_account_info.svr)
         # 判断所处界面
         curPage = self.get_current_page()
@@ -43,7 +43,7 @@ class SwitchAccount(LoginAccount, ExitGame, GameUi, SwitchAccountAssets):
             self.exitGame()
 
         # 处于登录界面
-        if not self.login(self.to_account_info):
+        if not self.login(self.to_account_info, saved_roles=saved_roles):
             return False
         logger.info("%s login suc", self.to_account_info.character)
         # 处理位于登录界面各种奇葩弹窗

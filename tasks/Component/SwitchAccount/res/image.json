@@ -115,5 +115,25 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "判断是否在 选择服务器 界面的标志物 角色的服务器图标已经显示时"
+  },
+  {
+    "itemName": "sa_check_select_svr_1_batch",
+    "imageName": "res_sa_check_select_svr_1_batch.png",
+    "roiFront": "194,130,181,60",
+    "roiBack": "187,121,197,79",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "判断是否在 选择服务器 界面的标志物 角色的服务器图标还未显示时"
+  },
+  {
+    "itemName": "sa_check_select_svr_2_batch",
+    "imageName": "res_sa_check_select_svr_2_batch.png",
+    "roiFront": "194,130,181,60",
+    "roiBack": "187,121,197,79",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "判断是否在 选择服务器 界面的标志物 角色的服务器图标已经显示时"
   }
 ]

@@ -70,5 +70,26 @@
     "roiFront": "550,510,280,35",
     "roiBack": "550,510,280,35",
     "description": "登录界面-切换服务器按钮-旧版"
+  },
+  {
+    "itemName": "sa_login_form_switch_svr_btn_batch",
+    "roiFront": "513,506,272,41",
+    "roiBack": "513,506,272,41",
+    "profile": "Default",
+    "description": "登录界面-切换服务器按钮"
+  },
+  {
+    "itemName": "sa_login_form_cancel_svr_select_batch",
+    "roiFront": "1081,91,45,44",
+    "roiBack": "1081,91,45,44",
+    "profile": "Default",
+    "description": "登录界面-选择服务器-点击关闭选择服务器界面的红叉"
+  },
+  {
+    "itemName": "sa_login_form_account_close_btn_batch",
+    "roiFront": "1044,104,40,40",
+    "roiBack": "1044,104,40,40",
+    "profile": "Default",
+    "description": "登录界面-账号选择界面-右上角关闭按钮"
   }
 ]

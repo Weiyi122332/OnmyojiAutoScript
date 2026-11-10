@@ -25,9 +25,8 @@ page_act_list_meta_demon.connect(page_activity, GameUiAssets.I_ACT_LIST_GOTO_ACT
 
 
 def handle_activity_overlays(task) -> bool:
-    """领取昨日奖励并处理遮挡鬼王入口的活动弹窗。"""
+    """处理遮挡鬼王入口的活动弹窗。"""
     rules = (
-        (MetaDemonAssets.I_MD_GET_YESTERDAY_REWARD, None),
         (GlobalGameAssets.I_UI_REWARD, GlobalGameAssets.C_UI_REWARD),
         (MetaDemonAssets.I_ACTIVITY_SKIP_ENSURE, None),
         (GameUiAssets.I_ACTIVITY_SKIP, None),
@@ -77,7 +76,6 @@ def configure_activity_navigation(navigator) -> None:
         activity.recognizer, MetaDemonAssets.I_PAGE_CHECK_ACTIVITY,
         MetaDemonAssets.I_PAGE_CHECK_ACT_GENERAL_1,
         MetaDemonAssets.I_MD_CHECK_MAIN_PAGE, MetaDemonAssets.I_MD_CHECK_MAIN_PAGE_BACKUP,
-        MetaDemonAssets.I_MD_GET_YESTERDAY_REWARD,
     )
     activity.on_enter_success[:] = [handle_activity_overlays]
     activity.on_enter_failure[:] = [handle_activity_overlays]

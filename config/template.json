@@ -1125,6 +1125,8 @@
     },
     "assistance_config": {
       "cooperation_script": "",
+      "batch_cooperation": false,
+      "batch_accounts": "",
       "role": "上供",
       "friend_names": "",
       "poll_interval": 5

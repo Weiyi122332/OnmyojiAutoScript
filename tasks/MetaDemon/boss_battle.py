@@ -55,7 +55,6 @@ class BossBattle(GeneralBattle, SwitchSoul, FrameQuickLoadout, GameUi, MetaDemon
 
     def before_run(self):
         ipages.configure_activity_navigation(self.navigator)
-        self.navigator.add_unknown_closer(self.I_MD_GET_YESTERDAY_REWARD)
         self.State = BossBattle.State()
         self._active_loadout_group = None
         self._last_quick_loadout = None

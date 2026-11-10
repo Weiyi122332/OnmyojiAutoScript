@@ -6,7 +6,8 @@ from tasks.Component.config_settings_layout import SettingsLayoutConfig, setting
 from datetime import timedelta, time
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 
-from tasks.Component.config_base import ConfigBase, TimeDelta, Time
+from tasks.Component.config_base import ConfigBase, MultiLine, TimeDelta, Time
+from tasks.Component.SwitchAccount.switch_account_config import AccountInfo
 from pydantic import Field, field_validator, model_validator
 from module.config.multi_select import normalize_multi_select
 from module.cooperation import instance_name
@@ -204,6 +205,8 @@ class AssistanceRole(str, Enum):
 class MetaDemonAssistanceConfig(ConfigBase):
     cooperation_script: str = Field(default='', title='鬼王协助协同脚本',
         description='关联另一端的本地脚本。协助者接收上供端的鬼王截图，并在好友列表中匹配后挑战。')
+    batch_cooperation: bool = Field(default=False, title='整批鬼王协同', description='batch_cooperation_help')
+    batch_accounts: MultiLine = Field(default='', title='整批上供账号', description='batch_accounts_help')
     role: AssistanceRole = Field(default=AssistanceRole.OFFERING, title='鬼王协助身份',
         description='上供召唤六星鬼王并分享；协助从超鬼王主页寻找好友分享的鬼王并挑战。')
     friend_names: str = Field(default='', title='分享好友名字',
@@ -215,6 +218,28 @@ class MetaDemonAssistanceConfig(ConfigBase):
     @classmethod
     def validate_cooperation_script(cls, value: str) -> str:
         return instance_name(value)
+
+    @staticmethod
+    def parse_accounts(value: str) -> list[AccountInfo]:
+        accounts = []
+        for index, line in enumerate(value.splitlines(), 1):
+            if not line.strip():
+                continue
+            fields = [field.strip() for field in line.split('|')]
+            if not 2 <= len(fields) <= 5 or not all(fields[:2]):
+                raise ValueError(f'整批上供账号第 {index} 行需要填写账号和服务器')
+            account, server, character, platform, aliases = fields + [''] * (5 - len(fields))
+            if platform not in ('', '安卓', '苹果'):
+                raise ValueError(f'整批上供账号第 {index} 行的平台应为安卓或苹果')
+            accounts.append(AccountInfo(account=account, svr=server, character=character,
+                                        apple_or_android=platform != '苹果', account_alias=aliases))
+        return accounts
+
+    @field_validator('batch_accounts')
+    @classmethod
+    def validate_batch_accounts(cls, value: str) -> str:
+        cls.parse_accounts(value)
+        return value
 
     @property
     def friends(self) -> list[str]:

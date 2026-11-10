@@ -86,5 +86,9 @@
   "ResourceInventory": "Resource Inventory",
   "resource_inventory": "Resource Inventory",
   "MetaDemonTicket": "MetaDemon Tickets",
-  "cooperation_script_help": "Name of the other local profile"
+  "cooperation_script_help": "Name of the other local profile",
+  "batch_cooperation": "Batch ghost assistance",
+  "batch_accounts": "Batch offering accounts",
+  "batch_cooperation_help": "Enable on both profiles and enter the other local profile name. Run the offering task in a task group and start the assistant to wait until the group finishes.",
+  "batch_accounts_help": "Enter one saved login per line as account|server|character|platform|aliases. Account and server are required. Use 安卓 or 苹果 for the platform. All accounts use the same assistance settings. Leave empty to use the current account."
 }

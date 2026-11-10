@@ -196,13 +196,7 @@ class ChessSharedUiMixin:
             self.device.screenshot()
 
     def screenshot(self):
-        self.device.screenshot()
-        while True:
-            self._handle_network()
-            if not self._burst():
-                return self.device.image
-            # 弹窗消失后刷新再识别，不能把关闭前的图交给回目状态机。
-            self.device.screenshot()
+        return super().screenshot(check_network=self._handle_network)
 
     def _create_chess_login(self):
         from tasks.Component.Login.service import LoginService

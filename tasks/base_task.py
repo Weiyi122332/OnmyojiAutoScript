@@ -18,7 +18,7 @@ from module.atom.swipe import RuleSwipe
 from module.base.timer import Timer
 from module.config.config import Config
 from module.device.device import Device
-from module.exception import ScriptError
+from module.exception import GameStuckError, ScriptError
 from module.image.rpc import get_image_client
 from module.logger import logger
 from module.ocr.base_ocr import OcrMode
@@ -26,6 +26,7 @@ from tasks.Component.Costume.costume_base import CostumeBase
 from tasks.Component.config_base import Time
 from tasks.GlobalGame.assets import GlobalGameAssets
 from tasks.GlobalGame.config_emergency import FriendInvitation
+from tasks.MetaDemon.assets import MetaDemonAssets
 from typing import Union
 
 
@@ -118,28 +119,27 @@ class BaseTask(GlobalGameAssets, CostumeBase):
             self.set_next_run(task='WantedQuests', target=datetime.now().replace(microsecond=0))
         return True
 
-    def screenshot(self):
-        """
-        截图 引入中间函数的目的是 为了解决如协作的这类突发的事件
-        :return:
-        """
-        # nemu_ipc 返回为RGB
-        # 其他方式未知
+    def screenshot(self, *, check_network=None):
+        """处理截图上的突发弹窗，再把最新画面交给任务。"""
         self.device.screenshot()
-        # 判断勾协
-        self._burst()
-
-        # # 判断网络异常
-        # if self.appear(self.I_NETWORK_ABNORMAL):
-        #     logger.warning(f"Network abnormal")
-        #     raise GameStuckError
-        #
-        # # 判断网络错误
-        # if self.appear(self.I_NETWORK_ERROR):
-        #     logger.warning(f"Network error")
-        #     raise GameStuckError
-
-        return self.device.image
+        reward = MetaDemonAssets.I_MD_GET_YESTERDAY_REWARD
+        reward_clicks = 0
+        while True:
+            if check_network is not None:
+                check_network()
+            if self._burst():
+                self.device.screenshot()
+                continue
+            if not self.appear(reward):
+                return self.device.image
+            if reward_clicks >= 6:
+                raise GameStuckError('MetaDemon reward popup remains after six attempts')
+            self.click(reward)
+            reward_clicks += 1
+            logger.info('Claim MetaDemon points')
+            self.device.click_record_clear()
+            self.device.sleep(0.2)
+            self.device.screenshot()
 
     def maybe_screenshot(self, soft_skip: bool = False):
         """

@@ -13,6 +13,8 @@ from module.config.utils import convert_to_underscore
 
 
 META_DEMON_TASKS = frozenset(('MetaDemon', 'MetaDemonTicket'))
+META_DEMON_BATCH = 'MetaDemonAssistanceBatch'
+META_DEMON_BATCH_ROUND = 'MetaDemonAssistanceBatchRound'
 
 
 def instance_name(value):
@@ -79,6 +81,9 @@ class Cooperation:
     def start(self):
         if self._thread is not None:
             return
+        with self.connect() as db:
+            db.execute('DELETE FROM battle_states WHERE source=? AND task IN (?, ?)',
+                       (self.name, META_DEMON_BATCH, META_DEMON_BATCH_ROUND))
         self.publish('')
         self._owner_thread = threading.current_thread()
         self._thread = threading.Thread(target=self._heartbeat, daemon=True,
@@ -219,6 +224,8 @@ class Cooperation:
             from tasks.MetaDemon.config import AssistanceRole, MetaDemonMode
             pair = ((own, peer), (other, self.name))
             settings = [item.get('assistance_config', {}) for item, _ in pair]
+            if any(setting.get('batch_cooperation', False) for setting in settings):
+                raise ScriptError('整批鬼王协同需要启动上供任务组和协助端')
             targets = [setting.get('cooperation_script', '').strip() for setting in settings]
             if ({setting.get('role') for setting in settings} != {AssistanceRole.OFFERING, AssistanceRole.ASSIST}
                     or not all(MetaDemonMode.BOSS_ASSIST in item.get('meta_demon_config', {}).get('mode', [])
