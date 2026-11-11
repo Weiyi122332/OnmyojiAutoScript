@@ -104,6 +104,7 @@ class MetaDemonSettingsChecks(unittest.TestCase):
     def test_boss_and_ticket_settings_are_localized_in_simplified_chinese(self):
         config = ConfigModel()
         translations = Addition.load_additions()['zh-CN']
+        self.assertEqual(translations['MetaDemonTicket'], '鬼王门票')
         chinese = r'[\u3400-\u9fff]'
         for task in ('MetaDemon', 'MetaDemonTicket'):
             self.assertRegex(translations[task], chinese)
