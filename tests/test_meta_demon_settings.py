@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from module.config.config_model import ConfigModel
+from module.server.i18n import Addition
 from tasks.MetaDemon.config import BossType, MetaDemon, MetaDemonMode, loadout_group
 from tasks.MetaDemon.boss_battle import BossBattle
 from tasks.MetaDemonTicket.config import ExplorationTarget, MetaDemonTicket, TicketMode
@@ -99,6 +100,30 @@ class MetaDemonSettingsChecks(unittest.TestCase):
         self.assertIn('invite_config', ticket)
         common = {field['name']: field for field in ticket['general_config']}
         self.assertEqual(common['exploration_target']['enumEnum'], ['全部','金币','经验','达摩'])
+
+    def test_boss_and_ticket_settings_are_localized_in_simplified_chinese(self):
+        config = ConfigModel()
+        translations = Addition.load_additions()['zh-CN']
+        chinese = r'[\u3400-\u9fff]'
+        for task in ('MetaDemon', 'MetaDemonTicket'):
+            self.assertRegex(translations[task], chinese)
+            for group, rows in config.script_task(task).items():
+                self.assertRegex(rows[0]['ui_group_title']['zh_CN'], chinese)
+                self.assertRegex(translations.get(group, group), chinese)
+                for row in rows:
+                    name = row['name']
+                    with self.subTest(task=task, group=group, field=name):
+                        display = row['ui_text']['zh_CN']
+                        self.assertRegex(display['title'], chinese)
+                        self.assertRegex(translations.get(name, name), chinese)
+                        if row.get('description'):
+                            self.assertRegex(display['description'], chinese)
+                        options = row.get('enumEnum', [])
+                        self.assertEqual(list(display['options']), options)
+                        for option in options:
+                            if not str(option).isdecimal():
+                                self.assertRegex(display['options'][option], chinese)
+                                self.assertRegex(translations.get(option, option), chinese)
 
     def test_low_and_high_share_loadout_within_category(self):
         owner = object.__new__(BossBattle)
