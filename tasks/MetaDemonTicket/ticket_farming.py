@@ -6,7 +6,7 @@ from pydantic import Field
 from module.base.decorator import cached_property
 
 from module.base.timer import Timer
-from module.exception import GameStuckError
+from module.exception import GameStuckError, TaskEnd
 from module.logger import logger
 from tasks.Component.GeneralBattle.assets import GeneralBattleAssets
 from tasks.EvoZone.config import EvoZone, EvoZoneConfig, UserStatus as AwakeUserStatus
@@ -39,6 +39,10 @@ class TicketsFull(Exception):
 
 class TicketPartnerFinished(Exception):
     """协同伙伴结束门票阶段。"""
+
+
+class RealmRaidThresholdReached(Exception):
+    """突破券达标，先结束本轮探索再交给突破任务。"""
 
 
 def metademon_tickets_full(task) -> bool:
@@ -141,10 +145,14 @@ class ExplorationTicketTask(TicketRewardMixin, ExplorationTask, MetaDemonAssets)
         return handlers
 
     def activate_realm_raid(self, con_scrolls, con, current_page):
-        """门票刷取不检测结界票，也不触发个人突破调度。"""
-        return
-
-
+        raid = self.config.realm_raid
+        if not raid.scheduler.enable:
+            return
+        count = self.read_realm_raid_tickets(current_page)
+        threshold = max(con_scrolls.scrolls_threshold, raid.raid_config.number_base)
+        if count and count >= threshold:
+            logger.info(f'探索突破券 {count}/30，达到阈值 {threshold}')
+            raise RealmRaidThresholdReached
 
     def arrive_end(self) -> bool:
         # 28章直接匹配
@@ -235,7 +243,7 @@ class ExplorationTicketTask(TicketRewardMixin, ExplorationTask, MetaDemonAssets)
 
 
 def ticket_farming_config(meta, mode, exploration: Exploration | None = None):
-    """觉醒使用门票任务的设置，探索复用普通探索的副本与战斗设置。"""
+    """觉醒使用门票任务设置，探索复用普通探索的副本、战斗设置和突破券阈值。"""
     common = meta.general_config
     if mode == TicketMode.AWAKE:
         return EvoZone(
@@ -326,6 +334,7 @@ def run_ticket_farming(owner, mode) -> bool:
     buff_opened = False
     exploration_started = False
     cooperation_started = False
+    realm_raid_due = False
     result = False
     try:
         if peer:
@@ -370,6 +379,8 @@ def run_ticket_farming(owner, mode) -> bool:
             logger.info('双方门票已满，结束协同刷取')
     except TicketPartnerFinished:
         logger.info('协同伙伴已结束门票刷取，退出组队')
+    except RealmRaidThresholdReached:
+        realm_raid_due = True
     finally:
         runner._ticket_farming_complete = True
         if cooperation_started:
@@ -382,4 +393,10 @@ def run_ticket_farming(owner, mode) -> bool:
             runner.open_buff()
             runner.awake(is_open=False)
             runner.close_buff()
+    if realm_raid_due:
+        config.reload()
+        if config.task_call('RealmRaid', force_call=False):
+            cooldown = max(runner._config.scrolls.scrolls_cd, timedelta(seconds=1))
+            owner.set_next_run(task='MetaDemonTicket', target=datetime.now() + cooldown)
+            raise TaskEnd
     return result

@@ -259,18 +259,24 @@ class BaseExploration(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, Replace
         self.fire_monster_type = 'normal'
         return self.I_NORMAL_BATTLE_BUTTON
 
-    def activate_realm_raid(self, con_scrolls, con, current_page: pages.Page | None) -> None:
-        # 判断是否开启突破票检测
-        if not con_scrolls.scrolls_enable or current_page is None or \
-                current_page not in (pages.page_mainline, pages.page_gameplay,
-                                     pages.page_exploration, pages.page_exp_entrance):
-            return
+    def read_realm_raid_tickets(self, current_page: pages.Page | None) -> int | None:
+        counters = (self.O_REALM_RAID_NUMBER, self.O_REALM_RAID_NUMBER_EVENT)
         if current_page == pages.page_exp_entrance:
-            cu, res, total = self.O_REALM_RAID_NUMBER1.ocr(self.device.image)
-        else:
-            cu, res, total = self.O_REALM_RAID_NUMBER.ocr(self.device.image)
-        # 判断突破票数量
-        if cu < con_scrolls.scrolls_threshold:
+            counters = (self.O_REALM_RAID_NUMBER1, *counters)
+        elif current_page not in (pages.page_mainline, pages.page_gameplay, pages.page_exploration):
+            return None
+        for counter in counters:
+            text = counter.ocr_single(self.device.image)
+            # Only the breakthrough tickets have a capacity of 30 in this resource bar.
+            if match := re.fullmatch(r'([0-9]+)/30', text):
+                return int(match[1])
+        return None
+
+    def activate_realm_raid(self, con_scrolls, con, current_page: pages.Page | None) -> None:
+        if not con_scrolls.scrolls_enable:
+            return
+        count = self.read_realm_raid_tickets(current_page)
+        if not count or count < con_scrolls.scrolls_threshold:
             return
         # 关闭加成
         if con.buff_gold_50_click or con.buff_gold_100_click or con.buff_exp_50_click or con.buff_exp_100_click:

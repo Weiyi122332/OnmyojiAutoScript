@@ -10,7 +10,9 @@ from unittest.mock import Mock, call, patch
 import numpy as np
 
 from module.cooperation import Cooperation
+from module.exception import TaskEnd
 from tasks.Exploration import page as exploration_pages
+from tasks.Exploration.base import BaseExploration
 from tasks.Exploration.config import Exploration, UserStatus
 from tasks.GameUi.registry import PageRegistry
 from tasks.GameUi.session import NavigatorSession
@@ -20,10 +22,59 @@ from tasks.MetaDemon.assistance import AssistanceLink
 from tasks.MetaDemon.boss_battle import BossBattle
 from tasks.MetaDemon.config import MetaDemon
 from tasks.MetaDemonTicket.config import MetaDemonTicket
-from tasks.MetaDemonTicket.ticket_farming import ExplorationTicketTask, TicketsFull
+from tasks.MetaDemonTicket.ticket_farming import (
+    ExplorationTicketTask, RealmRaidThresholdReached, TicketsFull,
+)
+from tasks.RealmRaid.config import RealmRaid
 
 
 class MetaDemonIntegrationTest(unittest.TestCase):
+    def test_breakthrough_counter_reads_both_map_layouts_and_the_chapter(self):
+        runner = object.__new__(BaseExploration)
+        runner.device = SimpleNamespace(image=object())
+        runner.O_REALM_RAID_NUMBER = Mock()
+        runner.O_REALM_RAID_NUMBER1 = Mock()
+        runner.O_REALM_RAID_NUMBER_EVENT = Mock()
+        for page, old_map, old_chapter, activity, expected in (
+            (exploration_pages.page_exploration, '7/30', '', '', 7),
+            (exploration_pages.page_mainline, '33', '', '25/30', 25),
+            (exploration_pages.page_exp_entrance, '18', '3/30', '', 3),
+            (exploration_pages.page_exp_entrance, '33', '50/50', '29/30', 29),
+            (exploration_pages.page_gameplay, '33', '', '50/50', None),
+        ):
+            with self.subTest(page=page, old_map=old_map, activity=activity):
+                runner.O_REALM_RAID_NUMBER.ocr_single.return_value = old_map
+                runner.O_REALM_RAID_NUMBER1.ocr_single.return_value = old_chapter
+                runner.O_REALM_RAID_NUMBER_EVENT.ocr_single.return_value = activity
+                self.assertEqual(runner.read_realm_raid_tickets(page), expected)
+
+    def test_ticket_exploration_checks_the_inherited_threshold_with_scrolls_disabled(self):
+        runner = object.__new__(ExplorationTicketTask)
+        runner.config = SimpleNamespace(realm_raid=RealmRaid(scheduler={'enable': True}))
+        runner.read_realm_raid_tickets = Mock(side_effect=[24, 25, 15])
+        settings = Exploration(scrolls={'scrolls_threshold': 25})
+        page = exploration_pages.page_mainline
+        runner.activate_realm_raid(settings.scrolls, settings.exploration_config, page)
+        with self.assertRaises(RealmRaidThresholdReached):
+            runner.activate_realm_raid(settings.scrolls, settings.exploration_config, page)
+        settings.scrolls.scrolls_threshold = 10
+        runner.config.realm_raid.raid_config.number_base = 20
+        runner.activate_realm_raid(settings.scrolls, settings.exploration_config, page)
+        runner.config.realm_raid.scheduler.enable = False
+        runner.activate_realm_raid(settings.scrolls, settings.exploration_config, page)
+        self.assertEqual(runner.read_realm_raid_tickets.call_args_list, [call(page)] * 3)
+
+    def test_normal_scrolls_schedules_its_original_tasks(self):
+        runner = object.__new__(BaseExploration)
+        runner.read_realm_raid_tickets = Mock(return_value=25)
+        runner.set_next_run = Mock()
+        runner.goto_page = Mock()
+        settings = Exploration(scrolls={'scrolls_enable': True, 'scrolls_threshold': 25})
+        with self.assertRaises(TaskEnd):
+            runner.activate_realm_raid(settings.scrolls, settings.exploration_config, exploration_pages.page_gameplay)
+        self.assertEqual([call.kwargs['task'] for call in runner.set_next_run.call_args_list],
+                         ['Exploration', 'RealmRaid', 'MemoryScrolls'])
+
     def test_exploration_tickets_use_the_registered_chapter_pages(self):
         for role in (UserStatus.ALONE, UserStatus.LEADER):
             with self.subTest(role=role):

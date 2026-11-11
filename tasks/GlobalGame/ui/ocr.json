@@ -1,0 +1,11 @@
+[
+  {
+    "itemName": "realm_raid_number_event",
+    "roiFront": "544,11,78,37",
+    "roiBack": "544,11,78,37",
+    "mode": "DigitCounter",
+    "method": "Default",
+    "keyword": "",
+    "description": "超鬼王活动期间顶部的突破券数量"
+  }
+]

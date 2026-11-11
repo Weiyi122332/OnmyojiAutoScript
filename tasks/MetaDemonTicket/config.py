@@ -23,7 +23,7 @@ class TicketMode(str, Enum):
 
 class TicketGeneralConfig(ConfigBase):
     mode: TicketMode = Field(default=TicketMode.AWAKE, title='刷票玩法',
-                             description='选择探索时，副本、候补、加成、御魂和战斗设置读取普通探索任务。')
+                             description='探索沿用普通探索的副本、候补、加成、御魂、战斗设置及突破券阈值。个人突破已启用且突破券达标时，先清突破，再按探索设置的间隔继续刷票。')
     limit_time: Time = Field(default=Time(minute=45), description="limit_time_help")
     user_status: UserStatus = Field(default=UserStatus.ALONE, title='门票刷取身份')
     awake_buff_enable: bool = Field(default=False, title='觉醒启用加成')

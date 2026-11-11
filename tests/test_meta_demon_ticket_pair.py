@@ -1,11 +1,14 @@
 """Ticket pair completion and configuration fallback regression checks."""
+from datetime import datetime, timedelta
 import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
+from module.exception import TaskEnd
+from tasks.Exploration.config import Exploration
 from tasks.MetaDemonTicket.config import MetaDemonTicket, TicketMode
 from tasks.MetaDemonTicket.ticket_farming import (
-    TicketRewardMixin, TicketsFull, TicketPartnerFinished,
+    RealmRaidThresholdReached, TicketRewardMixin, TicketsFull, TicketPartnerFinished,
     run_ticket_farming, ticket_farming_config,
 )
 
@@ -102,6 +105,36 @@ class TicketPairChecks(unittest.TestCase):
         runner.run_member.assert_called_once()
         self.assertEqual(runner._ticket_peer, 'other')
         self.assertTrue(runner._ticket_full)
+
+    def test_realm_raid_handoff_cleans_up_and_defers_ticket_farming(self):
+        for delay in (timedelta(0), timedelta(minutes=30)):
+            with self.subTest(delay=delay):
+                events = Mock()
+                owner = self.owner(True)
+                owner.config.reload = events.reload
+                owner.config.task_call = events.task_call
+                owner.set_next_run = events.set_next_run
+                events.task_call.return_value = True
+                runner = Mock()
+                runner._config = Exploration(scrolls={'scrolls_cd': delay})
+                runner.close_exploration_buffs = events.close_exploration_buffs
+                runner.exec_exp_page.side_effect = RealmRaidThresholdReached
+                now = datetime(2026, 11, 11, 12, 0)
+                with patch('tasks.MetaDemonTicket.ticket_farming.tickets_full_before_farming', return_value=False), \
+                        patch('tasks.MetaDemonTicket.ticket_farming.ExplorationTicketTask', return_value=runner), \
+                        patch('tasks.MetaDemonTicket.ticket_farming.datetime') as clock:
+                    clock.now.return_value = now
+                    with self.assertRaises(TaskEnd):
+                        run_ticket_farming(owner, TicketMode.EXPLORATION)
+                self.assertEqual(events.mock_calls, [
+                    call.close_exploration_buffs(),
+                    call.reload(),
+                    call.task_call('RealmRaid', force_call=False),
+                    call.set_next_run(task='MetaDemonTicket', target=now + max(delay, timedelta(seconds=1))),
+                ])
+                owner.config.cooperation_runtime.notify_task_completion.assert_called_once_with(
+                    'MetaDemonTicket', 'other', 'ticket_finished',
+                )
 
 
 if __name__ == '__main__':

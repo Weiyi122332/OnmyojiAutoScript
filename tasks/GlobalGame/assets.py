@@ -66,3 +66,6 @@ class GlobalGameAssets:
 	I_UI_BACK_CIRCLE = RuleImage(roi_front=(24,21,36,39), roi_back=(0,0,95,101), threshold=0.8, method="Template matching", file="./tasks/GlobalGame/ui/ui_ui_back_circle.png")
 
 
+	# Ocr Rule Assets
+	# 超鬼王活动期间顶部的突破券数量
+	O_REALM_RAID_NUMBER_EVENT = RuleOcr(roi=(544,11,78,37), area=(544,11,78,37), mode="DigitCounter", method="Default", keyword="", name="realm_raid_number_event")

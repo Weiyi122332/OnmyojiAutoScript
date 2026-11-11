@@ -79,7 +79,7 @@ class MetaDemonSettingsChecks(unittest.TestCase):
         self.assertEqual(awake.switch_soul_config.group_name, '觉醒')
         self.assertIs(awake.general_battle_config, meta.general_battle_config)
 
-    def test_ticket_rotation_reuses_exploration_and_disables_scrolls(self):
+    def test_ticket_rotation_reuses_exploration_without_enabling_scrolls_mode(self):
         from tasks.Exploration.script_task import ScriptTask as ExplorationTask
         self.assertIs(ExplorationTicketTask.switch_rotate, ExplorationTask.switch_rotate)
         self.assertIs(ExplorationTicketTask.run_on_exp_settings, ExplorationTask.run_on_exp_settings)
@@ -89,18 +89,6 @@ class MetaDemonSettingsChecks(unittest.TestCase):
             exploration = ticket_farming_config(meta, TicketMode.EXPLORATION, normal)
             self.assertEqual(exploration.exploration_config.auto_rotate, rotation)
             self.assertFalse(exploration.scrolls.scrolls_enable)
-        # Even a stale enabled scrolls setting cannot perform ticket OCR or scheduling.
-        owner = object.__new__(ExplorationTicketTask)
-        owner.O_REALM_RAID_NUMBER1_META = Mock()
-        owner.O_REALM_RAID_NUMBER_META = Mock()
-        owner.set_next_run = Mock()
-        from tasks.Exploration import page as pages
-        exploration.scrolls.scrolls_enable = True
-        for page in (pages.page_exploration, pages.page_exp_entrance, pages.page_exp_main):
-            owner.activate_realm_raid(exploration.scrolls, exploration.exploration_config, page)
-        owner.O_REALM_RAID_NUMBER1_META.ocr_digit_counter.assert_not_called()
-        owner.O_REALM_RAID_NUMBER_META.ocr_digit_counter.assert_not_called()
-        owner.set_next_run.assert_not_called()
 
     def test_settings_payload_has_flat_groups_and_defaults(self):
         payload = ConfigModel.script_task(SimpleNamespace(meta_demon=MetaDemon()), 'MetaDemon')
