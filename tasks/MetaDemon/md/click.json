@@ -1,5 +1,19 @@
 [
   {
+    "itemName": "md_close_preset",
+    "roiFront": "384,531,50,32",
+    "roiBack": "384,531,50,32",
+    "profile": "High",
+    "description": "点击快速预设面板外的空白区域"
+  },
+  {
+    "itemName": "md_preset_soul_cancel",
+    "roiFront": "462,422,122,34",
+    "roiBack": "462,422,122,34",
+    "profile": "High",
+    "description": "取消装配御魂"
+  },
+  {
     "itemName": "select_normal",
     "roiFront": "62,228,68,34",
     "roiBack": "62,228,68,34",

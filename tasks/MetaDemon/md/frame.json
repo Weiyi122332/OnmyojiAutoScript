@@ -18,6 +18,9 @@
     "badges": [
       {
         "imageName": "quick_loadout_frame_badge_1.png"
+      },
+      {
+        "imageName": "quick_loadout_frame_badge_2.png"
       }
     ],
     "rangeOperations": [

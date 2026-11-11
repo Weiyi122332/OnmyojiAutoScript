@@ -416,7 +416,7 @@ class ConfigModel(ConfigBase):
                 item["title"] = value["title"] if "title" in value else inflection.underscore(key)
                 if "description" in value:
                     item["description"] = value["description"]
-                for name in ('ui_exclusive_groups', 'ui_hidden'):
+                for name in ('ui_exclusive_groups', 'ui_hidden', 'ui_visible_when'):
                     if name in value:
                         item[name] = value[name]
                 item["default"] = value["default"]

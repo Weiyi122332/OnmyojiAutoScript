@@ -13,6 +13,10 @@ class MetaDemonAssets:
 
 
 	# Click Rule Assets
+	# 点击快速预设面板外的空白区域
+	C_MD_CLOSE_PRESET = RuleClick(roi_front=(384,531,50,32), roi_back=(384,531,50,32), profile="High", name="md_close_preset")
+	# 取消装配御魂
+	C_MD_PRESET_SOUL_CANCEL = RuleClick(roi_front=(462,422,122,34), roi_back=(462,422,122,34), profile="High", name="md_preset_soul_cancel")
 	#
 	C_SELECT_NORMAL = RuleClick(roi_front=(62,228,68,34), roi_back=(62,228,68,34), name="select_normal")
 	#
@@ -20,7 +24,7 @@ class MetaDemonAssets:
 
 
 	# Image Rule Assets
-	F_QUICK_LOADOUT_FRAME = RuleFrame(name='quick_loadout_frame', roi_badge=(1225, 433, 28, 31), roi_range=[(496, 224, 553, 387), (762, 557, 108, 36), (1113, 428, 109, 38)], roi_back=(474, 177, 800, 450), threshold=0.8, method='Template matching', profile='High', badgefile=['./tasks/MetaDemon/md/quick_loadout_frame_badge_1.png'], range=[Image(method='Template matching', threshold=0.8), Image(method='Template matching', threshold=0.8), Click()])
+	F_QUICK_LOADOUT_FRAME = RuleFrame(name='quick_loadout_frame', roi_badge=(1225, 433, 28, 31), roi_range=[(496, 224, 553, 387), (762, 557, 108, 36), (1113, 428, 109, 38)], roi_back=(474, 177, 800, 450), threshold=0.8, method='Template matching', profile='High', badgefile=['./tasks/MetaDemon/md/quick_loadout_frame_badge_1.png', './tasks/MetaDemon/md/quick_loadout_frame_badge_2.png'], range=[Image(method='Template matching', threshold=0.8), Image(method='Template matching', threshold=0.8), Click()])
 
 
 	# List Rule Assets
@@ -30,6 +34,10 @@ class MetaDemonAssets:
 
 
 	# Image Rule Assets
+	# 快速预设顶部的队伍租借分组
+	I_MD_RENTAL_TAB = RuleImage(roi_front=(520,246,72,23), roi_back=(498,228,112,63), threshold=0.85, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_rental_tab.png")
+	# 个人预设出战前的自动装配御魂确认
+	I_MD_PRESET_SOUL_PROMPT = RuleImage(roi_front=(438,287,408,32), roi_back=(410,270,460,72), threshold=0.85, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_preset_soul_prompt.png")
 	# 挑战鬼王
 	I_MD_FIRE = RuleImage(roi_front=(1135,597,99,53), roi_back=(1104,546,154,147), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_fire.png")
 	# 式神录

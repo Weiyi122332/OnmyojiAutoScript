@@ -5,7 +5,8 @@ from unittest.mock import Mock, patch
 
 from module.config.config_model import ConfigModel
 from module.server.i18n import Addition
-from tasks.MetaDemon.config import BossType, MetaDemon, PRESET_GROUPS, SPECIAL_BOSS_PRESETS
+from tasks.Component.QuickLoadout.config import QuickLoadoutConfig, QuickLoadoutMode
+from tasks.MetaDemon.config import BossType, MetaDemon, MetaDemonRentalLineup, PRESET_GROUPS, SPECIAL_BOSS_PRESETS
 from tasks.MetaDemon.boss_battle import BossBattle
 from tasks.MetaDemonTicket.config import MetaDemonTicket, TicketMode
 from tasks.MetaDemonTicket.ticket_farming import ticket_farming_config, ExplorationTicketTask, AwakeTicketTask
@@ -43,7 +44,8 @@ class MetaDemonSettingsChecks(unittest.TestCase):
         )
         self.assertEqual(conf.high_star_preset.model_dump(), {
             'powerful_count': 2, 'switch_soul': True,
-            'group_name': '默认分组', 'preset_name': '超鬼王',
+            'group_name': '默认分组', 'preset_name': '超鬼王', 'preset_numbers': '',
+            'rental_lineup': MetaDemonRentalLineup.NONE,
         })
         self.assertEqual(conf.high_star_preset, conf.tsukuyomi_preset)
         self.assertEqual(conf.low_star_preset.preset_name, '')
@@ -112,8 +114,15 @@ class MetaDemonSettingsChecks(unittest.TestCase):
         self.assertTrue(selector['select_variant'])
         self.assertEqual([variant['groups'][0]['name'] for variant in selector['variants']], list(PRESET_GROUPS))
         for key in PRESET_GROUPS:
-            self.assertEqual({field['name'] for field in payload[key]},
-                             {'powerful_count', 'switch_soul', 'group_name', 'preset_name'})
+            fields = {field['name']: field for field in payload[key]}
+            self.assertEqual(set(fields), {
+                'powerful_count', 'rental_lineup', 'switch_soul', 'preset_numbers', 'group_name', 'preset_name',
+            })
+            expected_count = 0 if key == 'low_star_preset' else 1
+            self.assertEqual(fields['powerful_count']['default'], expected_count)
+            self.assertEqual(fields['powerful_count']['value'], expected_count)
+            self.assertEqual(fields['rental_lineup']['enumEnum'], [mode.value for mode in MetaDemonRentalLineup])
+            self.assertEqual(fields['switch_soul']['ui_visible_when'], {'rental_lineup': MetaDemonRentalLineup.NONE.value})
         for group in payload.values():
             self.assertIsInstance(group, list)
             for field in group:
@@ -184,7 +193,77 @@ class MetaDemonSettingsChecks(unittest.TestCase):
         self.assertEqual(settings.high_star_preset.preset_name, '新配置')
         self.assertEqual(settings.high_star_preset.powerful_count, 3)
         settings.kidomaru_preset.powerful_count = 2
-        self.assertEqual(settings.shura_kidomaru_preset.powerful_count, 0)
+        self.assertEqual(settings.shura_kidomaru_preset.powerful_count, 1)
+
+    def test_default_powerful_count_preserves_saved_zero(self):
+        settings = MetaDemon(high_star_preset={'powerful_count': 0}, tsukuyomi_preset={'switch_soul': True})
+        self.assertEqual(settings.high_star_preset.powerful_count, 0)
+        self.assertEqual(settings.tsukuyomi_preset.powerful_count, 1)
+        legacy = MetaDemon(meta_demon_config={'high_star_powerful_enable': False})
+        self.assertEqual(legacy.high_star_preset.powerful_count, 0)
+
+    def test_rented_lineup_takes_precedence_over_personal_settings(self):
+        for rental, name in ((MetaDemonRentalLineup.GROUP, '群体'),
+                             (MetaDemonRentalLineup.SINGLE, '单体'),
+                             (MetaDemonRentalLineup.NORMAL_ATTACK, '普攻')):
+            with self.subTest(rental=rental):
+                owner = BossBattle.__new__(BossBattle)
+                owner.conf = MetaDemon(low_star_preset={
+                    'rental_lineup': rental, 'switch_soul': True, 'preset_numbers': '1,1',
+                })
+                owner.cur_boss_type = BossType.ONE_STAR
+                owner.run_quick_loadout = Mock(return_value=True)
+                self.assertTrue(owner.prepare_boss_preset())
+                config = owner.run_quick_loadout.call_args.args[0]
+                self.assertEqual((config.group_name, config.preset_name), ('队伍租借', name))
+                self.assertTrue(owner.run_quick_loadout.call_args.kwargs['skip_equip_soul'])
+
+    def test_number_pair_selects_personal_preset(self):
+        owner = BossBattle.__new__(BossBattle)
+        owner.conf = MetaDemon(low_star_preset={'switch_soul': True, 'preset_numbers': ' 1 ， 2 '})
+        owner.cur_boss_type = BossType.ONE_STAR
+        owner.run_quick_loadout = Mock(return_value=True)
+        self.assertEqual(owner.conf.low_star_preset.preset_numbers, '1,2')
+        self.assertTrue(owner.prepare_boss_preset())
+        config = owner.run_quick_loadout.call_args.args[0]
+        self.assertEqual((config.mode, config.group_number, config.preset_number), (QuickLoadoutMode.NUMBER, 1, 2))
+        self.assertFalse(owner.run_quick_loadout.call_args.kwargs['skip_equip_soul'])
+        with self.assertRaises(ValueError):
+            MetaDemon(low_star_preset={'preset_numbers': '1,0'})
+
+    def test_first_personal_group_skips_rental_tab_without_swiping(self):
+        owner = BossBattle.__new__(BossBattle)
+        layout = owner._quick_loadout_layout_at((496, 224, 553, 387), reference_size=owner.PANEL_SIZE)
+        owner.appear = Mock(return_value=True)
+        owner.device = SimpleNamespace(click=Mock())
+        owner.swipe = Mock()
+        with patch('tasks.MetaDemon.quick_loadout.sleep'):
+            self.assertTrue(owner._select_group(layout, QuickLoadoutConfig(mode=QuickLoadoutMode.NUMBER)))
+        owner.appear.assert_called_once_with(owner.I_MD_RENTAL_TAB)
+        owner.device.click.assert_called_once_with(557, 306, control_name='QUICK_LOADOUT_GROUP')
+        owner.swipe.assert_not_called()
+
+    def test_deploy_soul_prompt_respects_the_equip_option(self):
+        for equip in (True, False):
+            with self.subTest(equip=equip):
+                owner = BossBattle.__new__(BossBattle)
+                frame = owner.F_QUICK_LOADOUT_FRAME
+                layout = owner._quick_loadout_layout_at((496, 224, 553, 387))
+                owner.screenshot = Mock()
+                owner.device = SimpleNamespace(click=Mock())
+                owner._quick_loadout_panel_visible = Mock(side_effect=[True, False])
+                owner._quick_loadout_fight = Mock()
+                owner._dismiss_quick_loadout = Mock(return_value=True)
+                owner.appear = Mock(side_effect=[True, False])
+                owner.appear_then_click = Mock(return_value=True)
+                owner.click = Mock(return_value=True)
+                with patch('tasks.MetaDemon.quick_loadout.sleep'):
+                    self.assertEqual(owner._deploy_quick_loadout(layout, frame, 249, equip_soul=equip), equip)
+                if equip:
+                    owner.appear_then_click.assert_called_once_with(owner.I_SOU_SWITCH_SURE, interval=0.8)
+                else:
+                    owner.appear_then_click.assert_not_called()
+                    owner.click.assert_any_call(owner.C_MD_PRESET_SOUL_CANCEL, interval=0.8)
 
     def test_boss_prepares_souls_and_powerful_before_challenge(self):
         owner = object.__new__(BossBattle)
@@ -226,13 +305,12 @@ class MetaDemonSettingsChecks(unittest.TestCase):
         owner._build_quick_loadout_layout = Mock()
         owner._select_group = Mock(return_value=True)
         owner._select_preset_row = Mock(return_value=120)
-        owner._equip_quick_loadout_souls = Mock()
         owner._deploy_quick_loadout = Mock(return_value=True)
         for expected in (1, 1, 2):
             owner._active_preset = None
             self.assertTrue(owner.prepare_boss_preset())
-            self.assertEqual(owner._equip_quick_loadout_souls.call_count, expected)
             self.assertEqual(owner._deploy_quick_loadout.call_count, expected)
+            self.assertTrue(owner._deploy_quick_loadout.call_args.kwargs['equip_soul'])
 
     def test_incomplete_preset_stops_before_any_game_input(self):
         owner = object.__new__(BossBattle)

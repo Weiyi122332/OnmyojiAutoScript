@@ -1,5 +1,25 @@
 [
   {
+    "itemName": "md_rental_tab",
+    "imageName": "md_rental_tab.png",
+    "roiFront": "520,246,72,23",
+    "roiBack": "498,228,112,63",
+    "method": "Template matching",
+    "threshold": 0.85,
+    "profile": "High",
+    "description": "快速预设顶部的队伍租借分组"
+  },
+  {
+    "itemName": "md_preset_soul_prompt",
+    "imageName": "md_preset_soul_prompt.png",
+    "roiFront": "438,287,408,32",
+    "roiBack": "410,270,460,72",
+    "method": "Template matching",
+    "threshold": 0.85,
+    "profile": "High",
+    "description": "个人预设出战前的自动装配御魂确认"
+  },
+  {
     "itemName": "md_fire",
     "imageName": "md_md_fire.png",
     "roiFront": "1135,597,99,53",

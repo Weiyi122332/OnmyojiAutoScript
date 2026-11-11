@@ -12,7 +12,7 @@ from tasks.Component.GeneralBattle.general_battle import GeneralBattle
 from tasks.Component.QuickLoadout.config import QuickLoadoutConfig, QuickLoadoutMode
 from tasks.MetaDemon.quick_loadout import FrameQuickLoadout
 from tasks.GameUi.game_ui import GameUi
-from tasks.MetaDemon.config import MetaDemon, MetaDemonBattlePreset, BossType
+from tasks.MetaDemon.config import BossType, MetaDemon, MetaDemonBattlePreset, MetaDemonRentalLineup
 from tasks.MetaDemon.assets import MetaDemonAssets
 from tasks.MetaDemon.synthesis import parse_synthesis_material_level
 from tasks.MetaDemon.ticket_stars import recognize_summon_preview, recognize_ticket_stars
@@ -20,6 +20,13 @@ import tasks.MetaDemon.page as ipages
 
 from module.logger import logger
 from module.exception import TaskEnd
+
+
+RENTAL_LINEUP_NAMES = {
+    MetaDemonRentalLineup.GROUP: '群体',
+    MetaDemonRentalLineup.SINGLE: '单体',
+    MetaDemonRentalLineup.NORMAL_ATTACK: '普攻',
+}
 
 
 class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
@@ -337,16 +344,26 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
         if self.cur_boss_type >= BossType.FIVE_STARS:
             name = self._normalize_name(self._read_quick_loadout_stage_name(self.O_BOSS_NAME))
         preset = self.conf.preset_for(self.cur_boss_type, name)
-        target = (preset.group_name, preset.preset_name)
-        if any(target) or preset.switch_soul:
-            if not all(target):
-                logger.warning('请同时填写快速预设的分组名和队伍名')
+        rental_name = RENTAL_LINEUP_NAMES.get(preset.rental_lineup)
+        quick = None
+        if rental_name:
+            quick = QuickLoadoutConfig(enable=True, mode=QuickLoadoutMode.OCR,
+                                      group_name=self.RENTAL_GROUP_NAME, preset_name=rental_name)
+        elif preset.preset_numbers:
+            group, team = map(int, preset.preset_numbers.split(','))
+            quick = QuickLoadoutConfig(enable=True, mode=QuickLoadoutMode.NUMBER,
+                                      group_number=group, preset_number=team)
+        elif preset.group_name or preset.preset_name or preset.switch_soul:
+            if not preset.group_name or not preset.preset_name:
+                logger.warning('请填写快速预设编号，或同时填写分组名和队伍名')
                 return False
             quick = QuickLoadoutConfig(enable=True, mode=QuickLoadoutMode.OCR,
-                                      group_name=target[0], preset_name=target[1])
-            if not self.run_quick_loadout(quick, frame=self.F_QUICK_LOADOUT_FRAME,
-                                          skip_equip_soul=not preset.switch_soul):
-                return False
+                                      group_name=preset.group_name, preset_name=preset.preset_name)
+
+        if quick and not self.run_quick_loadout(
+            quick, frame=self.F_QUICK_LOADOUT_FRAME, skip_equip_soul=bool(rental_name) or not preset.switch_soul,
+        ):
+            return False
         self._active_preset = preset
         return True
 

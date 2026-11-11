@@ -2,8 +2,9 @@
 # @author runhey
 # github https://github.com/runhey
 import ast
-from enum import IntEnum
-from typing import ClassVar
+import re
+from enum import Enum, IntEnum
+from typing import Annotated, ClassVar
 
 from pydantic import Field, field_validator, model_validator
 
@@ -38,6 +39,20 @@ PRESET_GROUPS = {
 }
 
 
+class MetaDemonRentalLineup(str, Enum):
+    NONE = 'meta_demon_rental_none'
+    GROUP = 'meta_demon_rental_group'
+    SINGLE = 'meta_demon_rental_single'
+    NORMAL_ATTACK = 'meta_demon_rental_normal_attack'
+
+
+PERSONAL_PRESET_FIELD = {'ui_visible_when': {'rental_lineup': MetaDemonRentalLineup.NONE.value}}
+PowerfulChaseCount = Annotated[int, Field(
+    ge=0, title='强力追击次数',
+    description='每只鬼王的前几次挑战使用强力追击。填 0 时使用普通追击。',
+)]
+
+
 class MetaDemonConfig(ConfigBase):
     auto_tea: bool = Field(default=False, description='疲劳度满时自动喝茶。关闭时按调度器的等待间隔恢复疲劳。')
     synthesis_list: str = Field(
@@ -50,26 +65,49 @@ class MetaDemonConfig(ConfigBase):
 
 
 class MetaDemonBattlePreset(ConfigBase):
-    powerful_count: int = Field(
-        default=0, ge=0, title='强力追击次数',
-        description='每只鬼王的前几次挑战使用强力追击。填 0 时使用普通追击。',
+    powerful_count: PowerfulChaseCount = 0
+    rental_lineup: MetaDemonRentalLineup = Field(
+        default=MetaDemonRentalLineup.NONE, title='使用租借阵容',
+        description='选择群体、单体或普攻后，在挑战前直接上阵对应的租借队伍。',
     )
     switch_soul: bool = Field(
         default=False, title='切换御魂',
-        description='启用后在挑战前装配所填队伍的御魂。连续使用同一预设时复用已装配的御魂。',
+        description='启用后在挑战前上阵个人预设并装配御魂。连续使用同一预设时复用已装配的御魂。',
+        json_schema_extra=PERSONAL_PRESET_FIELD,
+    )
+    preset_numbers: str = Field(
+        default='', title='预设编号',
+        description='例如 1,1 表示第一个个人分组的第一队。队伍租借跳过计数。留空可按名称选择。',
+        json_schema_extra=PERSONAL_PRESET_FIELD,
     )
     group_name: str = Field(
         default='', title='预设分组名', description='填写游戏中快速预设的分组名称。',
+        json_schema_extra=PERSONAL_PRESET_FIELD,
     )
     preset_name: str = Field(
         default='', title='预设队伍名',
-        description='上阵和装配共用这支队伍。关闭御魂切换且两项名称留空时使用当前阵容。',
+        description='上阵和装配共用这支队伍。关闭切换御魂且编号和名称都留空时沿用当前阵容。',
+        json_schema_extra=PERSONAL_PRESET_FIELD,
     )
 
     @field_validator('group_name', 'preset_name')
     @classmethod
     def strip_name(cls, value: str) -> str:
         return value.strip()
+
+    @field_validator('preset_numbers')
+    @classmethod
+    def normalize_preset_numbers(cls, value: str) -> str:
+        if not value.strip():
+            return ''
+        match = re.fullmatch(r'\s*([1-7])\s*[,，]\s*([1-9][0-9]*)\s*', value)
+        if not match:
+            raise ValueError('请按 1,1 的格式填写预设编号，分组为 1 至 7，队伍编号为正整数')
+        return ','.join(match.groups())
+
+
+class MetaDemonHighStarPreset(MetaDemonBattlePreset):
+    powerful_count: PowerfulChaseCount = 1
 
 
 class MetaDemonScheduler(Scheduler):
@@ -149,13 +187,13 @@ class MetaDemon(ConfigBase):
     scheduler: MetaDemonScheduler = Field(default_factory=MetaDemonScheduler)
     meta_demon_config: MetaDemonConfig = Field(default_factory=MetaDemonConfig)
     low_star_preset: MetaDemonBattlePreset = Field(default_factory=MetaDemonBattlePreset)
-    high_star_preset: MetaDemonBattlePreset = Field(default_factory=MetaDemonBattlePreset)
-    tsukuyomi_preset: MetaDemonBattlePreset = Field(default_factory=MetaDemonBattlePreset)
-    shuten_doji_preset: MetaDemonBattlePreset = Field(default_factory=MetaDemonBattlePreset)
-    oni_king_shuten_doji_preset: MetaDemonBattlePreset = Field(default_factory=MetaDemonBattlePreset)
-    yuki_gozen_preset: MetaDemonBattlePreset = Field(default_factory=MetaDemonBattlePreset)
-    shura_kidomaru_preset: MetaDemonBattlePreset = Field(default_factory=MetaDemonBattlePreset)
-    kidomaru_preset: MetaDemonBattlePreset = Field(default_factory=MetaDemonBattlePreset)
+    high_star_preset: MetaDemonHighStarPreset = Field(default_factory=MetaDemonHighStarPreset)
+    tsukuyomi_preset: MetaDemonHighStarPreset = Field(default_factory=MetaDemonHighStarPreset)
+    shuten_doji_preset: MetaDemonHighStarPreset = Field(default_factory=MetaDemonHighStarPreset)
+    oni_king_shuten_doji_preset: MetaDemonHighStarPreset = Field(default_factory=MetaDemonHighStarPreset)
+    yuki_gozen_preset: MetaDemonHighStarPreset = Field(default_factory=MetaDemonHighStarPreset)
+    shura_kidomaru_preset: MetaDemonHighStarPreset = Field(default_factory=MetaDemonHighStarPreset)
+    kidomaru_preset: MetaDemonHighStarPreset = Field(default_factory=MetaDemonHighStarPreset)
 
     def preset_for(self, star: BossType, boss_name: str = '') -> MetaDemonBattlePreset:
         if star <= BossType.FOUR_STARS:
@@ -172,10 +210,12 @@ class MetaDemon(ConfigBase):
             data['scheduler'] = {**(data.get('scheduler') or {}), 'enable': False}
 
         settings = data.get('meta_demon_config') or {}
-        powerful = settings.get('high_star_powerful_enable')
-        if powerful is None:
-            powerful = bool({'5', '6'} & set(str(settings.get('powerful_list', '')).split()))
-        count = settings.get('powerful_count', 1) if powerful else 0
+        count = None
+        if 'high_star_powerful_enable' in settings or 'powerful_list' in settings:
+            powerful = settings.get('high_star_powerful_enable')
+            if powerful is None:
+                powerful = bool({'5', '6'} & set(str(settings.get('powerful_list', '')).split()))
+            count = settings.get('powerful_count', 1) if powerful else 0
         quick = data.get('quick_preset_config')
         if not isinstance(quick, dict):
             quick = {}
@@ -185,8 +225,10 @@ class MetaDemon(ConfigBase):
                 continue
             low = key == 'low_star_preset'
             target = targets.get(label, targets.get('ALL')) if not low or 'enable' in quick else None
-            if target or (count and not low):
-                preset = {'powerful_count': 0 if low else count}
+            if target or (count is not None and not low):
+                preset = {}
+                if count is not None and not low:
+                    preset['powerful_count'] = count
                 if target:
                     preset.update(group_name=target[0], preset_name=target[1],
                                   switch_soul=not quick.get('skip_equip_soul', False))

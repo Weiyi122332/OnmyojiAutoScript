@@ -98,6 +98,12 @@
   "鬼童丸": "Kidomaru",
   "powerful_count": "Powerful chase count",
   "switch_soul": "Equip souls",
+  "rental_lineup": "Use rented lineup",
+  "meta_demon_rental_none": "Off",
+  "meta_demon_rental_group": "Group",
+  "meta_demon_rental_single": "Single target",
+  "meta_demon_rental_normal_attack": "Normal attacks",
+  "preset_numbers": "Preset numbers",
   "预设分组名": "Preset group name",
   "预设队伍名": "Preset team name"
 }
