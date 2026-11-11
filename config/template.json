@@ -1096,30 +1096,15 @@
       "mode": [
         "鬼王战斗"
       ],
-      "limit_time": "00:45:00",
-      "limit_count": 50,
       "auto_tea": false,
       "fire_sequence": "1 2 3 4",
       "high_star_powerful_enable": false,
       "powerful_count": 1,
       "synthesis_list": "1"
     },
-    "general_config": {
-      "high_star_quick_loadout_enable": false
-    },
-    "switch_soul_config": {
-      "low_star_enable": false,
-      "low_star_group_team": "-1,-1",
-      "low_star_by_name": false,
-      "low_star_group_team_name": "",
-      "high_star_enable": false,
-      "high_star_group_team": "-1,-1",
-      "high_star_by_name": false,
-      "high_star_group_team_name": ""
-    },
     "quick_preset_config": {
-      "high_star_custom_preset_enable": false,
-      "high_star_custom_preset": "预设组1:ALL",
+      "enable": false,
+      "preset_rules": "预设组1:ALL",
       "preset_groups": "预设组1,默认分组,队伍1",
       "skip_equip_soul": false
     },
@@ -1130,36 +1115,6 @@
       "role": "上供",
       "friend_names": "",
       "poll_interval": 5
-    },
-    "low_star_battle_conf": {
-      "lock_team_enable": false,
-      "preset_enable": false,
-      "preset_group": 1,
-      "preset_team": 1,
-      "green_enable": false,
-      "green_mark_type": "choose",
-      "green_mark": "green_left1",
-      "green_mark_name": "",
-      "random_click_swipt_enable": false,
-      "battle_timeout": -1,
-      "continuous_battle": false,
-      "max_continuous": 0,
-      "quick_exit": false
-    },
-    "high_star_battle_conf": {
-      "lock_team_enable": false,
-      "preset_enable": false,
-      "preset_group": 1,
-      "preset_team": 1,
-      "green_enable": false,
-      "green_mark_type": "choose",
-      "green_mark": "green_left1",
-      "green_mark_name": "",
-      "random_click_swipt_enable": false,
-      "battle_timeout": -1,
-      "continuous_battle": false,
-      "max_continuous": 0,
-      "quick_exit": false
     }
   },
   "meta_demon_ticket": {

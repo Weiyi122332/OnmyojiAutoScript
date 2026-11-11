@@ -102,6 +102,8 @@ class MetaDemonAssets:
 	I_CHECK_ACT_LIST_METADEMON_ACT = RuleImage(roi_front=(718,293,448,127), roi_back=(675,249,566,240), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_check_act_list_metademon_act.png")
 	# 鬼王页面标志
 	I_CHECK_BOSS_PAGE = RuleImage(roi_front=(1064,19,43,40), roi_back=(1054,7,62,63), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_check_boss_page.png")
+	# 祸主降临页面标题
+	I_CHECK_BOSS_PAGE_TITLE = RuleImage(roi_front=(144,15,141,41), roi_back=(138,8,158,57), threshold=0.85, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_check_boss_page_title.png")
 	# 超鬼王战斗页入口
 	I_MD_CHECK_MAIN_PAGE = RuleImage(roi_front=(907,60,76,208), roi_back=(869,14,171,288), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_check_main_page.png")
 	# 超鬼王战斗页备用入口
@@ -127,6 +129,8 @@ class MetaDemonAssets:
 	O_MD_FATIGUE = RuleOcr(roi=(1109,22,114,34), area=(1106,17,124,41), mode="DigitCounter", method="Default", keyword="", name="md_fatigue")
 	# 好友列表
 	O_MD_FRIENDS = RuleOcr(roi=(435,179,486,351), area=(435,178,489,352), mode="Full", method="Default", keyword="", name="md_friends")
+	# 召唤队列门票持有数量
+	O_MD_TICKET_COUNTS = RuleOcr(roi=(345,384,591,36), area=(345,384,591,36), mode="Full", method="Default", keyword="", name="md_ticket_counts")
 	# 合成目标星级
 	O_SYNTHESIS_LEVEL = RuleOcr(roi=(747,424,181,34), area=(747,424,181,34), mode="Single", method="Default", keyword="", name="synthesis_level")
 	#

@@ -3,10 +3,7 @@ from tasks.Component.config_settings_layout import SettingsLayoutConfig, setting
 # This Python file uses the following encoding: utf-8
 # @author runhey
 # github https://github.com/runhey
-from datetime import timedelta, time
-from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
-
-from tasks.Component.config_base import ConfigBase, MultiLine, TimeDelta, Time
+from tasks.Component.config_base import ConfigBase, MultiLine, TimeDelta
 from tasks.Component.SwitchAccount.switch_account_config import AccountInfo
 from pydantic import Field, field_validator, model_validator
 from module.config.multi_select import normalize_multi_select
@@ -42,10 +39,11 @@ class MetaDemonConfig(ConfigBase):
             raise ValueError('鬼王战斗和鬼王协助至多选择一种')
         return selected
 
-    limit_time: Time = Field(default=Time(minute=45), description='limit_time_help')
-    limit_count: int = Field(default=50, description='limit_count_help')
     auto_tea: bool = Field(default=False, description='疲劳度满时是否自动喝茶, 关闭则自动根据调度器等待间隔时间安排下一次调度')
-    fire_sequence: str = Field(default='1 2 3 4', description='攻击顺序:从左到右,空格分隔(1:一星鬼王,2:二星鬼王...)\n例:3 2(先攻击三星鬼王然后二星鬼王)')
+    fire_sequence: str = Field(
+        default='1 2 3 4',
+        description='用空格分隔星级，从左到右挑战填写的星级。例如填 3 2，先打三星再打二星。主页显示下一只为六星时结束。',
+    )
     high_star_powerful_enable: bool = Field(
         default=False, title='启用高星强力追击', description='仅对五星、六星鬼王生效。',
     )
@@ -63,19 +61,11 @@ class MetaDemonConfig(ConfigBase):
         return data
 
     @property
-    def limit_time_v(self) -> timedelta:
-        if isinstance(self.limit_time, time):
-            return timedelta(hours=self.limit_time.hour, minutes=self.limit_time.minute, seconds=self.limit_time.second)
-        return self.limit_time
-
-    @property
     def fire_sequence_v(self) -> list[BossType]:
-        sequence_text = self.fire_sequence.strip()
-        if sequence_text == '':
-            return []
-        fire_num_list = sequence_text.split()
-        fire_boss_type_list = [BossType(int(num_text)) for num_text in fire_num_list]
-        return fire_boss_type_list
+        stars = [int(value) for value in self.fire_sequence.replace('，', ' ').replace(',', ' ').split()]
+        if any(star not in range(1, 7) for star in stars):
+            raise ValueError('鬼王挑战顺序只能填写 1 到 6 星')
+        return list(dict.fromkeys(BossType(star) for star in stars))
 
     @property
     def synthesis_list_v(self) -> list[BossType]:
@@ -87,47 +77,15 @@ class MetaDemonConfig(ConfigBase):
         return synthesis_boss_type_list
 
 
-def loadout_group(boss_type: BossType | None) -> str:
-    if boss_type is None:
-        return 'low_star'
-    return 'low_star' if int(boss_type) <= 4 else 'high_star'
-
-
-class MetaDemonGeneralConfig(ConfigBase):
-    high_star_quick_loadout_enable: bool = Field(default=False, title="高星鬼王启用快速上阵", description="仅五星、六星鬼王战斗生效；使用对应御魂配置中的分组名、预设名快速上阵，跳过式神录切魂与战斗准备预设。")
-
-
-class MetaDemonSwitchSoulConfig(ConfigBase):
-    low_star_enable: bool = Field(default=False, title='按编号切换')
-    low_star_group_team: str = Field(default='-1,-1', title='分组、队号', description='switch_group_team_help')
-    low_star_by_name: bool = Field(default=False, title='按名称切换', description='enable_switch_by_name_help')
-    low_star_group_team_name: str = Field(default='', title='分组名、预设名')
-    high_star_enable: bool = Field(default=False, title='按编号切换')
-    high_star_group_team: str = Field(default='-1,-1', title='分组、队号', description='switch_group_team_help')
-    high_star_by_name: bool = Field(default=False, title='按名称切换', description='enable_switch_by_name_help')
-    high_star_group_team_name: str = Field(default='', title='分组名、预设名')
-
-    def switch_for(self, category: str):
-        from tasks.Component.SwitchSoul.switch_soul_config import SwitchSoulConfig
-        names = getattr(self, f'{category}_group_team_name').split(',')
-        by_name = getattr(self, f'{category}_by_name')
-        group_name, team_name = (part.strip() for part in names) if len(names) == 2 else ('', '')
-        return SwitchSoulConfig(
-            enable=getattr(self, f'{category}_enable') and not by_name,
-            switch_group_team=getattr(self, f'{category}_group_team'),
-            enable_switch_by_name=by_name, group_name=group_name, team_name=team_name,
-        )
-
-
 class MetaDemonQuickPresetConfig(ConfigBase):
-    high_star_custom_preset_enable: bool = Field(default=False, title='指定高星切换预设',
-        description='新首领使用对应预设；与上次成功上阵相同时复用当前阵容。')
-    high_star_custom_preset: str = Field(default='预设组1:ALL', title='自定义配置上阵预设',
+    enable: bool = Field(default=False, title='启用快速预设',
+        description='挑战前按首领名称选择预设。连续使用同一预设时复用当前阵容。')
+    preset_rules: str = Field(default='预设组1:ALL', title='首领预设规则',
         description='示例：预设组1:月读,雪御前;预设组2:ALL。首领名以半角逗号分隔，规则以半角分号分隔；ALL 表示其他未指定的怪物。')
     preset_groups: str = Field(default='预设组1,默认分组,队伍1', title='预设组列表',
         description='格式：预设组名,御魂分组名,队伍名；例如：预设组1,队伍租借,第4日单体通用阵容。不同预设组以半角分号分隔。')
     skip_equip_soul: bool = Field(default=False, title='不装配御魂',
-        description='启用高星快速上阵时，选中预设后直接点击出战。')
+        description='启用快速预设时，选中预设后直接点击出战。')
 
     def named_presets(self) -> dict[str, tuple[str, str]]:
         groups = {}
@@ -142,7 +100,7 @@ class MetaDemonQuickPresetConfig(ConfigBase):
                 raise ValueError(f'预设组名重复：{name}')
             groups[name] = (group, team)
         presets = {}
-        for row in self.high_star_custom_preset.split(';'):
+        for row in self.preset_rules.split(';'):
             if not row.strip():
                 continue
             name, separator, targets = row.partition(':')
@@ -166,7 +124,10 @@ class MetaDemonQuickPresetConfig(ConfigBase):
     def migrate_legacy_presets(cls, value):
         if not isinstance(value, dict):
             return value
-        rule = value.get('high_star_custom_preset', '')
+        value = dict(value)
+        if 'high_star_custom_preset' in value:
+            value.setdefault('preset_rules', value['high_star_custom_preset'])
+        rule = value.get('preset_rules', '')
         if '(' not in rule:
             return value
         import ast
@@ -194,7 +155,7 @@ class MetaDemonQuickPresetConfig(ConfigBase):
                 targets[target] = name
                 groups.append(','.join((name, *target)))
             rules.append(f'{targets[target]}:{parts[0].strip()}')
-        return {**value, 'preset_groups': ';'.join(groups), 'high_star_custom_preset': ';'.join(rules)}
+        return {**value, 'preset_groups': ';'.join(groups), 'preset_rules': ';'.join(rules)}
 
 
 class AssistanceRole(str, Enum):
@@ -258,19 +219,9 @@ class MetaDemon(ConfigBase):
             {'name': 'meta_demon_config', 'fields': ['mode']},
             {'name': 'assistance_config', 'fields': ['friend_names']},
             {'name': 'meta_demon_config', 'fields': [key for key in MetaDemonConfig.model_fields if key != 'mode']},
-            {'name': 'general_config'},
             {'name': 'assistance_config', 'fields': ['role']},
         ]),
-        settings_section('switch_soul_config', '执行任务前切换御魂', variants=[
-            {'id': key, 'label': label, 'groups': [{'name': 'switch_soul_config',
-                'fields': [f'{key}_{suffix}' for suffix in ('enable', 'group_team', 'by_name', 'group_team_name')],
-                'labels': {f'{key}_enable': '启用', f'{key}_group_team': '御魂装配分组设置',
-                           f'{key}_by_name': '通过OCR来切换御魂预设', f'{key}_group_team_name': '分组名、预设名'}}]}
-            for key, label in (('low_star', '低星鬼王'), ('high_star', '高星鬼王'))]),
-        settings_section('battle_config', '战斗配置', variants=[
-            {'id': key, 'label': label, 'groups': [{'name': f'{key}_battle_conf'}]}
-            for key, label in (('low_star', '低星鬼王'), ('high_star', '高星鬼王'))]),
-        settings_section('quick_preset_config', '快速预设详情', groups=[{'name': 'quick_preset_config'}]),
+        settings_section('quick_preset_config', '快速预设', groups=[{'name': 'quick_preset_config'}]),
         settings_section('assistance_config', '鬼王协助', groups=[
             {'name': 'assistance_config', 'fields': [key for key in MetaDemonAssistanceConfig.model_fields if key not in ('friend_names', 'role')]},
         ]),
@@ -278,64 +229,28 @@ class MetaDemon(ConfigBase):
 
     scheduler: MetaDemonScheduler = Field(default_factory=MetaDemonScheduler)
     meta_demon_config: MetaDemonConfig = Field(default_factory=MetaDemonConfig)
-    general_config: MetaDemonGeneralConfig = Field(default_factory=MetaDemonGeneralConfig)
-    switch_soul_config: MetaDemonSwitchSoulConfig = Field(default_factory=MetaDemonSwitchSoulConfig)
     quick_preset_config: MetaDemonQuickPresetConfig = Field(default_factory=MetaDemonQuickPresetConfig)
     assistance_config: MetaDemonAssistanceConfig = Field(default_factory=MetaDemonAssistanceConfig)
-    low_star_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
-    high_star_battle_conf: GeneralBattleConfig = Field(default_factory=GeneralBattleConfig)
-
-    def battle_config(self, category: str) -> GeneralBattleConfig:
-        config = getattr(self, f'{category}_battle_conf')
-        if category == 'high_star' and self.general_config.high_star_quick_loadout_enable:
-            return config.model_copy(update={'preset_enable': False})
-        return config
 
     @model_validator(mode='before')
     @classmethod
-    def migrate_flat_presets(cls, data):
+    def migrate_quick_loadout(cls, data):
         if not isinstance(data, dict):
             return data
-        data = dict(data)
-        old = data.pop('preset_config', None)
-        if isinstance(old, dict):
-            for category in ('low_star', 'high_star'):
-                data.setdefault(f'{category}_battle_conf', {
-                    'preset_enable': old.get(f'{category}_enable', False) if category != 'high_star' else False,
-                    'preset_group': old.get(f'{category}_group', 1),
-                    'preset_team': old.get(f'{category}_team', 1),
-                })
-            # Preserve the previously entered OCR target without enabling quick loadout implicitly.
-            souls = dict(data.get('switch_soul_config', {}))
-            if old.get('high_star_group_name') and old.get('high_star_preset_name'):
-                souls.setdefault('high_star_group_team_name', f"{old['high_star_group_name']},{old['high_star_preset_name']}")
-            data['switch_soul_config'] = souls
-        return data
-
-    @model_validator(mode='before')
-    @classmethod
-    def migrate_legacy_loadouts(cls, data):
-        if not isinstance(data, dict):
+        quick = data.get('quick_preset_config', {})
+        general = data.get('general_config', {})
+        if (not isinstance(quick, dict) or 'enable' in quick
+                or not isinstance(general, dict) or not general.get('high_star_quick_loadout_enable')):
             return data
-        data = dict(data)
-        old = data.pop('switch_soul', None)
-        if not isinstance(old, dict) or 'switch_soul_config' in data:
-            return data
-        souls, presets = {}, {}
-        for category, stars in (('low_star', ('one_star','two_stars','three_stars','four_stars')),
-                                ('high_star', ('five_stars','six_stars'))):
-            star = next((key for key in stars if str(old.get(key, '')).strip() not in ('', '-1,-1')), stars[0])
-            text = str(old.get(star, '')).strip()
-            if text == '-1,-1':
-                text = ''
-            parts = [part.strip() for part in text.split(',')]
-            numbered = len(parts) == 2 and all(part.isdigit() for part in parts)
-            souls[f'{category}_enable'] = bool(old.get('enable') and text and numbered)
-            souls[f'{category}_by_name'] = bool(old.get('enable') and text and not numbered)
-            souls[f'{category}_group_team' if numbered else f'{category}_group_team_name'] = text
-            if category == 'low_star' and numbered:
-                presets.update(low_star_enable=bool(old.get(f'enable_{star}_preset')),
-                               low_star_group=int(parts[0]), low_star_team=int(parts[1]))
-        data['switch_soul_config'] = souls
-        data.setdefault('preset_config', presets)
-        return data
+        if quick.get('high_star_custom_preset_enable'):
+            return {**data, 'quick_preset_config': {**quick, 'enable': True}}
+        soul = data.get('switch_soul_config', {})
+        names = soul.get('high_star_group_team_name', '') if isinstance(soul, dict) else ''
+        old_preset = data.get('preset_config', {})
+        if not names and isinstance(old_preset, dict):
+            names = f"{old_preset.get('high_star_group_name', '')},{old_preset.get('high_star_preset_name', '')}"
+        parts = [part.strip() for part in str(names).split(',')]
+        if len(parts) == 2 and all(parts):
+            quick = {**quick, 'enable': True, 'preset_rules': '预设组1:ALL',
+                     'preset_groups': ','.join(('预设组1', *parts))}
+        return {**data, 'quick_preset_config': quick}

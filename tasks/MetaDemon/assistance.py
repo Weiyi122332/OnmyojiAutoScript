@@ -2,7 +2,6 @@
 from base64 import b64decode, b64encode
 import re
 import time
-from datetime import datetime
 from uuid import uuid4
 
 import cv2
@@ -10,7 +9,7 @@ import numpy as np
 
 from module.atom.click import RuleClick
 from module.atom.swipe import RuleSwipe
-from module.cooperation import Cooperation, META_DEMON_BATCH_ROUND
+from module.cooperation import Cooperation, META_DEMON_ASSISTANCE, META_DEMON_BATCH_ROUND
 from module.exception import RequestHumanTakeover, ScriptError, TaskEnd
 from module.image.rpc import get_image_client
 from module.logger import logger
@@ -20,7 +19,7 @@ import tasks.MetaDemon.page as pages
 
 
 class AssistanceLink:
-    CHANNEL = 'MetaDemonAssistance'
+    CHANNEL = META_DEMON_ASSISTANCE
 
     def __init__(self, task, *, batch_session=None):
         self.task = task
@@ -63,20 +62,23 @@ class AssistanceLink:
                     or other_settings.get('cooperation_script', '') not in ('', self.runtime.name)):
                 raise ScriptError('鬼王协同脚本应为匹配的上供和协助实例')
 
-    def publish(self, portrait=''):
+    def publish(self, portrait='', *, completed=False):
         if self.peer:
             if portrait:
                 self.session = uuid4().hex
-            remaining = (self.task.limit_time - (datetime.now() - self.task.start_time)).total_seconds()
-            payload = {
-                'portrait': portrait,
-                'expires': time.time() + max(0, remaining),
-            }
+            payload = {'portrait': portrait}
             if self.batch:
                 payload['batch'] = self.batch.session
+            elif completed:
+                payload['completed'] = True
             self.runtime.publish_battle_state(self.channel, self.peer, self.session, payload)
 
     def target(self):
+        if self.batch:
+            if self.batch.offering_status() != 'active':
+                return None
+        elif not self.peer_in_task():
+            return None
         state = self.runtime.peer_battle_state(self.channel, self.peer)
         if not state:
             return None
@@ -84,7 +86,8 @@ class AssistanceLink:
         if self.batch and payload.get('batch') != self.batch.session:
             return None
         portrait = payload.get('portrait')
-        if portrait and payload.get('expires', 0) > time.time():
+        expires = payload.get('expires')
+        if portrait and (expires is None or expires > time.time()):
             return state['session'], state['updated'], portrait
         return None
 
@@ -101,6 +104,10 @@ class AssistanceLink:
         state = self.runtime.peer_battle_state(self.channel, self.peer)
         return bool(state and state['session'] == self.session and state['payload'].get('settled'))
 
+    def peer_completed(self):
+        state = self.runtime.peer_battle_state(self.channel, self.peer)
+        return bool(state and state['payload'].get('completed'))
+
     def peer_in_task(self):
         if self.batch:
             return self.batch.assistant_ready()
@@ -112,7 +119,7 @@ class AssistanceLink:
         task = 'MetaDemon'
         if not self.runtime.prepare(self.task.config, task, self.peer, defer=False):
             return False
-        deadline = time.monotonic() + min(30, self.task.limit_time.total_seconds())
+        deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
             running = self.runtime.runner_task(self.peer)
             if running == task:
@@ -138,10 +145,8 @@ class GhostOffering:
         self.empty_frames = 0
         self.unknown_reported = False
 
-    def within_limit(self):
-        t = self.task
-        return (datetime.now() - t.start_time < t.limit_time and
-                t.total_count < t.limit_count and not t.State.done)
+    def can_continue(self):
+        return not self.task.State.done
 
     @staticmethod
     def normalize_name(name):
@@ -171,7 +176,7 @@ class GhostOffering:
         previous = None
         stable = 0
         for _ in range(20):
-            if not self.within_limit():
+            if not self.can_continue():
                 return False
             t.screenshot()
             if not t.appear(t.I_MD_INVITE_FRIENDS):
@@ -187,7 +192,7 @@ class GhostOffering:
     def open_share_panel(self):
         t = self.task
         deadline = time.monotonic() + 12
-        while self.within_limit() and time.monotonic() < deadline:
+        while self.can_continue() and time.monotonic() < deadline:
             t.screenshot()
             if t.appear(t.I_MD_INVITE_FRIENDS):
                 return True
@@ -199,7 +204,7 @@ class GhostOffering:
         before = self.selected_count()
         t.click(RuleClick(roi_front=area, roi_back=area, name='metademon_offering_friend'))
         deadline = time.monotonic() + 4
-        while self.within_limit() and time.monotonic() < deadline:
+        while self.can_continue() and time.monotonic() < deadline:
             t.screenshot()
             if not t.appear(t.I_MD_INVITE_FRIENDS):
                 return False
@@ -234,7 +239,7 @@ class GhostOffering:
         stable = 0
         available = set()
         for _ in range(30):
-            if not self.within_limit():
+            if not self.can_continue():
                 return False
             t.screenshot()
             if not t.appear(t.I_MD_INVITE_FRIENDS) or self.selected_count():
@@ -262,7 +267,7 @@ class GhostOffering:
             return False
         remaining = dict(wanted)
         for _ in range(30):
-            if not self.within_limit():
+            if not self.can_continue():
                 return False
             t.screenshot()
             if not t.appear(t.I_MD_INVITE_FRIENDS):
@@ -289,7 +294,7 @@ class GhostOffering:
             return False
         portrait_sent = False
         select_recipients = True
-        while self.within_limit():
+        while self.can_continue():
             if not self.link.peer_in_task():
                 logger.info('协助端已离开超鬼王，停止重试邀请')
                 return False
@@ -310,7 +315,7 @@ class GhostOffering:
                 return False
             deadline = time.monotonic() + self.INVITE_RETRY_SECONDS
             select_recipients = False
-            while self.within_limit() and time.monotonic() < deadline:
+            while self.can_continue() and time.monotonic() < deadline:
                 if portrait_sent and self.link.confirmed():
                     logger.info('协助端已识别分享鬼王，等待好友击杀')
                     return True
@@ -324,9 +329,9 @@ class GhostOffering:
                     portrait_sent = self.send_portrait()
                     if not portrait_sent:
                         return False
-            if self.within_limit():
+            if self.can_continue():
                 logger.info('邀请已等待 20 秒，未收到协助端确认，准备重试')
-        logger.warning('运行时间内未收到协助端确认，停止本次上供')
+        logger.warning('未收到协助端确认，停止本次上供')
         return False
 
     def send_portrait(self):
@@ -382,13 +387,13 @@ class GhostOffering:
         if self.waiting:
             if self.shared_generation is not None:
                 t.total_count += 1
-                logger.info(f'上供鬼王已结束: {t.total_count}/{t.limit_count}')
+                logger.info(f'上供鬼王已结束：累计 {t.total_count} 只')
             self.waiting = False
             self.settled = False
             self.shared_generation = None
             t.cur_boss_type = None
             self.unknown_reported = False
-            if not self.within_limit():
+            if not self.can_continue():
                 return True
         self.empty_frames = 0
         return t.check_and_switch_ticket(sequence=(BossType.SIX_STARS,)) or t.State.done
@@ -404,12 +409,10 @@ class GhostAssistant:
         self.reverse = RuleSwipe(roi_front=swipe.roi_back, roi_back=swipe.roi_front,
                                  mode='default', name='metademon_assist_list_to_top')
 
-    def within_limit(self):
+    def can_continue(self):
         if self.link.batch:
             return self.link.batch.offering_status() == 'active'
-        t = self.task
-        t.update_global_state()
-        return not t.State.done
+        return not self.task.State.done and self.link.peer_in_task()
 
     def match_portrait(self, template):
         t = self.task
@@ -425,7 +428,7 @@ class GhostAssistant:
         t.click(RuleClick(roi_front=area, roi_back=area, name='metademon_assist_row'))
         time.sleep(0.6)
         deadline = time.monotonic() + 5
-        while self.within_limit() and time.monotonic() < deadline:
+        while self.can_continue() and time.monotonic() < deadline:
             t.screenshot()
             if t.appear(t.I_MD_SETTLING):
                 return False
@@ -447,7 +450,7 @@ class GhostAssistant:
             t._boss_generation += 1
             t._current_boss_attempts = 0
             self.active_target = target
-        while self.within_limit():
+        while self.can_continue():
             t.screenshot()
             if self.observe_settlement(target) or not t.appear(t.I_MD_FIRE) or self.link.target() != target:
                 break
@@ -456,7 +459,7 @@ class GhostAssistant:
                 break
             if self.link.target() != target:
                 break
-            if not t.start_battle(within_limit=self.within_limit):
+            if not t.start_battle((BossType.SIX_STARS,), should_continue=self.can_continue):
                 self.observe_settlement(target)
                 break
             if self.observe_settlement(target):
@@ -486,7 +489,7 @@ class GhostAssistant:
         template = cv2.cvtColor(portrait, cv2.COLOR_BGR2RGB)
         for swipe in (t.S_MD_SWIPE_UP, self.reverse):
             for _ in range(12):
-                if not self.within_limit() or self.link.target() != target:
+                if not self.can_continue() or self.link.target() != target:
                     return
                 t.screenshot()
                 area = self.match_portrait(template)
@@ -504,12 +507,15 @@ class GhostAssistant:
     def run(self):
         self.task.goto_page(pages.page_meta_demon_boss)
         waiting_logged = False
-        while self.link.batch or self.within_limit():
+        while not self.task.State.done:
             if self.link.batch:
                 status = self.link.batch.offering_status()
                 if status != 'active':
                     logger.info(f'上供端任务组已结束：{status}')
                     return status == 'complete'
+            elif self.link.peer_completed():
+                logger.info('上供端已完成，结束本轮协助')
+                return True
             elif not self.link.peer_in_task():
                 logger.info('上供端已离开超鬼王，结束本轮协助')
                 return False
@@ -521,7 +527,7 @@ class GhostAssistant:
             elif not waiting_logged:
                 logger.info('协助已进入鬼王挑战页，等待上供者同步鬼王截图')
                 waiting_logged = True
-            if self.within_limit():
+            if self.can_continue():
                 time.sleep(self.task.conf.assistance_config.poll_interval)
         return True
 
@@ -529,8 +535,7 @@ class GhostAssistant:
 def run_offering(task, link):
     task.goto_page(pages.page_meta_demon_boss)
     offering = GhostOffering(task, link)
-    success = True
-    while offering.within_limit():
+    while offering.can_continue():
         if not link.peer_in_task():
             logger.info('协助端已离开超鬼王，结束本轮上供')
             return False
@@ -538,18 +543,15 @@ def run_offering(task, link):
         task.device.stuck_record_clear()
         task.screenshot()
         if not offering.tick():
-            success = False
             logger.warning('鬼王上供流程未完成，结束本次运行')
-            break
-        if link.batch and not offering.within_limit():
-            break
-        remaining = max(0, (task.limit_time - (datetime.now() - task.start_time)).total_seconds())
-        interval = 0.5 if offering.waiting and not offering.settled else offering.settings.poll_interval
-        time.sleep(min(interval, remaining))
-    if success and link.batch and offering.shared_generation is not None:
-        logger.warning('本账号上供时间已用尽，仍有鬼王未完成结算')
+            return False
+        if offering.can_continue():
+            interval = 0.5 if offering.waiting and not offering.settled else offering.settings.poll_interval
+            time.sleep(interval)
+    if link.batch and offering.shared_generation is not None:
+        logger.warning('本账号仍有鬼王未完成结算')
         return False
-    return success
+    return True
 
 
 def run_assistance(task, *, grouped=False, batch_session=None):
@@ -585,10 +587,11 @@ def run_assistance(task, *, grouped=False, batch_session=None):
                 link.batch.close()
     else:
         link.publish()
+        success = False
         try:
             success = run_offering(task, link)
         finally:
-            link.publish()
+            link.publish(completed=success)
     if grouped:
         task.goto_page(pages.page_main)
         return success

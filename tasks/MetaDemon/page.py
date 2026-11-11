@@ -8,7 +8,6 @@ from tasks.GameUi.page import (
     page_battle_result,
     page_main,
     page_reward,
-    page_shikigami_records,
     random_click,
     reward_random_click,
 )
@@ -84,7 +83,7 @@ def configure_activity_navigation(navigator) -> None:
         if transition.key == 'page_main->page_activity':
             transition.action = enter_meta_demon_activity
 
-page_meta_demon_boss = Page(MetaDemonAssets.I_CHECK_BOSS_PAGE)
+page_meta_demon_boss = Page(any_of(MetaDemonAssets.I_CHECK_BOSS_PAGE, MetaDemonAssets.I_CHECK_BOSS_PAGE_TITLE))
 page_meta_demon_boss.add_enter_success_hooks(MetaDemonAssets.I_MD_CLOSE_POPUP)
 page_meta_demon_boss.connect(page_activity, GlobalGameAssets.I_UI_BACK_YELLOW, key="page_meta_demon_boss->page_activity")
 page_activity.connect(page_meta_demon_boss, enter_meta_demon_boss, key="page_activity->page_meta_demon_boss")

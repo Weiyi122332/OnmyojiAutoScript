@@ -1,6 +1,5 @@
 """Exercise batch sessions and the account and screenshot paths that support them."""
 
-from datetime import datetime, timedelta
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
@@ -43,8 +42,7 @@ class BatchAssistanceTest(unittest.TestCase):
 
     @staticmethod
     def link(runtime, config, session=None):
-        task = SimpleNamespace(conf=config, config=SimpleNamespace(cooperation_runtime=runtime),
-                               start_time=datetime.now(), limit_time=timedelta(minutes=2))
+        task = SimpleNamespace(conf=config, config=SimpleNamespace(cooperation_runtime=runtime))
         return AssistanceLink(task, batch_session=session)
 
     def test_assistant_follows_one_group_and_separate_boss_rounds(self):
@@ -148,16 +146,17 @@ class BatchAssistanceTest(unittest.TestCase):
         worker = GhostAssistant.__new__(GhostAssistant)
         worker.task = Mock()
         worker.task.conf = boss('协助', 'offering')
+        worker.task.State.done = False
         worker.link = Mock()
         worker.link.batch.offering_status.side_effect = ['active', 'active', 'complete']
         worker.link.target.return_value = None
         with patch('tasks.MetaDemon.assistance.time.sleep'):
             self.assertTrue(worker.run())
-        worker.task.update_global_state.assert_not_called()
+        worker.link.batch.offering_status.assert_called()
 
-    def test_expired_account_with_unsettled_boss_fails_the_batch(self):
+    def test_ended_account_with_unsettled_boss_fails_the_batch(self):
         with patch('tasks.MetaDemon.assistance.GhostOffering') as factory:
-            factory.return_value.within_limit.return_value = False
+            factory.return_value.can_continue.return_value = False
             factory.return_value.shared_generation = 1
             self.assertFalse(run_offering(Mock(), SimpleNamespace(batch=object())))
 

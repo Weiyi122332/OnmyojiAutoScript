@@ -18,6 +18,15 @@
     "description": "好友列表"
   },
   {
+    "itemName": "md_ticket_counts",
+    "roiFront": "345,384,591,36",
+    "roiBack": "345,384,591,36",
+    "mode": "Full",
+    "method": "Default",
+    "keyword": "",
+    "description": "召唤队列门票持有数量"
+  },
+  {
     "itemName": "synthesis_level",
     "roiFront": "747,424,181,34",
     "roiBack": "747,424,181,34",

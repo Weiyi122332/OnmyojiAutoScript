@@ -1,32 +1,34 @@
 # This Python file uses the following encoding: utf-8
 # @author runhey
 # github https://github.com/runhey
-import time
-
 import random
+import re
+import time
 from datetime import datetime
+
 from module.atom.image import RuleImage
 
+from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
 from tasks.Component.GeneralBattle.general_battle import GeneralBattle
-from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
+from tasks.Component.QuickLoadout.config import QuickLoadoutConfig, QuickLoadoutMode
 from tasks.MetaDemon.quick_loadout import FrameQuickLoadout
 from tasks.GameUi.game_ui import GameUi
-from tasks.MetaDemon.config import MetaDemon, BossType, loadout_group
+from tasks.MetaDemon.config import MetaDemon, BossType
 from tasks.MetaDemon.assets import MetaDemonAssets
 from tasks.MetaDemon.synthesis import parse_synthesis_material_level
-from tasks.MetaDemon.ticket_stars import recognize_ticket_stars
+from tasks.MetaDemon.ticket_stars import recognize_summon_preview, recognize_ticket_stars
 import tasks.MetaDemon.page as ipages
 
 from module.logger import logger
 from module.exception import TaskEnd
 
 
-class BossBattle(GeneralBattle, SwitchSoul, FrameQuickLoadout, GameUi, MetaDemonAssets):
+class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
     """超鬼王"""
 
     class State:
         done: bool = False
-        switch_soul_done: bool = False
+        targets_finished: bool = False
         synthesis_done: bool = False
 
     conf: MetaDemon = None
@@ -39,13 +41,6 @@ class BossBattle(GeneralBattle, SwitchSoul, FrameQuickLoadout, GameUi, MetaDemon
             frame, fight_file='./tasks/MetaDemon/md/md_quick_loadout_frame_fight.png',
         )
 
-    def _meta_demon_battle_key(self) -> str:
-        """返回当前鬼王类型对应的通用战斗分组键。"""
-
-        if self.cur_boss_type is None:
-            return "meta_demon_default"
-        return f"meta_demon_{loadout_group(self.cur_boss_type)}"
-
     @property
     def enable_powerful_fire(self) -> bool:
         config = self.conf.meta_demon_config
@@ -56,50 +51,38 @@ class BossBattle(GeneralBattle, SwitchSoul, FrameQuickLoadout, GameUi, MetaDemon
     def before_run(self):
         ipages.configure_activity_navigation(self.navigator)
         self.State = BossBattle.State()
-        self._active_loadout_group = None
+        self._preset_boss_generation = None
         self._last_quick_loadout = None
         self._boss_generation = 0
         self.cur_boss_type = None
         self.total_count = 0
         self._current_boss_attempts = 0
         self.conf = self.config.meta_demon
-        self.limit_time = self.conf.meta_demon_config.limit_time_v
-        self.limit_count = self.conf.meta_demon_config.limit_count
-        page_shikigami_records = self.navigator.resolve_page(ipages.page_shikigami_records)
-        page_meta_demon_boss = self.navigator.resolve_page(ipages.page_meta_demon_boss)
-        page_main = self.navigator.resolve_page(ipages.page_main)
-        if page_shikigami_records is None or page_meta_demon_boss is None or page_main is None:
-            raise RuntimeError("MetaDemon 页面 session 初始化失败")
-
-        # 仅修改当前任务 session 内的跳转图，不污染全局页面定义
-        page_shikigami_records.clear_transitions()
-        page_shikigami_records.connect(
-            page_meta_demon_boss,
-            self.I_UI_BACK_YELLOW,
-            key="page_shikigami_records->page_meta_demon_boss",
-        )
-        page_meta_demon_boss.connect(
-            page_shikigami_records,
-            MetaDemonAssets.I_MD_SHIKIGAMI,
-            key="page_meta_demon_boss->page_shikigami_records",
-        )
-        page_main.remove_transition(key="page_main->page_shikigami_records")
 
     def run(self):
         self.before_run()
+        try:
+            sequence = self.conf.meta_demon_config.fire_sequence_v
+        except ValueError:
+            logger.warning('鬼王挑战顺序只能填写 1 到 6 星')
+            self.set_next_run(task='MetaDemon', success=False)
+            raise TaskEnd
+        if not sequence:
+            logger.info('鬼王挑战顺序为空，结束任务')
+            self.set_next_run(task='MetaDemon', success=True)
+            raise TaskEnd
         self.goto_page(ipages.page_meta_demon_boss)
-        while True:
-            self.update_global_state()
-            if self.State.done:
-                break
+        while not self.State.done:
             self.screenshot()
             current_page = self.get_current_page()
             match current_page:
                 case ipages.page_activity:
                     self.goto_page(ipages.page_meta_demon_boss)
                 case ipages.page_meta_demon_boss:
-                    if self.check_and_prepare_battle():
-                        self.start_battle()
+                    if not self.check_and_prepare_battle(sequence):
+                        break
+                    if not self.start_battle(sequence) and not self.appear(self.I_MD_SETTLING):
+                        break
                 case ipages.page_battle:
                     self.battle_wait(False)
                 case ipages.page_reward:
@@ -108,24 +91,37 @@ class BossBattle(GeneralBattle, SwitchSoul, FrameQuickLoadout, GameUi, MetaDemon
                     self.click(ipages.random_click(), interval=0.6)
                 case _:
                     time.sleep(random.uniform(0.7, 1.4))
-        self.set_next_run(task="MetaDemon", success=True)
+        if self.State.targets_finished and self.total_count > 0:
+            self.push_targets_finished(sequence)
+        self.set_next_run(task='MetaDemon', success=self.State.done)
         self.finish_task()
 
-    def start_battle(self, within_limit=None):
+    def push_targets_finished(self, sequence):
+        stars = '、'.join(f'{int(star)} 星' for star in sequence)
+        content = f'已打完目标星级的鬼王（{stars}）'
+        logger.info(content)
+        try:
+            notifier = self.config.notifier
+            if notifier.enable and not notifier.push(title='超鬼王挑战完成', content=content):
+                logger.warning('超鬼王完成通知发送失败')
+        except Exception as exc:
+            logger.warning(f'超鬼王完成通知发送失败：{exc}')
+
+    def start_battle(self, sequence, should_continue=None):
+        if self.cur_boss_type not in sequence:
+            logger.warning('当前鬼王星级未确认或不在挑战顺序中，跳过挑战')
+            return False
         logger.hr('Click fire, start battle')
         last_challenge = time.monotonic()
-        while within_limit is None or within_limit():
+        while should_continue is None or should_continue():
             self.screenshot()
             if self.is_in_battle(False):
                 self.total_count += 1
                 self._current_boss_attempts += 1
-                battle_config = self.conf.battle_config(loadout_group(self.cur_boss_type))
-                if self.cur_boss_type is None:
-                    battle_config = battle_config.model_copy(update={'preset_enable': False})
                 self.run_general_battle(
-                    battle_config,
-                    battle_key=self._meta_demon_battle_key(),
-                    exit_matcher=self.I_MD_SETTLING if within_limit is not None else None,
+                    GeneralBattleConfig(),
+                    battle_key='meta_demon',
+                    exit_matcher=self.I_MD_SETTLING if should_continue is not None else None,
                 )
                 return True
             if self.appear(self.I_MD_DRINK_TEA, interval=1.2):  # 出现喝茶弹窗
@@ -136,16 +132,12 @@ class BossBattle(GeneralBattle, SwitchSoul, FrameQuickLoadout, GameUi, MetaDemon
                 self.ui_click_until_disappear(self.I_MD_CLOSE_POPUP, interval=0.6)
                 self.set_next_run('MetaDemon', target=datetime.now() + self.conf.scheduler.wait_interval)
                 self.finish_task()
-            if within_limit is not None and self.appear(self.I_MD_SETTLING):
+            if self.appear(self.I_MD_SETTLING):
                 return False
-            if self.appear_then_click(self.I_MD_FIRE, interval=0.8):
+            if self.appear_then_click(self.I_MD_FIRE, interval=0.8) or self.appear(self.I_MD_FIRE):
                 last_challenge = time.monotonic()
-                continue
-            if within_limit is not None:
-                if self.appear(self.I_MD_FIRE):
-                    last_challenge = time.monotonic()
-                elif time.monotonic() - last_challenge >= 5:
-                    return False
+            elif should_continue is not None and time.monotonic() - last_challenge >= 5:
+                return False
         return False
 
     def battle_wait(self, random_click_swipt_enable: bool) -> bool:
@@ -171,29 +163,21 @@ class BossBattle(GeneralBattle, SwitchSoul, FrameQuickLoadout, GameUi, MetaDemon
                 logger.info('wait result')
                 time.sleep(random.uniform(3, 5))
                 continue
-        total_run_time = datetime.now() - self.start_time
         logger.info(f'battle win: {win}')
-        logger.info(f'battle count: {self.total_count}/{self.limit_count}')
-        logger.info(f'time count: {total_run_time.total_seconds():.1f}s/{self.limit_time.total_seconds()}s')
+        logger.info(f'battle count: {self.total_count}')
         return win
 
-    def update_global_state(self):
-        if datetime.now() - self.start_time >= self.limit_time or \
-                self.total_count >= self.limit_count:
-            self.State.done = True
-
-    def check_and_prepare_battle(self) -> bool:
-        """检查并做战斗前的准备工作
-        :return: True可以战斗, False不能战斗
-        """
+    def check_and_prepare_battle(self, sequence) -> bool:
+        """确认鬼王星级后准备战斗。"""
         logger.hr('battle prepare', 2)
-        if not self.check_fatigue():
-            return False
-        if self.cur_boss_type is None and self.appear(self.I_MD_FIRE):
-            logger.info('已有鬼王星级未知，沿用当前阵容并使用普通追击')
-            return self.check_and_switch_powerful()
-        self.synthesis_boss_ticket()
-        return self.check_and_switch_ticket() and self.check_and_switch_soul() and self.check_and_switch_powerful()
+        if self.appear(self.I_MD_SUMMON_BOSS) and not self.appear(self.I_MD_GET_BOSS):
+            preview = self.next_summon_star()
+            if self.stop_at_six_star_preview(preview, sequence):
+                return False
+            if preview is not None:
+                self.synthesis_boss_ticket()
+        return (self.check_and_switch_ticket(sequence=sequence, stop_at_six=True)
+                and self.check_fatigue() and self.check_and_switch_soul() and self.check_and_switch_powerful())
 
     def synthesis_boss_ticket(self):
         """合成鬼王"""
@@ -277,11 +261,46 @@ class BossBattle(GeneralBattle, SwitchSoul, FrameQuickLoadout, GameUi, MetaDemon
             self.finish_task()
         return True
 
-    def check_and_switch_ticket(self, sequence=None):
-        """切换鬼王门票并更新当前鬼王级别"""
+    def next_summon_star(self) -> BossType | None:
+        if not self.appear(self.I_MD_SWITCH_TICKET):
+            return None
+        stars = recognize_summon_preview(self.device.image, self.I_MD_SWITCH_TICKET.roi_front)
+        return BossType(stars) if stars is not None else None
+
+    def stop_at_six_star_preview(self, preview, sequence) -> bool:
+        if preview != BossType.SIX_STARS:
+            return False
+        self.State.done = True
+        self.State.targets_finished = BossType.SIX_STARS not in sequence
+        logger.info('主页显示下一只为六星，结束鬼王战斗')
+        return True
+
+    def read_ticket_counts(self, tickets) -> dict[BossType, int] | None:
+        visible = {star: tuple(ticket.roi_front) for star, ticket in tickets.items()
+                   if self.ticket_matches_star(ticket, star)}
+        if not visible:
+            return None
+        rule = self.O_MD_TICKET_COUNTS
+        rows = rule.detect_and_ocr(self.device.image)
+        if len(rows) != len(visible):
+            return None
+        counts = {}
+        for row in rows:
+            match = re.fullmatch(r'持有\s*[:：]?\s*([0-9]+)', row.ocr_text.strip())
+            center = rule.roi[0] + row.box[:, 0].mean()
+            star = next((star for star, (x, _, width, _) in visible.items() if x <= center < x + width), None)
+            if not match or star is None or star in counts:
+                return None
+            counts[star] = int(match[1])
+        return counts
+
+    def check_and_switch_ticket(self, sequence=None, *, stop_at_six=False):
+        """使用当前帧的星级、数量和选中标记确认召唤。"""
+        if sequence is None:
+            sequence = self.conf.meta_demon_config.fire_sequence_v
+        if not sequence:
+            return False
         logger.hr('Summon boss')
-        # Keep panel opening, selection and confirmation in one screenshot-driven
-        # loop: a second entry click or a dropped click may close the panel.
         tickets = {
             BossType.ONE_STAR: self.I_MD_ONE_STAR,
             BossType.TWO_STARS: self.I_MD_TWO_STARS,
@@ -290,66 +309,82 @@ class BossBattle(GeneralBattle, SwitchSoul, FrameQuickLoadout, GameUi, MetaDemon
             BossType.FIVE_STARS: self.I_MD_FIVE_STARS,
             BossType.SIX_STARS: self.I_MD_SIX_STARS,
         }
-        target_type = None
+        pending_star = None
+        missing_inventory = None
         deadline = time.monotonic() + 25
         settle_until = 0.0
         while time.monotonic() < deadline:
             self.screenshot()
             if self.appear(self.I_MD_FIRE):
-                if target_type is not None:
-                    if self.cur_boss_type is None or loadout_group(self.cur_boss_type) != loadout_group(target_type):
-                        self.current_count = 0
-                    self.cur_boss_type = target_type
+                if pending_star is not None:
+                    self.current_count = 0
+                    self.cur_boss_type = pending_star
                     self._boss_generation = getattr(self, '_boss_generation', 0) + 1
                     self._current_boss_attempts = 0
-                    logger.info(f'Summon {target_type.name.lower()} boss confirmed')
-                return True
-            panel_open = self.appear(self.I_MD_GET_BOSS)
-            if not panel_open:
-                if time.monotonic() < settle_until:
-                    continue
-                if self.appear(self.I_MD_TICKET_EMPTY):
-                    self.State.done = True
-                    logger.info('Not have any boss ticket, exit')
+                    logger.info(f'已确认召唤 {int(pending_star)} 星鬼王')
+                if self.cur_boss_type not in sequence:
+                    logger.warning('当前鬼王星级未确认或不在挑战顺序中，结束本轮')
                     return False
+                return True
+
+            panel_open = self.appear(self.I_MD_GET_BOSS)
+            if pending_star is not None and not panel_open:
+                continue
+            preview = self.next_summon_star()
+            if pending_star is None and stop_at_six and self.stop_at_six_star_preview(preview, sequence):
+                if panel_open:
+                    self.appear_then_click(self.I_MD_CLOSE_POPUP, interval=0.8)
+                return False
+            if time.monotonic() < settle_until:
+                continue
+            if pending_star is None and self.appear(self.I_MD_TICKET_EMPTY):
+                self.State.done = self.State.targets_finished = True
+                logger.info('召唤队列无门票')
+                self.appear_then_click(self.I_MD_CLOSE_POPUP, interval=0.8)
+                return False
+            if not panel_open:
+                missing_inventory = None
+                if preview is not None or self.appear(self.I_MD_SUMMON_BOSS):
+                    self.cur_boss_type = None
                 if self.appear_then_click(self.I_MD_SWITCH_TICKET, interval=1.5):
-                    # Let the opening animation finish before clicking its toggle again.
                     settle_until = time.monotonic() + 1.5
                 continue
-            if target_type is None:
-                # The summon button may appear before the ticket cards settle.
-                if time.monotonic() < settle_until:
-                    continue
-                available = [star for star in (self.conf.meta_demon_config.fire_sequence_v if sequence is None else sequence)
-                             if star in tickets and self.ticket_matches_star(tickets[star], star)]
-                if not available:
-                    # A missed template is not evidence that the tickets ran out.
-                    # Only end here when other star levels are positively visible.
-                    visible = [star for star, ticket in tickets.items()
-                               if self.ticket_matches_star(ticket, star)]
-                    if visible:
-                        self.State.done = True
-                        logger.info(f'已识别门票星级 {[int(star) for star in visible]}，均不在召唤顺序中，结束任务')
-                        self.appear_then_click(self.I_MD_CLOSE_POPUP, interval=0.8)
-                        return False
-                    logger.warning('召唤面板尚未识别到有效门票，等待重新识别，不判定门票耗尽')
-                    settle_until = time.monotonic() + 1
-                    continue
-                target_type = available[0]
-                logger.info(f'Summon {target_type.name.lower()} boss')
-            target = tickets[target_type]
-            # Both the target ticket and its selected marker must belong to this frame.
-            if not self.ticket_matches_star(target, target_type):
+
+            self.cur_boss_type = None
+            inventory = self.read_ticket_counts(tickets)
+            if inventory is None or (preview is not None and not inventory.get(preview)):
+                missing_inventory = None
+                settle_until = time.monotonic() + 0.8
                 continue
+            target_star = next((star for star in sequence if inventory.get(star, 0) > 0), None)
+            if pending_star is not None and target_star != pending_star:
+                continue
+            if target_star is None:
+                if missing_inventory == inventory:
+                    self.State.done = self.State.targets_finished = True
+                    logger.info('已核对召唤队列，目标星级门票已用完')
+                    self.appear_then_click(self.I_MD_CLOSE_POPUP, interval=0.8)
+                    return False
+                missing_inventory = inventory
+                settle_until = time.monotonic() + 0.8
+                continue
+
+            missing_inventory = None
+            target = tickets[target_star]
             if self.appear(self.I_MD_CHECK_SELECTED):
                 marker_x, _, marker_w, _ = self.I_MD_CHECK_SELECTED.roi_front
                 x, _, width, _ = target.roi_front
                 if x <= marker_x + marker_w / 2 <= x + width:
+                    # The main page shows the automatic queue. The panel's own
+                    # marker confirms which ticket its button will actually use.
+                    if stop_at_six and (preview is None or not self.check_fatigue()):
+                        continue
                     if self.appear_then_click(self.I_MD_GET_BOSS, interval=1.5):
+                        pending_star = target_star
                         settle_until = time.monotonic() + 3
                     continue
             self.click(target, interval=1.0)
-        logger.warning(f'鬼王召唤未完成（目标={target_type.name if target_type else "未选定"}），返回重新检查界面')
+        logger.warning('未能确认鬼王召唤，结束本轮')
         return False
 
     def ticket_matches_star(self, ticket: RuleImage, star: BossType, *, synthesis=False) -> bool:
@@ -383,59 +418,31 @@ class BossBattle(GeneralBattle, SwitchSoul, FrameQuickLoadout, GameUi, MetaDemon
         return True
 
     def check_and_switch_soul(self) -> bool:
-        """按鬼王分类应用御魂；显式开启快速上阵时通过 frame 装魂并上阵。"""
-        if self.cur_boss_type is None:
+        """通过快速预设为当前鬼王装魂并上阵。"""
+        settings = self.conf.quick_preset_config
+        if not settings.enable or self._preset_boss_generation == self._boss_generation:
             return True
-        category = loadout_group(self.cur_boss_type)
-        custom = self.conf.quick_preset_config
-        custom_enabled = (category == 'high_star' and
-                          self.conf.general_config.high_star_quick_loadout_enable and
-                          custom.high_star_custom_preset_enable)
-        loadout_key = (category, getattr(self, '_boss_generation', 0)) if custom_enabled else category
-        if getattr(self, '_active_loadout_group', None) == loadout_key:
-            return True
-        if category == 'high_star' and self.conf.general_config.high_star_quick_loadout_enable:
-            from tasks.Component.QuickLoadout.config import QuickLoadoutConfig, QuickLoadoutMode
-            soul = self.conf.switch_soul_config.switch_for(category)
-            quick = QuickLoadoutConfig(enable=True, mode=QuickLoadoutMode.OCR,
-                                      group_name=soul.group_name, preset_name=soul.team_name)
-            if custom_enabled:
-                try:
-                    presets = custom.named_presets()
-                except ValueError as exc:
-                    logger.error(f'高星快速预设配置错误: {exc}')
-                    return False
-                name_ocr = getattr(self, 'O_BOSS_NAME', None)
-                if name_ocr is None:
-                    logger.error('缺少超鬼王首领名称 OCR 资源 O_BOSS_NAME')
-                    return False
-                boss_name = self._read_quick_loadout_stage_name(name_ocr)
-                if not self._normalize_name(boss_name):
-                    logger.warning('未识别到首领名称，暂不上阵')
-                    return False
-                _, target, _ = self._match_custom_preset(boss_name, presets)
-                if target is None:
-                    logger.error(f'首领 {boss_name} 无匹配预设，请配置对应名称或 ALL')
-                    return False
-                quick.group_name, quick.preset_name = target
-            if not self.run_quick_loadout(
-                quick, frame=self.F_QUICK_LOADOUT_FRAME, skip_equip_soul=custom.skip_equip_soul,
-            ):
+        try:
+            presets = settings.named_presets()
+        except ValueError as exc:
+            logger.error(f'超鬼王快速预设配置错误：{exc}')
+            return False
+        target = presets.get('ALL')
+        if len(presets) > 1 or target is None:
+            boss_name = self._read_quick_loadout_stage_name(self.O_BOSS_NAME)
+            if not self._normalize_name(boss_name):
+                logger.warning('未识别到首领名称，暂不上阵')
                 return False
-        else:
-            soul = self.conf.switch_soul_config.switch_for(category)
-            if soul.enable or soul.enable_switch_by_name:
-                self.goto_page(ipages.page_shikigami_records)
-                if soul.enable_switch_by_name:
-                    self.run_switch_soul_by_name(soul.group_name, soul.team_name)
-                else:
-                    self.run_switch_soul(soul.switch_group_team)
-                self.goto_page(ipages.page_meta_demon_boss)
-        # 其他分类可能已改变阵容，切回时必须重新应用该分类的战斗预设。
-        shared = getattr(self, '_battle_shared_state', None)
-        if shared is not None:
-            shared.pop(f'meta_demon_{category}', None)
-        self._active_loadout_group = loadout_key
+            _, target, _ = self._match_custom_preset(boss_name, presets)
+            if target is None:
+                logger.error(f'首领 {boss_name} 无匹配预设，请配置对应名称或 ALL')
+                return False
+        quick = QuickLoadoutConfig(enable=True, mode=QuickLoadoutMode.OCR,
+                                  group_name=target[0], preset_name=target[1])
+        if not self.run_quick_loadout(quick, frame=self.F_QUICK_LOADOUT_FRAME,
+                                      skip_equip_soul=settings.skip_equip_soul):
+            return False
+        self._preset_boss_generation = self._boss_generation
         return True
 
     def finish_task(self):

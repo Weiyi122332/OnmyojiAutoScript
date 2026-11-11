@@ -1,5 +1,4 @@
 # This Python file uses the following encoding: utf-8
-from datetime import datetime
 from tasks.MetaDemon.boss_battle import BossBattle
 from tasks.MetaDemon.config import MetaDemonMode
 
@@ -16,12 +15,10 @@ class ScriptTask(BossBattle):
         for mode in modes:
             if mode == MetaDemonMode.BOSS_ASSIST:
                 from tasks.MetaDemon.assistance import run_assistance
-                self.start_time = datetime.now()
                 if grouped_assistance:
                     return run_assistance(self, grouped=True, batch_session=batch_session)
                 return run_assistance(self)
             if mode == MetaDemonMode.BOSS_BATTLE:
-                self.start_time = datetime.now()
                 return super().run()
         self.set_next_run(task="MetaDemon", success=True)
         self.finish_task()

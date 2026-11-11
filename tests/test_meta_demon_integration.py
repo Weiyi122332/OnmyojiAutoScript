@@ -1,5 +1,5 @@
 """Exercise the MetaDemon adapters with the real page graph and cooperation store."""
-from datetime import datetime, timedelta
+from datetime import datetime
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -124,8 +124,7 @@ class MetaDemonIntegrationTest(unittest.TestCase):
         assist.publish('MetaDemon')
 
         def link(runtime, conf):
-            return AssistanceLink(SimpleNamespace(conf=conf, config=SimpleNamespace(cooperation_runtime=runtime),
-                                                   limit_time=timedelta(minutes=1), start_time=datetime.now()))
+            return AssistanceLink(SimpleNamespace(conf=conf, config=SimpleNamespace(cooperation_runtime=runtime)))
 
         sender, receiver = link(offer, first), link(assist, second)
         self.assertTrue(sender.wait_for_peer())
@@ -136,3 +135,13 @@ class MetaDemonIntegrationTest(unittest.TestCase):
         self.assertTrue(sender.peer_settled())
         sender.publish('new-boss-portrait')
         self.assertFalse(sender.confirmed())
+        self.assertEqual(receiver.target()[2], 'new-boss-portrait')
+        sender.publish(completed=True)
+        self.assertIsNone(receiver.target())
+        self.assertTrue(receiver.peer_completed())
+        sender.publish('interrupted-portrait')
+        self.assertFalse(receiver.peer_completed())
+        offer.publish('')
+        self.assertIsNone(receiver.target())
+        offer.publish('MetaDemon')
+        self.assertIsNone(receiver.target())

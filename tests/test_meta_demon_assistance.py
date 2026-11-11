@@ -1,6 +1,5 @@
 """Offline offering state, named recipients and six-star-only checks."""
 import unittest
-from datetime import datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -18,7 +17,6 @@ class AssistanceChecks(unittest.TestCase):
     def make_task(self, **options):
         conf = MetaDemon(assistance_config={'friend_names': 'Alice;Bob', **options})
         t = SimpleNamespace(conf=conf, config=SimpleNamespace(meta_demon=conf),
-            start_time=datetime.now(), limit_time=timedelta(minutes=5), limit_count=10,
             total_count=0, State=SimpleNamespace(done=False), cur_boss_type=BossType.SIX_STARS,
             _boss_generation=1, device=SimpleNamespace(image=object(), image_frame_id='frame'),
             screenshot=Mock(), swipe=Mock(), click=Mock(), appear_then_click=Mock(return_value=True),
@@ -171,9 +169,9 @@ class AssistanceChecks(unittest.TestCase):
         self.assertEqual(t.total_count, 0)
         t.start_battle.assert_not_called()
 
-    def test_kill_limit_prevents_another_summon(self):
+    def test_previous_kill_limit_does_not_prevent_another_summon(self):
         t = self.make_task()
-        t.limit_count = 1
+        t.total_count = 50
         offering = self.make_offering(t)
         offering.share = Mock(return_value=True)
         offering.tick()
@@ -181,8 +179,9 @@ class AssistanceChecks(unittest.TestCase):
         t.phase = 'empty'
         offering.tick()
         offering.tick()
-        self.assertFalse(offering.within_limit())
-        t.check_and_switch_ticket.assert_not_called()
+        self.assertTrue(offering.can_continue())
+        self.assertEqual(t.total_count, 51)
+        t.check_and_switch_ticket.assert_called_once_with(sequence=(BossType.SIX_STARS,))
 
     def test_placeholder_and_empty_friends_do_not_navigate(self):
         t = self.make_task(role=AssistanceRole.ASSIST)

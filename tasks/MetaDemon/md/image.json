@@ -350,6 +350,16 @@
     "description": "鬼王页面标志"
   },
   {
+    "itemName": "check_boss_page_title",
+    "imageName": "md_check_boss_page_title.png",
+    "roiFront": "144,15,141,41",
+    "roiBack": "138,8,158,57",
+    "method": "Template matching",
+    "threshold": 0.85,
+    "profile": "High",
+    "description": "祸主降临页面标题"
+  },
+  {
     "itemName": "md_check_main_page",
     "imageName": "md_md_check_main_page.png",
     "roiFront": "907,60,76,208",

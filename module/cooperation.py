@@ -13,6 +13,7 @@ from module.config.utils import convert_to_underscore
 
 
 META_DEMON_TASKS = frozenset(('MetaDemon', 'MetaDemonTicket'))
+META_DEMON_ASSISTANCE = 'MetaDemonAssistance'
 META_DEMON_BATCH = 'MetaDemonAssistanceBatch'
 META_DEMON_BATCH_ROUND = 'MetaDemonAssistanceBatchRound'
 
@@ -32,6 +33,7 @@ class Cooperation:
         folder.mkdir(parents=True, exist_ok=True)
         self.path = folder / 'state.sqlite3'
         self.active_task = ''
+        self._publish_lock = threading.Lock()
         self._stop = threading.Event()
         self._thread = None
         self.peers = {}
@@ -68,13 +70,16 @@ class Cooperation:
             db.close()
 
     def publish(self, task=None):
-        changed = task is not None and task != self.active_task
-        if task is not None:
-            self.active_task = task
-        with self.connect() as db:
+        with self._publish_lock, self.connect() as db:
+            changed = task is not None and task != self.active_task
+            if task is not None:
+                self.active_task = task
             if changed:
                 db.execute('DELETE FROM room_checks WHERE source=? OR target=?',
                            (self.name, self.name))
+                if self.active_task == 'MetaDemon':
+                    db.execute('DELETE FROM battle_states WHERE source=? AND task=?',
+                               (self.name, META_DEMON_ASSISTANCE))
             db.execute('INSERT OR REPLACE INTO runners VALUES (?, ?, ?)',
                        (self.name, self.active_task, time.time()))
 
@@ -82,8 +87,8 @@ class Cooperation:
         if self._thread is not None:
             return
         with self.connect() as db:
-            db.execute('DELETE FROM battle_states WHERE source=? AND task IN (?, ?)',
-                       (self.name, META_DEMON_BATCH, META_DEMON_BATCH_ROUND))
+            db.execute('DELETE FROM battle_states WHERE source=? AND task IN (?, ?, ?)',
+                       (self.name, META_DEMON_ASSISTANCE, META_DEMON_BATCH, META_DEMON_BATCH_ROUND))
         self.publish('')
         self._owner_thread = threading.current_thread()
         self._thread = threading.Thread(target=self._heartbeat, daemon=True,

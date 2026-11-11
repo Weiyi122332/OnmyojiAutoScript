@@ -1,11 +1,11 @@
-"""MetaDemon loadout categories, settings payload and ticket-runner mapping."""
+"""MetaDemon quick presets, settings payload and ticket-runner mapping."""
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
 from module.config.config_model import ConfigModel
 from module.server.i18n import Addition
-from tasks.MetaDemon.config import BossType, MetaDemon, MetaDemonMode, loadout_group
+from tasks.MetaDemon.config import BossType, MetaDemon, MetaDemonMode
 from tasks.MetaDemon.boss_battle import BossBattle
 from tasks.MetaDemonTicket.config import MetaDemonTicket, TicketMode
 from tasks.MetaDemonTicket.ticket_farming import ticket_farming_config, ExplorationTicketTask, AwakeTicketTask
@@ -21,27 +21,28 @@ class MetaDemonSettingsChecks(unittest.TestCase):
         self.assertEqual(conf.meta_demon_ticket.general_config.mode, TicketMode.EXPLORATION)
         self.assertTrue(conf.meta_demon.scheduler.enable and conf.meta_demon_ticket.scheduler.enable)
 
-    def test_categories_and_independent_presets(self):
-        self.assertEqual([loadout_group(BossType(i)) for i in range(1, 7)], ['low_star']*4+['high_star']*2)
-        conf = ConfigModel(meta_demon={'preset_config': {'low_star_enable': True, 'low_star_group': 2,
-            'low_star_team': 3, 'ticket_farming_enable': True, 'ticket_farming_group': 4, 'ticket_farming_team': 2}})
-        low = conf.meta_demon.battle_config('low_star')
+    def test_removed_boss_settings_and_legacy_ticket_preset(self):
+        conf = ConfigModel(meta_demon={
+            'meta_demon_config': {'limit_time': '00:45:00', 'limit_count': 50},
+            'preset_config': {'ticket_farming_enable': True, 'ticket_farming_group': 4, 'ticket_farming_team': 2},
+            'low_star_battle_conf': {'preset_enable': True},
+            'high_star_battle_conf': {'green_enable': True},
+            'switch_soul_config': {'low_star_enable': True},
+        })
+        battle = conf.meta_demon.model_dump()
+        self.assertFalse({'low_star_battle_conf', 'high_star_battle_conf', 'switch_soul_config'} & battle.keys())
+        self.assertFalse({'limit_time', 'limit_count'} & battle['meta_demon_config'].keys())
         ticket = conf.meta_demon_ticket.general_battle_config
-        self.assertEqual((low.preset_group, low.preset_team), (2,3))
-        self.assertEqual((ticket.preset_group, ticket.preset_team), (4,2))
-        self.assertFalse(conf.meta_demon.battle_config('high_star').preset_enable)
+        self.assertEqual((ticket.preset_group, ticket.preset_team), (4, 2))
 
-    def test_legacy_souls_and_low_preset_migrate(self):
-        conf = MetaDemon(switch_soul={'enable': True, 'one_star': '2,3', 'two_stars': '3,4',
-            'five_stars': '活动,高星', 'enable_one_star_preset': True})
-        low = conf.switch_soul_config.switch_for('low_star')
-        high = conf.switch_soul_config.switch_for('high_star')
-        self.assertTrue(low.enable)
-        self.assertEqual(low.switch_group_team, '2,3')
-        self.assertTrue(high.enable_switch_by_name)
-        self.assertEqual((high.group_name, high.team_name), ('活动','高星'))
-        self.assertTrue(conf.low_star_battle_conf.preset_enable)
-        self.assertNotIn('switch_soul', conf.model_dump())
+    def test_existing_quick_loadout_target_migrates(self):
+        conf = MetaDemon(
+            general_config={'high_star_quick_loadout_enable': True},
+            switch_soul_config={'high_star_group_team_name': '默认分组,超鬼王'},
+        )
+        self.assertTrue(conf.quick_preset_config.enable)
+        self.assertEqual(conf.quick_preset_config.named_presets(), {'ALL': ('默认分组', '超鬼王')})
+        self.assertEqual(MetaDemon.model_validate(conf.model_dump()), conf)
 
     def test_exploration_tickets_copy_normal_settings_with_ticket_limits_and_role(self):
         meta = MetaDemonTicket(
@@ -103,7 +104,8 @@ class MetaDemonSettingsChecks(unittest.TestCase):
 
     def test_settings_payload_has_flat_groups_and_defaults(self):
         payload = ConfigModel.script_task(SimpleNamespace(meta_demon=MetaDemon()), 'MetaDemon')
-        self.assertEqual(set(payload), {'scheduler','meta_demon_config','general_config','switch_soul_config','low_star_battle_conf','high_star_battle_conf','quick_preset_config','settings_layout_config','assistance_config'})
+        self.assertEqual(set(payload), {'scheduler', 'meta_demon_config', 'quick_preset_config',
+                                        'settings_layout_config', 'assistance_config'})
         for group in payload.values():
             self.assertIsInstance(group, list)
             for field in group:
@@ -139,62 +141,34 @@ class MetaDemonSettingsChecks(unittest.TestCase):
                                 self.assertRegex(display['options'][option], chinese)
                                 self.assertRegex(translations.get(option, option), chinese)
 
-    def test_low_and_high_share_loadout_within_category(self):
+    def test_quick_loadout_is_the_only_soul_path(self):
         owner = object.__new__(BossBattle)
         owner.conf = MetaDemon(
+            quick_preset_config={'enable': True, 'preset_groups': '预设组1,默认分组,超鬼王'},
             switch_soul_config={'low_star_enable': True, 'low_star_group_team': '2,3'},
-            general_config={'high_star_quick_loadout_enable': True},
-            preset_config={'high_star_enable': True, 'high_star_group_name': '默认分组', 'high_star_preset_name': '超鬼王'})
+        )
+        owner._preset_boss_generation = None
+        owner._boss_generation = 1
+        owner.cur_boss_type = BossType.ONE_STAR
         owner.goto_page = Mock()
-        owner.run_switch_soul = Mock()
         owner.run_quick_loadout = Mock(return_value=True)
-        for star in range(1,7):
-            owner.cur_boss_type = BossType(star)
-            self.assertTrue(owner.check_and_switch_soul())
-        owner.run_switch_soul.assert_called_once_with('2,3')
+        owner._read_quick_loadout_stage_name = Mock()
+        self.assertTrue(owner.check_and_switch_soul())
+        self.assertTrue(owner.check_and_switch_soul())
         owner.run_quick_loadout.assert_called_once()
         config = owner.run_quick_loadout.call_args.args[0]
-        self.assertEqual((config.group_name, config.preset_name), ('默认分组','超鬼王'))
+        self.assertEqual((config.group_name, config.preset_name), ('默认分组', '超鬼王'))
         self.assertIs(owner.run_quick_loadout.call_args.kwargs['frame'], owner.F_QUICK_LOADOUT_FRAME)
-        owner._battle_shared_state = {'meta_demon_low_star': object()}
-        owner.cur_boss_type = BossType.ONE_STAR
-        self.assertTrue(owner.check_and_switch_soul())
-        self.assertNotIn('meta_demon_low_star', owner._battle_shared_state)
+        owner.goto_page.assert_not_called()
+        owner._read_quick_loadout_stage_name.assert_not_called()
 
-    def test_high_star_default_uses_records_and_battle_preset(self):
-        owner = object.__new__(BossBattle)
-        owner.conf = MetaDemon(
-            switch_soul_config={'high_star_enable': True, 'high_star_group_team': '3,2'},
-            high_star_battle_conf={'preset_enable': True, 'preset_group': 4, 'preset_team': 3})
-        owner.cur_boss_type = BossType.FIVE_STARS
-        owner.goto_page = Mock()
-        owner.run_switch_soul = Mock()
-        owner.run_quick_loadout = Mock()
-        self.assertTrue(owner.check_and_switch_soul())
-        owner.run_switch_soul.assert_called_once_with('3,2')
-        self.assertEqual(owner.goto_page.call_count, 2)
-        owner.run_quick_loadout.assert_not_called()
-        self.assertTrue(owner.conf.battle_config('high_star').preset_enable)
-
-    def test_quick_loadout_only_overrides_high_star(self):
-        conf = MetaDemon(general_config={'high_star_quick_loadout_enable': True},
-            low_star_battle_conf={'preset_enable': True},
-            high_star_battle_conf={'preset_enable': True, 'green_enable': True})
-        ticket = MetaDemonTicket(general_battle_config={'preset_enable': True, 'green_enable': True})
-        self.assertTrue(conf.battle_config('low_star').preset_enable)
-        self.assertFalse(conf.battle_config('high_star').preset_enable)
-        self.assertTrue(conf.battle_config('high_star').green_enable)
-        self.assertTrue(conf.high_star_battle_conf.preset_enable)
-        awake = ticket_farming_config(ticket, TicketMode.AWAKE)
-        self.assertTrue(awake.general_battle_config.preset_enable)
-        self.assertTrue(awake.general_battle_config.green_enable)
-
-    def test_custom_high_presets_once_per_new_boss(self):
+    def test_custom_presets_apply_to_each_new_boss(self):
         owner = object.__new__(BossBattle)
         owner.conf = MetaDemon(general_config={'high_star_quick_loadout_enable': True},
             quick_preset_config={'high_star_custom_preset_enable': True,
                 'high_star_custom_preset': '大天狗:("高星","天狗");ALL:("通用","其他")'})
         owner.cur_boss_type = BossType.FIVE_STARS
+        owner._preset_boss_generation = None
         owner._boss_generation = 1
         owner._read_quick_loadout_stage_name = Mock(return_value='大天狗')
         owner.run_quick_loadout = Mock(return_value=True)
@@ -205,6 +179,7 @@ class MetaDemonSettingsChecks(unittest.TestCase):
         target = owner.run_quick_loadout.call_args.args[0]
         self.assertEqual((target.group_name, target.preset_name), ('高星', '天狗'))
         owner._boss_generation = 2
+        owner.cur_boss_type = BossType.TWO_STARS
         owner._read_quick_loadout_stage_name.return_value = '酒吞童子'
         self.assertTrue(owner.check_and_switch_soul())
         self.assertEqual(owner.run_quick_loadout.call_count, 2)
@@ -214,23 +189,12 @@ class MetaDemonSettingsChecks(unittest.TestCase):
 
     def test_numeric_custom_target_rejected_without_deploy(self):
         owner = object.__new__(BossBattle)
-        owner.conf = MetaDemon(general_config={'high_star_quick_loadout_enable': True},
-            quick_preset_config={'high_star_custom_preset_enable': True, 'high_star_custom_preset': 'ALL: (7, 5)'})
+        owner.conf = MetaDemon(quick_preset_config={'enable': True, 'preset_rules': 'ALL: (7, 5)'})
         owner.cur_boss_type = BossType.SIX_STARS
+        owner._preset_boss_generation = None
+        owner._boss_generation = 1
         owner.run_quick_loadout = Mock()
         self.assertFalse(owner.check_and_switch_soul())
-        owner.run_quick_loadout.assert_not_called()
-
-    def test_custom_high_presets_ignored_when_quick_disabled(self):
-        owner = object.__new__(BossBattle)
-        owner.conf = MetaDemon(quick_preset_config={'high_star_custom_preset_enable': True},
-            switch_soul_config={'high_star_enable': True, 'high_star_group_team': '2,3'})
-        owner.cur_boss_type = BossType.FIVE_STARS
-        owner.goto_page = Mock()
-        owner.run_switch_soul = Mock()
-        owner.run_quick_loadout = Mock()
-        self.assertTrue(owner.check_and_switch_soul())
-        owner.run_switch_soul.assert_called_once_with('2,3')
         owner.run_quick_loadout.assert_not_called()
 
     def test_ticket_entry_uses_mode_settings_without_copying_runtime(self):
@@ -429,34 +393,38 @@ class MetaDemonSettingsChecks(unittest.TestCase):
         from copy import deepcopy
         owner = object.__new__(BossBattle)
         owner.conf = MetaDemon(meta_demon_config={'fire_sequence': '2 1'})
-        owner.State = SimpleNamespace(done=False)
+        owner.State = BossBattle.State()
         owner.cur_boss_type = None
         owner.current_count = 7
         owner._boss_generation = 0
-        # These tests drive the summon flow. The real star matcher has separate image fixtures.
-        owner.ticket_matches_star = Mock(side_effect=lambda ticket, star: owner.appear(ticket))
         names = ('I_MD_FIRE', 'I_MD_GET_BOSS', 'I_MD_TICKET_EMPTY', 'I_MD_SWITCH_TICKET',
-                 'I_MD_CLOSE_POPUP', 'I_MD_CHECK_SELECTED', 'I_MD_ONE_STAR', 'I_MD_TWO_STARS',
+                 'I_MD_CLOSE_POPUP', 'I_MD_CHECK_SELECTED', 'I_MD_SUMMON_BOSS', 'I_MD_ONE_STAR', 'I_MD_TWO_STARS',
                  'I_MD_THREE_STARS', 'I_MD_FOUR_STARS', 'I_MD_FIVE_STARS', 'I_MD_SIX_STARS')
         for name in names:
             setattr(owner, name, deepcopy(getattr(owner, name)))
         target_ticket = {BossType.TWO_STARS: owner.I_MD_TWO_STARS,
+                         BossType.FIVE_STARS: owner.I_MD_FIVE_STARS,
                          BossType.SIX_STARS: owner.I_MD_SIX_STARS}[star]
         state = {'index': -1, 'time': 0.0}
         clicks = []
+
+        def current_frame():
+            return frames[min(state['index'], len(frames) - 1)]
 
         def screenshot():
             state['index'] += 1
             state['time'] += 1
 
         def appear(rule, **kwargs):
-            frame = frames[min(state['index'], len(frames)-1)]
+            frame = current_frame()
             if rule is owner.I_MD_FIRE:
                 return frame.get('fire', False)
             if rule is owner.I_MD_GET_BOSS:
                 return frame.get('panel', False)
             if rule is owner.I_MD_SWITCH_TICKET:
                 return not frame.get('panel', False) and not frame.get('fire', False)
+            if rule is owner.I_MD_SUMMON_BOSS:
+                return frame.get('preview') is not None
             if rule is target_ticket:
                 return frame.get('panel', False)
             if rule is owner.I_MD_CHECK_SELECTED and frame.get('panel'):
@@ -472,6 +440,10 @@ class MetaDemonSettingsChecks(unittest.TestCase):
             return True
 
         owner.screenshot = Mock(side_effect=screenshot)
+        owner.next_summon_star = Mock(side_effect=lambda: current_frame().get('preview'))
+        owner.read_ticket_counts = Mock(side_effect=lambda _: current_frame().get('inventory', {star: 1}))
+        owner.check_fatigue = Mock(return_value=True)
+        owner.synthesis_boss_ticket = Mock()
         owner.appear = Mock(side_effect=appear)
         owner.click = Mock(side_effect=click)
         owner.appear_then_click = Mock(side_effect=click)
@@ -500,7 +472,7 @@ class MetaDemonSettingsChecks(unittest.TestCase):
 
     def test_summon_retries_unresponsive_confirmation_without_reselecting(self):
         owner, state, clicks = self._summon_owner([
-            {'panel': True, 'selected': True}, {'panel': True, 'selected': True}, {'fire': True}])
+            *[{'panel': True, 'selected': True}] * 4, {'fire': True}])
         with patch('tasks.MetaDemon.boss_battle.time.monotonic', side_effect=lambda: state['time']):
             self.assertTrue(owner.check_and_switch_ticket())
         self.assertEqual(sum(rule is owner.I_MD_GET_BOSS for _, rule in clicks), 2)
@@ -516,6 +488,54 @@ class MetaDemonSettingsChecks(unittest.TestCase):
                 self.assertIsNone(owner.cur_boss_type)
                 self.assertEqual(owner._boss_generation, 0)
                 self.assertLessEqual(owner.screenshot.call_count, 25)
+
+    def test_panel_can_use_configured_priority_over_the_home_queue(self):
+        inventory = {BossType.TWO_STARS: 3, BossType.FIVE_STARS: 2}
+        preview = BossType.TWO_STARS
+        owner, state, clicks = self._summon_owner([
+            {'panel': True, 'inventory': inventory, 'preview': preview},
+            {'panel': True, 'inventory': inventory, 'preview': preview, 'selected': True},
+            {'fire': True},
+        ], star=BossType.FIVE_STARS)
+        owner.conf.meta_demon_config.fire_sequence = '5 2'
+        with patch('tasks.MetaDemon.boss_battle.time.monotonic', side_effect=lambda: state['time']):
+            self.assertTrue(owner.check_and_switch_ticket(stop_at_six=True))
+        self.assertEqual(owner.cur_boss_type, BossType.FIVE_STARS)
+        self.assertEqual(clicks, [(0, owner.I_MD_FIVE_STARS), (1, owner.I_MD_GET_BOSS)])
+
+    def test_exhaustion_requires_consistent_inventory_and_home_preview(self):
+        inventory = {BossType.TWO_STARS: 2, BossType.FIVE_STARS: 0}
+        for preview, finished in ((BossType.TWO_STARS, True), (BossType.FIVE_STARS, False)):
+            with self.subTest(preview=preview):
+                owner, state, clicks = self._summon_owner([
+                    {'panel': True, 'inventory': inventory, 'preview': preview},
+                ])
+                owner.conf.meta_demon_config.fire_sequence = '5'
+                with patch('tasks.MetaDemon.boss_battle.time.monotonic', side_effect=lambda: state['time']):
+                    self.assertFalse(owner.check_and_switch_ticket(stop_at_six=True))
+                self.assertEqual(owner.State.targets_finished, finished)
+                self.assertGreaterEqual(owner.read_ticket_counts.call_count, 2)
+                self.assertEqual(clicks, [])
+
+    def test_six_star_home_preview_stops_without_summon_or_synthesis(self):
+        for sequence, finished in (((BossType.TWO_STARS,), True), ((BossType.SIX_STARS,), False)):
+            with self.subTest(sequence=sequence):
+                owner, _, clicks = self._summon_owner([{'preview': BossType.SIX_STARS}])
+                self.assertFalse(owner.check_and_prepare_battle(sequence))
+                self.assertTrue(owner.State.done)
+                self.assertEqual(owner.State.targets_finished, finished)
+                self.assertEqual(clicks, [])
+                owner.synthesis_boss_ticket.assert_not_called()
+
+    def test_active_unverified_or_unconfigured_boss_cannot_start_a_battle(self):
+        for boss in (None, BossType.FIVE_STARS):
+            with self.subTest(boss=boss):
+                owner, _, clicks = self._summon_owner([{'fire': True}])
+                owner.cur_boss_type = boss
+                self.assertFalse(owner.check_and_switch_ticket(stop_at_six=True))
+                self.assertFalse(owner.start_battle((BossType.TWO_STARS,)))
+                self.assertFalse(owner.State.targets_finished)
+                self.assertEqual(clicks, [])
 
     def test_full_ticket_precheck_skips_both_farming_runners(self):
         from tasks.MetaDemon.assets import MetaDemonAssets
