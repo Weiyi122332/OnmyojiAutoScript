@@ -1,8 +1,6 @@
 # This Python file uses the following encoding: utf-8
 """任务组的运行逻辑：按配置的顺序把组内任务跑一遍。"""
 
-from contextlib import nullcontext
-
 from module.atom.click import RuleClick
 from module.atom.scatter import RuleScatter
 from module.task_loader import load_task_script, task_script_path
@@ -16,8 +14,6 @@ from module.exception import (GameBugError,
                               ScriptError,
                               TaskEnd)
 from module.logger import logger
-from tasks.MetaDemon.batch_assistance import OfferingBatch, batch_settings, run_group_assistance
-from tasks.MetaDemon.config import AssistanceRole
 from tasks.base_task import BaseTask
 
 # 这些异常代表游戏或环境本身出了问题，需要交给调度器统一处理
@@ -67,29 +63,21 @@ class TaskGroupRunner(BaseTask):
             raise TaskEnd(self.command)
 
         first = self._first_task_index(conf, title, tasks)
-        assistance = batch_settings(self.config.model) if 'MetaDemon' in tasks[first - 1:] else None
-        batch = (OfferingBatch(self.config, self.command, assistance)
-                 if assistance and assistance.role == AssistanceRole.OFFERING else None)
-        with batch if batch else nullcontext():
-            success = self._run_entries(first, tasks, title, stop_on_error, assistance, batch)
-            self.set_next_run(task=self.command, success=success, finish=True)
-            if batch:
-                batch.complete = success
+        success = self._run_entries(first, tasks, title, stop_on_error)
+        self.set_next_run(task=self.command, success=success, finish=True)
         if success:
             logger.info(f'Task group `{title}` finished: {tasks}')
         else:
             logger.warning(f'Task group `{title}` finished with error: {tasks}')
         raise TaskEnd(self.command)
 
-    def _run_entries(self, first, tasks, title, stop_on_error, assistance, batch) -> bool:
+    def _run_entries(self, first, tasks, title, stop_on_error) -> bool:
         success = True
         stopped_early = False
         for index in range(first, len(tasks) + 1):
             task = tasks[index - 1]
-            batch_step = task == 'MetaDemon' and assistance is not None
             try:
-                finished = self._run_task(index, len(tasks), task, assistance=assistance if batch_step else None,
-                                          batch=batch if batch_step else None)
+                finished = self._run_task(index, len(tasks), task)
             except TaskEnd:
                 raise
             except Exception as error:
@@ -104,13 +92,11 @@ class TaskGroupRunner(BaseTask):
                     raise
                 logger.warning(f'Task group `{title}` skips `{task}` and runs the next task')
                 success = False
-                if not batch_step:
-                    self._mark_task_failed(task)
+                self._mark_task_failed(task)
                 continue
             if not finished:
                 success = False
-                if not batch_step:
-                    self._mark_task_failed(task)
+                self._mark_task_failed(task)
                 if stop_on_error:
                     logger.warning(f'Task group `{title}` stops at [{index}/{len(tasks)}] `{task}` '
                                    f'because of the error above')
@@ -184,7 +170,7 @@ class TaskGroupRunner(BaseTask):
         """
         self.set_next_run(task=task, success=False, finish=True)
 
-    def _run_task(self, index: int, total: int, task: str, *, assistance=None, batch=None) -> bool:
+    def _run_task(self, index: int, total: int, task: str) -> bool:
         """
         运行组内的一个任务。
 
@@ -206,13 +192,8 @@ class TaskGroupRunner(BaseTask):
         RuleScatter.begin_task(task)
         try:
             task_module = load_task_script(task, f'task_group_{task}')
-            if assistance is not None:
-                return run_group_assistance(self, task_module.ScriptTask, assistance, batch)
             task_module.ScriptTask(config=self.config, device=self.device).run()
         except TaskEnd as end:
-            if assistance is not None:
-                logger.warning('整批鬼王协同在返回结果前结束')
-                return False
             logger.info(f'Task group: `{task}` finished. {end}')
         finally:
             RuleScatter.end_task(task)

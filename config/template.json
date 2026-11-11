@@ -1093,28 +1093,56 @@
       "wait_interval": "00 01:40:00"
     },
     "meta_demon_config": {
-      "mode": [
-        "鬼王战斗"
-      ],
       "auto_tea": false,
-      "fire_sequence": "1 2 3 4",
-      "high_star_powerful_enable": false,
-      "powerful_count": 1,
       "synthesis_list": "1"
     },
-    "quick_preset_config": {
-      "enable": false,
-      "preset_rules": "预设组1:ALL",
-      "preset_groups": "预设组1,默认分组,队伍1",
-      "skip_equip_soul": false
+    "low_star_preset": {
+      "powerful_count": 0,
+      "switch_soul": false,
+      "group_name": "",
+      "preset_name": ""
     },
-    "assistance_config": {
-      "cooperation_script": "",
-      "batch_cooperation": false,
-      "batch_accounts": "",
-      "role": "上供",
-      "friend_names": "",
-      "poll_interval": 5
+    "high_star_preset": {
+      "powerful_count": 0,
+      "switch_soul": false,
+      "group_name": "",
+      "preset_name": ""
+    },
+    "tsukuyomi_preset": {
+      "powerful_count": 0,
+      "switch_soul": false,
+      "group_name": "",
+      "preset_name": ""
+    },
+    "shuten_doji_preset": {
+      "powerful_count": 0,
+      "switch_soul": false,
+      "group_name": "",
+      "preset_name": ""
+    },
+    "oni_king_shuten_doji_preset": {
+      "powerful_count": 0,
+      "switch_soul": false,
+      "group_name": "",
+      "preset_name": ""
+    },
+    "yuki_gozen_preset": {
+      "powerful_count": 0,
+      "switch_soul": false,
+      "group_name": "",
+      "preset_name": ""
+    },
+    "shura_kidomaru_preset": {
+      "powerful_count": 0,
+      "switch_soul": false,
+      "group_name": "",
+      "preset_name": ""
+    },
+    "kidomaru_preset": {
+      "powerful_count": 0,
+      "switch_soul": false,
+      "group_name": "",
+      "preset_name": ""
     }
   },
   "meta_demon_ticket": {

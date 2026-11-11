@@ -87,8 +87,17 @@
   "resource_inventory": "Resource Inventory",
   "MetaDemonTicket": "MetaDemon Tickets",
   "cooperation_script_help": "Name of the other local profile",
-  "batch_cooperation": "Batch ghost assistance",
-  "batch_accounts": "Batch offering accounts",
-  "batch_cooperation_help": "Enable on both profiles and enter the other local profile name. Run the offering task in a task group and start the assistant to wait until the group finishes.",
-  "batch_accounts_help": "Enter one saved login per line as account|server|character|platform|aliases. Account and server are required. Use 安卓 or 苹果 for the platform. All accounts use the same assistance settings. Leave empty to use the current account."
+  "快速预设": "Quick presets",
+  "1–4 星通用": "1–4 stars",
+  "5–6 星通用": "5–6 stars",
+  "月读": "Tsukuyomi",
+  "酒吞童子": "Shuten Doji",
+  "鬼王酒吞童子": "Oni King Shuten Doji",
+  "雪御前": "Yuki Gozen",
+  "修罗鬼童丸": "Shura Kidomaru",
+  "鬼童丸": "Kidomaru",
+  "powerful_count": "Powerful chase count",
+  "switch_soul": "Equip souls",
+  "预设分组名": "Preset group name",
+  "预设队伍名": "Preset team name"
 }

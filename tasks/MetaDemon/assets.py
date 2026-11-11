@@ -38,22 +38,8 @@ class MetaDemonAssets:
 	I_MD_SETTLING = RuleImage(roi_front=(723,441,82,32), roi_back=(714,431,100,51), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_settling.png")
 	# 领取昨日奖励
 	I_MD_GET_YESTERDAY_REWARD = RuleImage(roi_front=(709,544,183,56), roi_back=(628,487,327,163), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_get_yesterday_reward.png")
-	# 一星鬼王召唤票
-	I_MD_ONE_STAR = RuleImage(roi_front=(361,312,68,69), roi_back=(261,299,754,133), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_one_star.png")
-	# 二星鬼王召唤票
-	I_MD_TWO_STARS = RuleImage(roi_front=(460,314,66,67), roi_back=(266,303,751,134), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_two_stars.png")
-	# 三星鬼王召唤票
-	I_MD_THREE_STARS = RuleImage(roi_front=(557,315,67,67), roi_back=(266,302,749,129), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_three_stars.png")
-	# 四星鬼王召唤票
-	I_MD_FOUR_STARS = RuleImage(roi_front=(656,314,71,68), roi_back=(261,299,754,132), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_four_stars.png")
-	# 五星鬼王召唤票
-	I_MD_FIVE_STARS = RuleImage(roi_front=(754,313,71,69), roi_back=(267,303,749,129), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_five_stars.png")
-	# 六星鬼王召唤票
-	I_MD_SIX_STARS = RuleImage(roi_front=(856,316,66,69), roi_back=(265,299,754,133), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_six_stars.png")
 	# 立即召唤鬼王
 	I_MD_GET_BOSS = RuleImage(roi_front=(576,454,135,34), roi_back=(514,421,242,101), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_get_boss.png")
-	# 检查是否选中对应鬼王票
-	I_MD_CHECK_SELECTED = RuleImage(roi_front=(666,285,50,22), roi_back=(264,275,751,39), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_check_selected.png")
 	# 关闭超鬼王内弹窗
 	I_MD_CLOSE_POPUP = RuleImage(roi_front=(1003,160,41,37), roi_back=(895,39,345,209), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_close_popup.png")
 	# 喝茶
@@ -80,24 +66,12 @@ class MetaDemonAssets:
 	I_MD_START_SYNTHESIS = RuleImage(roi_front=(906,562,108,39), roi_back=(884,548,155,62), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_start_synthesis.png")
 	# 合成花钱标志
 	I_MD_SYNTHESIS_NEED_MONEY = RuleImage(roi_front=(1055,545,68,54), roi_back=(1004,521,178,109), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_synthesis_need_money.png")
-	# 邀请好友
-	I_MD_INVITE_FRIENDS = RuleImage(roi_front=(713,545,125,60), roi_back=(693,529,161,95), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_invite_friends.png")
-	# 鬼王集结
-	I_MD_INVITE = RuleImage(roi_front=(252,162,40,39), roi_back=(239,143,70,74), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_invite.png")
 	# 合成标志
 	I_MD_SYNTHESIS = RuleImage(roi_front=(1200,224,40,41), roi_back=(1172,199,100,100), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_synthesis.png")
 	# 合成鬼王空位
 	I_MD_SYNTHESIS_EMPTY = RuleImage(roi_front=(800,158,72,66), roi_back=(622,144,420,407), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_synthesis_empty.png")
-	# 好友选中标志
-	I_MD_FRIEND_SELECTED = RuleImage(roi_front=(600,178,32,38), roi_back=(351,174,578,357), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_friend_selected.png")
 	# 无鬼王门票标志
 	I_MD_TICKET_EMPTY = RuleImage(roi_front=(591,303,101,101), roi_back=(446,295,368,154), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_ticket_empty.png")
-	# 截取上供方截图中的鬼王头像
-	I_SHARE_DEMON = RuleImage(roi_front=(47,137,80,82), roi_back=(47,137,80,82), threshold=0.8, method="Template matching", profile="High", file="")
-	I_SHARE_DEMON.name = "SHARE_DEMON"
-	# 用上供方的头像截图在协助列表内匹配
-	I_FIGHT_SHARE_DEMON = RuleImage(roi_front=(49,376,80,82), roi_back=(30,361,298,276), threshold=0.8, method="Template matching", profile="High", file="")
-	I_FIGHT_SHARE_DEMON.name = "FIGHT_SHARE_DEMON"
 	# 活动列表页超鬼王活动标志
 	I_CHECK_ACT_LIST_METADEMON_ACT = RuleImage(roi_front=(718,293,448,127), roi_back=(675,249,566,240), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_check_act_list_metademon_act.png")
 	# 鬼王页面标志
@@ -127,24 +101,11 @@ class MetaDemonAssets:
 	# Ocr Rule Assets
 	# 疲劳度
 	O_MD_FATIGUE = RuleOcr(roi=(1109,22,114,34), area=(1106,17,124,41), mode="DigitCounter", method="Default", keyword="", name="md_fatigue")
-	# 好友列表
-	O_MD_FRIENDS = RuleOcr(roi=(435,179,486,351), area=(435,178,489,352), mode="Full", method="Default", keyword="", name="md_friends")
-	# 召唤队列门票持有数量
-	O_MD_TICKET_COUNTS = RuleOcr(roi=(345,384,591,36), area=(345,384,591,36), mode="Full", method="Default", keyword="", name="md_ticket_counts")
 	# 合成目标星级
 	O_SYNTHESIS_LEVEL = RuleOcr(roi=(747,424,181,34), area=(747,424,181,34), mode="Single", method="Default", keyword="", name="synthesis_level")
 	#
 	O_BOSS_NAME = RuleOcr(roi=(515,132,33,203), area=(515,132,33,203), mode="Single", method="Default", keyword="", name="boss_name")
 	# 探索页面超鬼王门票获得数量
 	O_METADEMON_PASS_EXP = RuleOcr(roi=(919,16,114,34), area=(919,16,114,34), mode="DigitCounter", method="Default", keyword="", name="metademon_pass_exp")
-	#
-	O_MD_HELP_SOLO = RuleOcr(roi=(134,374,111,28), area=(22,358,309,280), mode="Single", method="Default", keyword="已分享：1人", name="md_help_solo")
 	# 发现妖怪
 	O_FIND_SHIKIGAMI = RuleOcr(roi=(561,558,138,38), area=(538,547,188,72), mode="Single", method="Default", keyword="妖怪发现", name="find_shikigami")
-
-
-	# Swipe Rule Assets
-	# 向上滑动好友列表
-	S_MD_SWIPE_FRIEND_UP = RuleSwipe(roi_front=(784,398,55,20), roi_back=(792,340,56,23), mode="default", name="md_swipe_friend_up")
-	#
-	S_MD_SWIPE_UP = RuleSwipe(roi_front=(146,459,55,20), roi_back=(146,398,56,23), mode="default", name="md_swipe_up")

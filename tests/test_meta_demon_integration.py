@@ -18,9 +18,7 @@ from tasks.GameUi.registry import PageRegistry
 from tasks.GameUi.session import NavigatorSession
 from tasks.MetaDemon import page as pages
 from tasks.MetaDemon.assets import MetaDemonAssets
-from tasks.MetaDemon.assistance import AssistanceLink
 from tasks.MetaDemon.boss_battle import BossBattle
-from tasks.MetaDemon.config import MetaDemon
 from tasks.MetaDemonTicket.config import MetaDemonTicket
 from tasks.MetaDemonTicket.ticket_farming import (
     ExplorationTicketTask, RealmRaidThresholdReached, TicketsFull,
@@ -164,35 +162,3 @@ class MetaDemonIntegrationTest(unittest.TestCase):
         since = leader.begin_completion_phase('MetaDemonTicket', 'second')
         member.notify_task_completion('MetaDemonTicket', 'first', 'tickets_full')
         self.assertEqual(leader.peer_task_completion('MetaDemonTicket', 'second', since), 'tickets_full')
-
-    def test_assistance_acknowledgement_uses_the_current_boss_session(self):
-        first = MetaDemon(scheduler={'enable': True}, meta_demon_config={'mode': ['鬼王协助']},
-                          assistance_config={'role': '上供', 'cooperation_script': 'second'})
-        second = MetaDemon(scheduler={'enable': True}, meta_demon_config={'mode': ['鬼王协助']},
-                           assistance_config={'role': '协助'})
-        offer, assist = self.make_pair(first, second, 'meta_demon')
-        offer.publish('MetaDemon')
-        assist.publish('MetaDemon')
-
-        def link(runtime, conf):
-            return AssistanceLink(SimpleNamespace(conf=conf, config=SimpleNamespace(cooperation_runtime=runtime)))
-
-        sender, receiver = link(offer, first), link(assist, second)
-        self.assertTrue(sender.wait_for_peer())
-        sender.publish('fixture-portrait')
-        target = receiver.target()
-        self.assertEqual(target[2], 'fixture-portrait')
-        receiver.confirm(target, settled=True)
-        self.assertTrue(sender.peer_settled())
-        sender.publish('new-boss-portrait')
-        self.assertFalse(sender.confirmed())
-        self.assertEqual(receiver.target()[2], 'new-boss-portrait')
-        sender.publish(completed=True)
-        self.assertIsNone(receiver.target())
-        self.assertTrue(receiver.peer_completed())
-        sender.publish('interrupted-portrait')
-        self.assertFalse(receiver.peer_completed())
-        offer.publish('')
-        self.assertIsNone(receiver.target())
-        offer.publish('MetaDemon')
-        self.assertIsNone(receiver.target())

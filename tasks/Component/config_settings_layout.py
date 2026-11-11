@@ -9,10 +9,12 @@ class SettingsLayoutConfig(ConfigBase):
         json_schema_extra={'ui_hidden': True})
 
 
-def settings_section(key, title, groups=None, variants=None):
+def settings_section(key, title, groups=None, variants=None, *, select_variant=False):
     section = {'id': key, 'title': title}
     if groups is not None:
         section['groups'] = groups
     if variants is not None:
         section['variants'] = variants
+    if select_variant:
+        section['select_variant'] = True
     return section

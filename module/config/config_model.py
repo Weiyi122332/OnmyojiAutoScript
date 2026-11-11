@@ -59,7 +59,7 @@ from tasks.GuildActivityMonitor.config import GuildActivityMonitor
 # 这一部分是活动的配置-----------------------------------------------------------------------------------------------------
 from tasks.ActivityShikigami.config import ActivityShikigami
 from tasks.MartialArts.config import MartialArts
-from tasks.MetaDemon.config import MetaDemon
+from tasks.MetaDemon.config import MetaDemon, legacy_battle_disabled
 from tasks.MetaDemonTicket.config import MetaDemonTicket, split_legacy_meta_demon
 from tasks.FrogBoss.config import FrogBoss
 from tasks.FloatParade.config import FloatParade
@@ -70,8 +70,8 @@ from tasks.DyeTrials.config import DyeTrials
 # ----------------------------------------------------------------------------------------------------------------------
 
 # 任务组-----------------------------------------------------------------------------------------------------------------
-from tasks.TaskGroup.config import (TaskGroup1, TaskGroup2, TaskGroup3, TaskGroup4, TaskGroup5,
-                                    migrate_legacy_group)
+from tasks.TaskGroup.config import (GROUP_CLASSES, TaskGroup1, TaskGroup2, TaskGroup3,
+                                    TaskGroup4, TaskGroup5, TaskGroupConfigBase, migrate_legacy_group)
 # ----------------------------------------------------------------------------------------------------------------------
 
 # 肝帝专属---------------------------------------------------------------------------------------------------------------
@@ -234,6 +234,21 @@ class ConfigModel(ConfigBase):
                 activity['scheduler'] = legacy_scheduler
         data['activity_shikigami'] = activity
 
+        old_boss = data.get('meta_demon')
+        if isinstance(old_boss, dict) and legacy_battle_disabled(old_boss):
+            for group_class in GROUP_CLASSES:
+                key = convert_to_underscore(group_class.__name__)
+                group = data.get(key)
+                if not isinstance(group, dict):
+                    continue
+                settings = TaskGroupConfigBase.migrate_tasks(group.get('group_config', {}))
+                if not isinstance(settings, dict) or 'MetaDemon' not in settings['tasks']:
+                    continue
+                index = settings['tasks'].index('MetaDemon') + 1
+                settings['tasks'].remove('MetaDemon')
+                start = int(settings.get('start_index', 1))
+                settings['start_index'] = start - 1 if start > index else start
+                data[key] = {**group, 'group_config': settings}
         return split_legacy_meta_demon(data)
 
     def __setattr__(self, key, value):
