@@ -5,11 +5,13 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, call, patch
 
 import numpy as np
 
 from module.cooperation import Cooperation
+from tasks.Exploration import page as exploration_pages
+from tasks.Exploration.config import Exploration, UserStatus
 from tasks.GameUi.registry import PageRegistry
 from tasks.GameUi.session import NavigatorSession
 from tasks.MetaDemon import page as pages
@@ -18,9 +20,46 @@ from tasks.MetaDemon.assistance import AssistanceLink
 from tasks.MetaDemon.boss_battle import BossBattle
 from tasks.MetaDemon.config import MetaDemon
 from tasks.MetaDemonTicket.config import MetaDemonTicket
+from tasks.MetaDemonTicket.ticket_farming import ExplorationTicketTask, TicketsFull
 
 
 class MetaDemonIntegrationTest(unittest.TestCase):
+    def test_exploration_tickets_use_the_registered_chapter_pages(self):
+        for role in (UserStatus.ALONE, UserStatus.LEADER):
+            with self.subTest(role=role):
+                runner = ExplorationTicketTask.__new__(ExplorationTicketTask)
+                runner.config = SimpleNamespace(meta_demon_ticket=MetaDemonTicket(), exploration=Exploration())
+                runner.user_status = role
+                runner.wait_start_time = datetime.now()
+                runner.current_count = 0
+                runner.collect_treasure_box = Mock()
+                runner.check_and_invite = Mock(return_value=False)
+                runner.ensure_difficulty = Mock()
+                runner.goto_page = Mock()
+                runner.appear = Mock(return_value=False)
+
+                handlers = runner.exp_page_handle_dict
+                handlers[exploration_pages.page_mainline]()
+                expected = [call(exploration_pages.page_exp_entrance)]
+                if role is UserStatus.ALONE:
+                    handlers[exploration_pages.page_exp_entrance]()
+                    expected.append(call(exploration_pages.page_exp_main))
+                self.assertEqual(runner.goto_page.call_args_list, expected)
+
+    def test_exploration_map_full_counter_stops_before_reopening_chapter(self):
+        runner = ExplorationTicketTask.__new__(ExplorationTicketTask)
+        runner.device = SimpleNamespace(image=object())
+        runner.user_status = UserStatus.ALONE
+        runner.appear = Mock(return_value=True)
+        runner.goto_page = Mock()
+        runner.collect_treasure_box = Mock()
+        with patch.object(MetaDemonAssets.O_METADEMON_PASS_EXP, 'ocr_digit_counter',
+                          side_effect=[(49, 1, 50), (50, 0, 50)]):
+            runner.run_on_exp()
+            with self.assertRaises(TicketsFull):
+                runner.run_on_exp()
+        runner.goto_page.assert_called_once_with(exploration_pages.page_exp_entrance)
+
     def test_activity_backup_route_is_resolved_in_the_task_session(self):
         PageRegistry.load_all_pages()
         session = NavigatorSession(task_category='meta_demon')

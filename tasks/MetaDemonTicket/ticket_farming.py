@@ -13,12 +13,13 @@ from tasks.EvoZone.config import EvoZone, EvoZoneConfig, UserStatus as AwakeUser
 from tasks.EvoZone.script_task import ScriptTask as AwakeTask
 from tasks.Exploration.config import (
     AutoRotate, Exploration, ExplorationConfig, ExplorationLevel,
-    UpType, UserStatus as ExplorationUserStatus,
+    UserStatus as ExplorationUserStatus,
 )
+from tasks.Exploration.page import page_exp_entrance, page_exp_main
 from tasks.Exploration.script_task import ScriptTask as ExplorationTask
 from tasks.GameUi.default_pages import page_reward
 import tasks.GameUi.page as pages
-from tasks.MetaDemonTicket.config import TicketMode, ExplorationTarget
+from tasks.MetaDemonTicket.config import TicketMode
 from tasks.MetaDemon.assets import MetaDemonAssets
 from tasks.GameUi.assets import GameUiAssets
 
@@ -88,13 +89,16 @@ class TicketRewardMixin:
         if getattr(self, '_ticket_farming_complete', False) or getattr(self, '_ticket_full', False):
             return
         if metademon_tickets_full(self):
-            logger.info('门票已满')
-            peer = getattr(self, '_ticket_peer', '')
-            if not peer:
-                raise TicketsFull
-            self._ticket_full = True
-            self.config.cooperation_runtime.notify_task_completion('MetaDemonTicket', peer, 'tickets_full')
-            logger.info('本号门票已满，继续组队直到对方满票')
+            self._mark_tickets_full()
+
+    def _mark_tickets_full(self):
+        logger.info('门票已满')
+        self._ticket_full = True
+        peer = getattr(self, '_ticket_peer', '')
+        if not peer:
+            raise TicketsFull
+        self.config.cooperation_runtime.notify_task_completion('MetaDemonTicket', peer, 'tickets_full')
+        logger.info('本号门票已满，继续组队直到对方满票')
 
     def _handle_reward(self, context, config):
         self.check_ticket_reward()
@@ -118,7 +122,8 @@ class AwakeTicketTask(TicketRewardMixin, AwakeTask):
 class ExplorationTicketTask(TicketRewardMixin, ExplorationTask, MetaDemonAssets):
     @cached_property
     def _config(self):
-        return ticket_farming_config(self.config.meta_demon_ticket, TicketMode.EXPLORATION)
+        return ticket_farming_config(self.config.meta_demon_ticket, TicketMode.EXPLORATION,
+                                     self.config.exploration)
 
     def _infer_task_category(self):
         return 'exploration'
@@ -178,7 +183,7 @@ class ExplorationTicketTask(TicketRewardMixin, ExplorationTask, MetaDemonAssets)
                 difficulty = self.solo_difficulty
                 if difficulty is not None:
                     self.ensure_difficulty(difficulty)
-                self.goto_page(pages.page_exp_main)
+                self.goto_page(page_exp_main)
             case ExplorationUserStatus.MEMBER:
                 self.check_then_accept()
                 self.device.stuck_record_clear()
@@ -207,6 +212,10 @@ class ExplorationTicketTask(TicketRewardMixin, ExplorationTask, MetaDemonAssets)
         raise GameStuckError(f'未确认探索难度：{difficulty.value}')
 
     def run_on_exp(self):
+        if (not getattr(self, '_ticket_farming_complete', False)
+                and not getattr(self, '_ticket_full', False)
+                and exploration_tickets_full(self)):
+            self._mark_tickets_full()
         self.fire_monster_type = ''  # 入口处重置怪物类型
         self.need_exit = False
         match self.user_status:
@@ -215,48 +224,51 @@ class ExplorationTicketTask(TicketRewardMixin, ExplorationTask, MetaDemonAssets)
                 if self.check_and_invite(self._config.invite_config.default_invite):
                     return
                 if datetime.now() - self.wait_start_time >= timedelta(seconds=10) or self.current_count == 0:
-                    self.goto_page(pages.page_exp_entrance)
+                    self.goto_page(page_exp_entrance)
             case ExplorationUserStatus.ALONE:
                 self.collect_treasure_box()
-                self.goto_page(pages.page_exp_entrance)
+                self.goto_page(page_exp_entrance)
             case ExplorationUserStatus.MEMBER:
                 self.collect_treasure_box()
                 self.check_then_accept()
                 self.device.stuck_record_clear()
 
-    def pre_process(self):
-        soul = self._config.switch_soul_config
-        if soul.enable_switch_by_name:
-            self.goto_page(pages.page_shikigami_records)
-            self.run_switch_soul_by_name(soul.group_name, soul.team_name)
-        return super().pre_process()
 
-
-def ticket_farming_config(meta, mode):
-    """仅把超鬼王专用字段适配为复用流程需要的设置，不读取独立任务配置。"""
+def ticket_farming_config(meta, mode, exploration: Exploration | None = None):
+    """觉醒使用门票任务的设置，探索复用普通探索的副本与战斗设置。"""
     common = meta.general_config
-    soul = meta.switch_soul_config.model_copy()
-    battle = meta.general_battle_config
     if mode == TicketMode.AWAKE:
         return EvoZone(
             evo_zone_config=EvoZoneConfig(user_status=AwakeUserStatus(common.user_status.value),
                 layer=common.awake_layer, kirin_type=common.awake_kirin_type,
                 limit_time=common.limit_time, limit_count=2 ** 31 - 1,
                 soul_buff_enable=common.awake_buff_enable),
-            switch_soul_config=soul, general_battle_config=battle, invite_config=meta.invite_config)
+            switch_soul_config=meta.switch_soul_config.model_copy(),
+            general_battle_config=meta.general_battle_config, invite_config=meta.invite_config)
     if mode == TicketMode.EXPLORATION:
-        target = {ExplorationTarget.ALL: UpType.ALL, ExplorationTarget.COIN: UpType.COIN,
-                  ExplorationTarget.EXP: UpType.EXP, ExplorationTarget.DARUMA: UpType.DARUMAA}
-        if common.exploration_rotate and battle.lock_team_enable:
-            battle = battle.model_copy(update={'lock_team_enable': False})
-        return Exploration(
-            exploration_config=TicketExplorationConfig(user_status=ExplorationUserStatus(common.user_status.value),
-                exploration_level=ExplorationLevel.EXPLORATION_28, difficulty=ExplorationDifficulty.HARD,
-                limit_time=common.limit_time, minions_cnt=2 ** 31 - 1,
-                auto_rotate=AutoRotate.yes if common.exploration_rotate else AutoRotate.no,
-                up_type=target[common.exploration_target]),
-            switch_soul_config=soul, general_battle_config=battle, invite_config=meta.invite_config)
+        config = (exploration if exploration is not None else Exploration()).model_copy(deep=True)
+        settings = config.exploration_config.model_dump()
+        settings.update(user_status=common.user_status, limit_time=common.limit_time,
+                        minions_cnt=2 ** 31 - 1)
+        config.exploration_config = TicketExplorationConfig(**settings)
+        config.scheduler = meta.scheduler.model_copy(deep=True)
+        config.invite_config = meta.invite_config.model_copy(deep=True)
+        config.scrolls.scrolls_enable = False
+        if config.exploration_config.auto_rotate == AutoRotate.yes:
+            config.general_battle_config.lock_team_enable = False
+        return config
     raise ValueError(f'未知门票刷取模式: {mode}')
+
+
+def exploration_tickets_full(task) -> bool | None:
+    """读取探索地图上的门票数量，识别失败时留给结算页复核。"""
+    if not task.appear(GameUiAssets.I_CHECK_EXPLORATION):
+        return None
+    current, _, total = MetaDemonAssets.O_METADEMON_PASS_EXP.ocr_digit_counter(task.device.image)
+    if current < 0 or total <= 0:
+        return None
+    logger.info(f'探索门票: {current}/{total}')
+    return current >= total
 
 
 def tickets_full_before_farming(owner) -> bool:
@@ -264,18 +276,15 @@ def tickets_full_before_farming(owner) -> bool:
     owner.goto_page(pages.page_exploration)
     for _ in range(3):
         owner.screenshot()
-        if not owner.appear(GameUiAssets.I_CHECK_EXPLORATION):
-            continue
-        current, _, total = MetaDemonAssets.O_METADEMON_PASS_EXP.ocr_digit_counter(owner.device.image)
-        if current >= 0 and total > 0:
-            logger.info(f'门票刷取前检测: {current}/{total}')
-            return current >= total
+        full = exploration_tickets_full(owner)
+        if full is not None:
+            return full
     logger.warning('探索入口未识别到有效超鬼王门票计数，继续刷取并由奖励页检测满票')
     return False
 
 
 def run_ticket_farming(owner, mode) -> bool:
-    """共享运行环境；御魂和战斗参数直接使用超鬼王门票刷取配置。"""
+    """运行所选刷票玩法，门票满后停止开启新的战斗。"""
     if mode not in (TicketMode.AWAKE, TicketMode.EXPLORATION):
         raise ValueError(f'未知门票刷取模式: {mode}')
     config = getattr(owner, 'config', None)
@@ -315,6 +324,7 @@ def run_ticket_farming(owner, mode) -> bool:
         runner._register_custom_pages()
     runner.install_ticket_reward_hook()
     buff_opened = False
+    exploration_started = False
     cooperation_started = False
     result = False
     try:
@@ -350,6 +360,7 @@ def run_ticket_farming(owner, mode) -> bool:
             else:
                 runner.run_alone()
         else:
+            exploration_started = True
             runner.pre_process()
             runner.limit_time = limit_time
             runner.exec_exp_page()
@@ -363,6 +374,8 @@ def run_ticket_farming(owner, mode) -> bool:
         runner._ticket_farming_complete = True
         if cooperation_started:
             runtime.notify_task_completion('MetaDemonTicket', peer, 'tickets_full' if result else 'ticket_finished')
+        if exploration_started:
+            runner.close_exploration_buffs()
         if cooperation_started or (not peer and role != ExplorationUserStatus.ALONE) or buff_opened:
             runner.goto_page(pages.page_main)
         if buff_opened:

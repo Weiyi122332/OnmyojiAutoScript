@@ -21,24 +21,16 @@ class TicketMode(str, Enum):
     EXPLORATION = '门票刷取：探索'
 
 
-class ExplorationTarget(str, Enum):
-    ALL = '全部'
-    COIN = '金币'
-    EXP = '经验'
-    DARUMA = '达摩'
-
-
 class TicketGeneralConfig(ConfigBase):
-    mode: TicketMode = Field(default=TicketMode.AWAKE, title="刷票玩法")
+    mode: TicketMode = Field(default=TicketMode.AWAKE, title='刷票玩法',
+                             description='选择探索时，副本、候补、加成、御魂和战斗设置读取普通探索任务。')
     limit_time: Time = Field(default=Time(minute=45), description="limit_time_help")
     user_status: UserStatus = Field(default=UserStatus.ALONE, title='门票刷取身份')
-    exploration_rotate: bool = Field(default=False, title='探索自动添加候补式神', description='与探索任务的自动添加候补式神一致：启用轮换并自动补充候补式神；关闭时关闭轮换。')
     awake_buff_enable: bool = Field(default=False, title='觉醒启用加成')
     awake_kirin_type: KirinType = Field(default=KirinType.LIGHTNINGKIRIN, title='觉醒麒麟',
         description='门票刷取：觉醒使用的麒麟类型，仅影响超鬼王门票刷取。')
     awake_layer: Layer = Field(default=Layer.SEVEN, title='觉醒层数',
         description='门票刷取：觉醒使用的层数，可选一至十层；默认七层。')
-    exploration_target: ExplorationTarget = Field(default=ExplorationTarget.ALL, title='探索目标')
 
 
     @property

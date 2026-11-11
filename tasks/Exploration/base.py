@@ -82,8 +82,7 @@ class BaseExploration(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, Replace
         self.user_status = self._config.exploration_config.user_status
         self.wait_start_time = datetime.now()  # 重置等待时间
 
-    def post_process(self):
-        self.goto_page(pages.page_exploration)
+    def close_exploration_buffs(self):
         con = self._config.exploration_config
         if con.buff_gold_50_click or con.buff_gold_100_click or con.buff_exp_50_click or con.buff_exp_100_click:
             self.goto_page(pages.page_main)
@@ -93,6 +92,10 @@ class BaseExploration(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, Replace
             self.exp_50(is_open=False)
             self.exp_100(is_open=False)
             self.close_buff()
+
+    def post_process(self):
+        self.goto_page(pages.page_exploration)
+        self.close_exploration_buffs()
         self.set_next_run(task='Exploration', success=True, finish=False)
         raise TaskEnd
 
