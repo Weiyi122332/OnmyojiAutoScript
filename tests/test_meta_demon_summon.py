@@ -128,18 +128,20 @@ class SummonChecks(unittest.TestCase):
         self.assertEqual(clicks, [(0, task.I_MD_SUMMON_BOSS)])
 
     def test_live_five_star_portrait_recovers_the_existing_boss(self):
-        image_path = Path(__file__).parent / 'fixtures' / 'meta_demon' / 'five_star_portrait.png'
-        portrait = np.array(Image.open(image_path).convert('RGB'))
-        frame = np.zeros((720, 1280, 3), dtype=np.uint8)
-        frame[136:220, 46:130] = portrait
-        self.assertEqual(recognize_boss_stars(frame), 5)
-        task, clicks, clock = self.make_task([{'fire': True}])
-        task.device = SimpleNamespace(image=frame)
-        task.current_boss_star = BossBattle.current_boss_star.__get__(task)
-        with clock:
-            self.assertTrue(task.summon_boss())
-        self.assertEqual(task.cur_boss_type, BossType.FIVE_STARS)
-        self.assertEqual(clicks, [])
+        for filename in ('five_star_portrait.png', 'sp_five_star_portrait.png'):
+            with self.subTest(portrait=filename):
+                image_path = Path(__file__).parent / 'fixtures' / 'meta_demon' / filename
+                portrait = np.array(Image.open(image_path).convert('RGB'))
+                frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+                frame[136:220, 46:130] = portrait
+                self.assertEqual(recognize_boss_stars(frame), 5)
+                task, clicks, clock = self.make_task([{'fire': True}])
+                task.device = SimpleNamespace(image=frame)
+                task.current_boss_star = BossBattle.current_boss_star.__get__(task)
+                with clock:
+                    self.assertTrue(task.summon_boss())
+                self.assertEqual(task.cur_boss_type, BossType.FIVE_STARS)
+                self.assertEqual(clicks, [])
         self.assertIsNone(recognize_boss_stars(np.zeros_like(frame)))
         self.assertIsNone(recognize_boss_stars(None))
         self.assertIsNone(recognize_boss_stars(frame[:100]))
