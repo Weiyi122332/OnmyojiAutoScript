@@ -117,7 +117,7 @@ class TicketPairChecks(unittest.TestCase):
                 events.task_call.return_value = True
                 runner = Mock()
                 runner._config = Exploration(scrolls={'scrolls_cd': delay})
-                runner.close_exploration_buffs = events.close_exploration_buffs
+                runner.finish_exploration = events.finish_exploration
                 runner.exec_exp_page.side_effect = RealmRaidThresholdReached
                 now = datetime(2026, 11, 11, 12, 0)
                 with patch('tasks.MetaDemonTicket.ticket_farming.tickets_full_before_farming', return_value=False), \
@@ -127,7 +127,7 @@ class TicketPairChecks(unittest.TestCase):
                     with self.assertRaises(TaskEnd):
                         run_ticket_farming(owner, TicketMode.EXPLORATION)
                 self.assertEqual(events.mock_calls, [
-                    call.close_exploration_buffs(),
+                    call.finish_exploration(),
                     call.reload(),
                     call.task_call('RealmRaid', force_call=False),
                     call.set_next_run(task='MetaDemonTicket', target=now + max(delay, timedelta(seconds=1))),

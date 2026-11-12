@@ -386,7 +386,7 @@ def run_ticket_farming(owner, mode) -> bool:
         if cooperation_started:
             runtime.notify_task_completion('MetaDemonTicket', peer, 'tickets_full' if result else 'ticket_finished')
         if exploration_started:
-            runner.close_exploration_buffs()
+            runner.finish_exploration()
         if cooperation_started or (not peer and role != ExplorationUserStatus.ALONE) or buff_opened:
             runner.goto_page(pages.page_main)
         if buff_opened:

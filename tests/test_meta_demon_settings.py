@@ -348,7 +348,7 @@ class MetaDemonSettingsChecks(unittest.TestCase):
                 runner.run_alone = Mock(side_effect=TicketsFull)
                 runner.exec_exp_page = Mock(side_effect=TicketsFull)
                 runner.pre_process = Mock()
-                runner.close_exploration_buffs = Mock()
+                runner.finish_exploration = Mock()
                 runner._register_custom_pages = Mock()
                 runner.install_ticket_reward_hook = Mock()
 
@@ -369,7 +369,7 @@ class MetaDemonSettingsChecks(unittest.TestCase):
                     self.assertEqual(runner._config.evo_zone_config.user_status, AwakeStatus.ALONE)
                     runner.run_alone.assert_called_once()
                     runner.exec_exp_page.assert_not_called()
-                    runner.close_exploration_buffs.assert_not_called()
+                    runner.finish_exploration.assert_not_called()
                 else:
                     self.assertEqual(runner._config.general_battle_config.preset_group, 7)
                     self.assertEqual(runner._config.general_battle_config.preset_team, 4)
@@ -378,7 +378,7 @@ class MetaDemonSettingsChecks(unittest.TestCase):
                     self.assertFalse(runner._config.scrolls.scrolls_enable)
                     runner.pre_process.assert_called_once()
                     runner.exec_exp_page.assert_called_once()
-                    runner.close_exploration_buffs.assert_called_once()
+                    runner.finish_exploration.assert_called_once()
                     runner.run_alone.assert_not_called()
                 self.assertEqual(original.model.model_dump(), before)
 

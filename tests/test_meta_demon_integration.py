@@ -11,6 +11,7 @@ import numpy as np
 
 from module.cooperation import Cooperation
 from module.exception import TaskEnd
+from tasks.Component.GeneralBattle.assets import GeneralBattleAssets
 from tasks.Exploration import page as exploration_pages
 from tasks.Exploration.base import BaseExploration
 from tasks.Exploration.config import Exploration, UserStatus
@@ -19,7 +20,8 @@ from tasks.GameUi.session import NavigatorSession
 from tasks.MetaDemon import page as pages
 from tasks.MetaDemon.assets import MetaDemonAssets
 from tasks.MetaDemon.boss_battle import BossBattle
-from tasks.MetaDemonTicket.config import MetaDemonTicket
+from tasks.MetaDemonTicket.config import MetaDemonTicket, TicketMode
+from tasks.MetaDemonTicket.script_task import ScriptTask as TicketTask
 from tasks.MetaDemonTicket.ticket_farming import (
     ExplorationTicketTask, RealmRaidThresholdReached, TicketsFull,
 )
@@ -108,6 +110,43 @@ class MetaDemonIntegrationTest(unittest.TestCase):
             with self.assertRaises(TicketsFull):
                 runner.run_on_exp()
         runner.goto_page.assert_called_once_with(exploration_pages.page_exp_entrance)
+
+    def test_full_exploration_tickets_settle_and_exit_before_ending_ticket_task(self):
+        events = Mock()
+        owner = TicketTask.__new__(TicketTask)
+        owner.config = SimpleNamespace(meta_demon_ticket=MetaDemonTicket(
+            general_config={'mode': TicketMode.EXPLORATION}), exploration=Exploration())
+        owner.device = SimpleNamespace(image=object())
+        owner.set_next_run = events.set_next_run
+        owner.goto_page = events.return_courtyard
+
+        runner = ExplorationTicketTask.__new__(ExplorationTicketTask)
+        runner.config = owner.config
+        runner.device = owner.device
+        runner.install_ticket_reward_hook = Mock()
+        runner.pre_process = Mock()
+        runner.appear = Mock(return_value=True)
+        runner.exec_exp_page = Mock(side_effect=runner.check_ticket_reward)
+        runner.screenshot = Mock()
+        runner.detect_page_in = Mock(side_effect=[exploration_pages.page_reward] * 2 + [None])
+        runner.goto_page = events.exit_exploration
+        runner.close_exploration_buffs = events.close_buffs
+
+        with patch('tasks.MetaDemonTicket.ticket_farming.tickets_full_before_farming', return_value=False), \
+                patch('tasks.MetaDemonTicket.ticket_farming.ExplorationTicketTask', return_value=runner), \
+                patch.object(GeneralBattleAssets.O_METADEMON_PASS, 'ocr_digit_counter', return_value=(50, 0, 50)), \
+                patch('tasks.Exploration.base.handle_battle_reward_page', events.dismiss_reward):
+            with self.assertRaises(TaskEnd):
+                owner.run()
+
+        self.assertEqual(events.mock_calls, [
+            call.dismiss_reward(runner),
+            call.dismiss_reward(runner),
+            call.exit_exploration(exploration_pages.page_exploration),
+            call.close_buffs(),
+            call.set_next_run(task='MetaDemonTicket', success=True),
+            call.return_courtyard(exploration_pages.page_main),
+        ])
 
     def test_activity_backup_route_is_resolved_in_the_task_session(self):
         PageRegistry.load_all_pages()

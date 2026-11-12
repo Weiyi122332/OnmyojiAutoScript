@@ -17,7 +17,7 @@ from tasks.Exploration.assets import ExplorationAssets
 from tasks.Exploration.config import ChooseRarity, UpType, ExplorationLevel, AutoRotate, UserStatus, Exploration
 from tasks.Component.GeneralBattle.general_battle import GeneralBattle, ExitMatcher, BattleContext, BattleAction
 from tasks.GameUi.game_ui import GameUi
-from tasks.GameUi.default_pages import settlement_random_click
+from tasks.GameUi.default_pages import handle_battle_reward_page, settlement_random_click
 from tasks.Utils.config_enum import ShikigamiClass
 import tasks.Exploration.page as pages
 
@@ -93,9 +93,25 @@ class BaseExploration(GameUi, GeneralBattle, GeneralRoom, GeneralInvite, Replace
             self.exp_100(is_open=False)
             self.close_buff()
 
-    def post_process(self):
+    def finish_exploration(self):
+        """完成战后结算，退回探索地图并关闭加成。"""
+        settlement_timeout = Timer(8).start()
+        while True:
+            self.screenshot()
+            page = self.detect_page_in(pages.page_reward, pages.page_battle_result, include_global=False)
+            if page is None:
+                break
+            if settlement_timeout.reached():
+                raise GameStuckError('探索结束时结算页未关闭')
+            if page == pages.page_reward:
+                handle_battle_reward_page(self)
+            else:
+                self.click(self._battle_settlement_click(), interval=0.8)
         self.goto_page(pages.page_exploration)
         self.close_exploration_buffs()
+
+    def post_process(self):
+        self.finish_exploration()
         self.set_next_run(task='Exploration', success=True, finish=False)
         raise TaskEnd
 
