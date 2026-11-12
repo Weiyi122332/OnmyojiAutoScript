@@ -45,22 +45,21 @@ class MetaDemonRandomClickTests(unittest.TestCase):
     def test_personal_group_numbers_skip_rental_and_stay_on_the_same_row(self):
         # Row centers from the verified 1280x720 layout; the final group is clipped.
         centers = [255, 306, 357, 408, 458, 509, 560, 594]
-        for rental_visible in (False, True):
-            for number in range(1, 8):
-                with self.subTest(rental=rental_visible, number=number):
-                    task, layout = self.make_task()
-                    task.appear.return_value = rental_visible
-                    config = QuickLoadoutConfig(mode=QuickLoadoutMode.NUMBER, group_number=number)
-                    for _ in range(20):
-                        self.assertTrue(task._select_group(layout, config))
-                    points = self.points(task, 'QUICK_LOADOUT_GROUP')
-                    center = centers[number - 1 + int(rental_visible)]
-                    self.assertEqual(len(points), 20)
-                    self.assert_varied_in_area(points, (502, center - 12, 108, 24))
-                    self.assert_varied_in_area(points, layout.group_ocr.roi)
-                    if rental_visible and number == 7:
-                        self.assert_varied_in_area(points, (502, 588, 108, 15))
-                    task.swipe.assert_not_called()
+        for number in range(1, 8):
+            with self.subTest(number=number):
+                task, layout = self.make_task()
+                task.appear.return_value = True
+                config = QuickLoadoutConfig(mode=QuickLoadoutMode.NUMBER, group_number=number)
+                for _ in range(20):
+                    self.assertTrue(task._select_group(layout, config))
+                points = self.points(task, 'QUICK_LOADOUT_GROUP')
+                center = centers[number]
+                self.assertEqual(len(points), 20)
+                self.assert_varied_in_area(points, (502, center - 12, 108, 24))
+                self.assert_varied_in_area(points, layout.group_ocr.roi)
+                if number == 7:
+                    self.assert_varied_in_area(points, (502, 588, 108, 15))
+                task.swipe.assert_not_called()
 
     def test_named_and_rental_groups_also_use_random_points(self):
         for group, preset, row_y in [('自定义分组', '任意队伍', 458),

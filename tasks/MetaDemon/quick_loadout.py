@@ -108,25 +108,23 @@ class FrameQuickLoadout(QuickLoadout):
         return False
 
     def _select_group(self, layout: QuickLoadoutLayout, config: QuickLoadoutConfig) -> bool:
-        rental_tab = self.appear(self.I_MD_RENTAL_TAB)
+        for attempt in range(self.RENTAL_GROUP_MAX_SWIPES + 1):
+            self.screenshot()
+            if self.appear(self.I_MD_RENTAL_TAB):
+                break
+            if attempt == self.RENTAL_GROUP_MAX_SWIPES:
+                logger.warning('滑动后仍未确认队伍租借分组位于顶部')
+                return False
+            logger.info('队伍租借分组未在顶部，向下滑动分组列表')
+            self.swipe(layout.group_swipe_to_top)
+            sleep(0.45)
+
         if config.mode == QuickLoadoutMode.NUMBER:
-            index = config.group_number - 1 + int(rental_tab)
+            index = config.group_number
             # 末尾的个人分组在租借分组存在时只露出一部分，点击可见部分。
             offset = min(self.GROUP_FIRST_Y + index * self.GROUP_ROW_HEIGHT, self.GROUP_BOTTOM_CLICK_Y)
             y = self._panel_row(layout, offset)
         elif config.group_name == self.RENTAL_GROUP_NAME:
-            if not rental_tab:
-                logger.info('队伍租借分组不可见，向下滑动分组列表回到顶部')
-                for _ in range(self.RENTAL_GROUP_MAX_SWIPES):
-                    self.swipe(layout.group_swipe_to_top)
-                    sleep(0.45)
-                    self.screenshot()
-                    rental_tab = self.appear(self.I_MD_RENTAL_TAB)
-                    if rental_tab:
-                        break
-            if not rental_tab:
-                logger.warning('滑动后仍未找到队伍租借分组')
-                return False
             y = self._panel_row(layout, self.GROUP_FIRST_Y)
         else:
             y, score = self._find_name_y(layout.group_ocr, config.group_name)

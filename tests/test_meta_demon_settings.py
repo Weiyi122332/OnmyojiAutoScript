@@ -3,7 +3,7 @@ from copy import copy
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import numpy as np
 from PIL import Image
@@ -245,23 +245,20 @@ class MetaDemonSettingsChecks(unittest.TestCase):
             MetaDemon(low_star_preset={'preset_numbers': '1,0'})
 
     def test_first_personal_group_skips_rental_tab_without_swiping(self):
-        for rental_visible, expected_y in ((True, 306), (False, 255)):
-            with self.subTest(rental_visible=rental_visible):
-                owner = BossBattle.__new__(BossBattle)
-                layout = owner._quick_loadout_layout_at((496, 224, 553, 387), reference_size=owner.PANEL_SIZE)
-                owner.appear = Mock(return_value=rental_visible)
-                owner.device = SimpleNamespace(click=Mock())
-                owner.swipe = Mock()
-                with patch('tasks.MetaDemon.quick_loadout.sleep'):
-                    self.assertTrue(owner._select_group(layout, QuickLoadoutConfig(mode=QuickLoadoutMode.NUMBER)))
-                owner.appear.assert_called_once_with(owner.I_MD_RENTAL_TAB)
-                self.assert_group_click_in_row(owner, expected_y)
-                owner.swipe.assert_not_called()
-
-    def test_rental_group_recovers_from_the_clipped_live_tab(self):
         owner = BossBattle.__new__(BossBattle)
-        owner.I_MD_RENTAL_TAB = copy(owner.I_MD_RENTAL_TAB)
         layout = owner._quick_loadout_layout_at((496, 224, 553, 387), reference_size=owner.PANEL_SIZE)
+        owner.appear = Mock(return_value=True)
+        owner.device = SimpleNamespace(click=Mock())
+        owner.screenshot = Mock()
+        owner.swipe = Mock()
+        with patch('tasks.MetaDemon.quick_loadout.sleep'):
+            self.assertTrue(owner._select_group(layout, QuickLoadoutConfig(mode=QuickLoadoutMode.NUMBER)))
+        owner.appear.assert_called_once_with(owner.I_MD_RENTAL_TAB)
+        owner.screenshot.assert_called_once()
+        self.assert_group_click_in_row(owner, 306)
+        owner.swipe.assert_not_called()
+
+    def test_all_group_modes_check_top_before_each_swipe_and_selection(self):
         frames = []
         for name in ('rental_tab_clipped', 'rental_tab_visible'):
             path = Path(__file__).parent / 'fixtures' / 'meta_demon' / f'{name}.png'
@@ -269,18 +266,36 @@ class MetaDemonSettingsChecks(unittest.TestCase):
             frame = np.zeros((720, 1280, 3), dtype=np.uint8)
             frame[228:291, 498:610] = crop
             frames.append(frame)
-        self.assertFalse(owner.I_MD_RENTAL_TAB.template_match(frames[0]))
-        self.assertTrue(owner.I_MD_RENTAL_TAB.template_match(frames[1]))
-        owner.device = SimpleNamespace(image=frames[0], click=Mock())
-        owner.appear = lambda rule: rule.template_match(owner.device.image)
-        owner.screenshot = Mock(side_effect=lambda: setattr(owner.device, 'image', frames[1]))
-        owner.swipe = Mock()
-        config = QuickLoadoutConfig(mode=QuickLoadoutMode.OCR, group_name='队伍租借', preset_name='普攻')
-        with patch('tasks.MetaDemon.quick_loadout.sleep'):
-            self.assertTrue(owner._select_group(layout, config))
-        owner.swipe.assert_called_once_with(layout.group_swipe_to_top)
-        owner.screenshot.assert_called_once()
-        self.assert_group_click_in_row(owner, 255)
+        cases = (
+            (QuickLoadoutConfig(mode=QuickLoadoutMode.NUMBER, group_number=7), 594),
+            (QuickLoadoutConfig(mode=QuickLoadoutMode.OCR, group_name='日常', preset_name='队伍'), 306),
+            (QuickLoadoutConfig(mode=QuickLoadoutMode.OCR, group_name='队伍租借', preset_name='普攻'), 255),
+        )
+        for config, expected_y in cases:
+            with self.subTest(mode=config.mode, group=config.group_name):
+                owner = BossBattle.__new__(BossBattle)
+                owner.I_MD_RENTAL_TAB = copy(owner.I_MD_RENTAL_TAB)
+                layout = owner._quick_loadout_layout_at((496, 224, 553, 387), reference_size=owner.PANEL_SIZE)
+                owner.device = SimpleNamespace(image=None)
+                screenshots = iter((frames[0], frames[0], frames[1]))
+                events = Mock()
+                owner.screenshot = events.screenshot
+                events.screenshot.side_effect = lambda: setattr(owner.device, 'image', next(screenshots))
+                owner.appear = events.appear
+                events.appear.side_effect = lambda rule: rule.template_match(owner.device.image)
+                owner.swipe = events.swipe
+                owner._click_loadout_row = events.select_row
+                owner._find_name_y = Mock(return_value=(expected_y, 1.0))
+
+                with patch('tasks.MetaDemon.quick_loadout.sleep'):
+                    self.assertTrue(owner._select_group(layout, config))
+
+                self.assertEqual(events.mock_calls, [
+                    call.screenshot(), call.appear(owner.I_MD_RENTAL_TAB), call.swipe(layout.group_swipe_to_top),
+                    call.screenshot(), call.appear(owner.I_MD_RENTAL_TAB), call.swipe(layout.group_swipe_to_top),
+                    call.screenshot(), call.appear(owner.I_MD_RENTAL_TAB),
+                    call.select_row(layout, expected_y, group=True),
+                ])
 
     def test_visible_rental_group_does_not_scroll(self):
         owner = BossBattle.__new__(BossBattle)
@@ -293,22 +308,28 @@ class MetaDemonSettingsChecks(unittest.TestCase):
         with patch('tasks.MetaDemon.quick_loadout.sleep'):
             self.assertTrue(owner._select_group(layout, config))
         owner.swipe.assert_not_called()
-        owner.screenshot.assert_not_called()
+        owner.screenshot.assert_called_once()
         self.assert_group_click_in_row(owner, 255)
 
-    def test_unavailable_rental_group_stops_after_bounded_scrolls(self):
-        owner = BossBattle.__new__(BossBattle)
-        layout = owner._quick_loadout_layout_at((496, 224, 553, 387), reference_size=owner.PANEL_SIZE)
-        owner.appear = Mock(return_value=False)
-        owner.device = SimpleNamespace(click=Mock())
-        owner.swipe = Mock()
-        owner.screenshot = Mock()
-        config = QuickLoadoutConfig(mode=QuickLoadoutMode.OCR, group_name='队伍租借', preset_name='群体')
-        with patch('tasks.MetaDemon.quick_loadout.sleep'):
-            self.assertFalse(owner._select_group(layout, config))
-        self.assertEqual(owner.swipe.call_count, 3)
-        self.assertEqual(owner.screenshot.call_count, 3)
-        owner.device.click.assert_not_called()
+    def test_missing_top_rental_group_stops_all_selection_modes(self):
+        configs = (
+            QuickLoadoutConfig(mode=QuickLoadoutMode.NUMBER, group_number=7),
+            QuickLoadoutConfig(mode=QuickLoadoutMode.OCR, group_name='日常', preset_name='队伍'),
+            QuickLoadoutConfig(mode=QuickLoadoutMode.OCR, group_name='队伍租借', preset_name='群体'),
+        )
+        for config in configs:
+            with self.subTest(mode=config.mode, group=config.group_name):
+                owner = BossBattle.__new__(BossBattle)
+                layout = owner._quick_loadout_layout_at((496, 224, 553, 387), reference_size=owner.PANEL_SIZE)
+                owner.appear = Mock(return_value=False)
+                owner.device = SimpleNamespace(click=Mock())
+                owner.swipe = Mock()
+                owner.screenshot = Mock()
+                with patch('tasks.MetaDemon.quick_loadout.sleep'):
+                    self.assertFalse(owner._select_group(layout, config))
+                self.assertEqual(owner.swipe.call_count, 3)
+                self.assertEqual(owner.screenshot.call_count, 4)
+                owner.device.click.assert_not_called()
 
     def test_deploy_soul_prompt_respects_the_equip_option(self):
         for equip in (True, False):
