@@ -90,6 +90,16 @@
     "description": "喝茶"
   },
   {
+    "itemName": "md_drink_tea_free",
+    "imageName": "md_md_drink_tea_free.png",
+    "roiFront": "549,467,184,59",
+    "roiBack": "527,455,235,80",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "profile": "High",
+    "description": "花合战每日首次免费清酿"
+  },
+  {
     "itemName": "md_disable_powerful_fire",
     "imageName": "md_md_disable_powerful_fire.png",
     "roiFront": "1113,513,24,24",

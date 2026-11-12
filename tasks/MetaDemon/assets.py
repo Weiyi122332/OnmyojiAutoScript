@@ -52,6 +52,8 @@ class MetaDemonAssets:
 	I_MD_CLOSE_POPUP = RuleImage(roi_front=(1003,160,41,37), roi_back=(895,39,345,209), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_close_popup.png")
 	# 喝茶
 	I_MD_DRINK_TEA = RuleImage(roi_front=(555,467,168,58), roi_back=(527,455,235,80), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_drink_tea.png")
+	# 花合战每日首次免费清酿
+	I_MD_DRINK_TEA_FREE = RuleImage(roi_front=(549,467,184,59), roi_back=(527,455,235,80), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_drink_tea_free.png")
 	# 禁用强力追击
 	I_MD_DISABLE_POWERFUL_FIRE = RuleImage(roi_front=(1113,513,24,24), roi_back=(1108,508,36,36), threshold=0.8, method="Template matching", profile="High", file="./tasks/MetaDemon/md/md_md_disable_powerful_fire.png")
 	# 开启强力追击

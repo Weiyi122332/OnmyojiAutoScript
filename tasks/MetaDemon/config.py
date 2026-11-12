@@ -54,7 +54,7 @@ PowerfulChaseCount = Annotated[int, Field(
 
 
 class MetaDemonConfig(ConfigBase):
-    auto_tea: bool = Field(default=False, description='疲劳度满时自动喝茶。关闭时按调度器的等待间隔恢复疲劳。')
+    auto_tea: bool = Field(default=False, description='疲劳度满时使用勾玉购买清酿。关闭时按调度器的等待间隔恢复疲劳。花合战每日首次免费清酿自动使用。')
     synthesis_list: str = Field(
         default='1', description='填写要合成的鬼王门票星级，支持 1 至 5 星，用空格分隔。',
     )

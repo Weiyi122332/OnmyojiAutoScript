@@ -131,7 +131,10 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
                     battle_key='meta_demon',
                 )
                 return True
-            if self.appear(self.I_MD_DRINK_TEA, interval=1.2):  # 出现喝茶弹窗
+            if self.appear(self.I_MD_DRINK_TEA_FREE, interval=1.2):
+                self.click(self.I_MD_DRINK_TEA_FREE)  # 花合战每日首次免费，不受喝茶开关限制
+                continue
+            if self.appear(self.I_MD_DRINK_TEA, interval=1.2):  # 出现付费喝茶弹窗
                 if self.conf.meta_demon_config.auto_tea:
                     self.click(self.I_MD_DRINK_TEA)  # 喝茶
                     continue
