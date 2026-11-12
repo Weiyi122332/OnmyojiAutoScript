@@ -1,9 +1,15 @@
 import unittest
+from copy import deepcopy
 from itertools import count
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, PropertyMock, call, patch
 
+import numpy as np
+from PIL import Image
+
 from module.exception import GameStuckError, TaskEnd
+from tasks.DemonEncounter.assets import DemonEncounterAssets
 from tasks.DemonEncounter.config import DemonEncounter
 from tasks.DemonEncounter.script_task import ScriptTask
 from tasks.GameUi.assets import GameUiAssets
@@ -15,6 +21,20 @@ from tasks.GameUi.session import NavigatorSession
 class DemonEncounterNavigationTest(unittest.TestCase):
     def setUp(self):
         self.task = ScriptTask.__new__(ScriptTask)
+
+    def test_search_button_is_recognized_after_leaving_full_boss(self):
+        fixture = Path(__file__).parent / 'fixtures' / 'demon_encounter' / 'full_boss_return_button.png'
+        frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+        with Image.open(fixture) as image:
+            frame[620:720, 875:975] = np.asarray(image.convert('RGB'))
+        button = deepcopy(DemonEncounterAssets.I_DE_BOSS_BEST)
+
+        self.assertTrue(button.template_match(frame))
+        x, y, width, height = button.roi_front
+        self.assertGreaterEqual(x, 900)
+        self.assertGreaterEqual(y, 643)
+        self.assertLessEqual(x + width, 945)
+        self.assertLessEqual(y + height, 694)
 
     def test_town_lantern_and_back_link_the_current_map_directly(self):
         PageRegistry.load_all_pages()

@@ -32,8 +32,8 @@
   {
     "itemName": "de_boss_best",
     "imageName": "demon_de_boss_best.png",
-    "roiFront": "900,644,45,50",
-    "roiBack": "900,644,45,50",
+    "roiFront": "906,650,33,38",
+    "roiBack": "894,638,57,62",
     "method": "Template matching",
     "threshold": 0.8,
     "profile": "Default",
