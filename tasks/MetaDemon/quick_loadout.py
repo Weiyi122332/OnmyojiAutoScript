@@ -31,6 +31,23 @@ class FrameQuickLoadout(QuickLoadout):
         _, y, _, height = layout.panel
         return y + round(offset * height / self.PANEL_SIZE[1])
 
+    def _click_loadout_row(self, layout: QuickLoadoutLayout, row_y: int, *, group: bool) -> None:
+        """在目标行的安全窄条内随机点击，并裁剪到列表当前可见范围。"""
+        column = self.GROUP_CLICK_X if group else self.PRESET_SELECT_X
+        name = 'QUICK_LOADOUT_GROUP' if group else 'QUICK_LOADOUT_PRESET'
+        bounds = layout.group_ocr.roi if group else layout.preset_ocr.roi
+        x = layout.column(column)
+        half_width = max(1, round(24 * layout.scale_x))
+        half_height = max(1, round(6 * layout.panel[3] / self.PANEL_SIZE[1]))
+        left = max(x - half_width, bounds[0])
+        right = min(x + half_width + 1, bounds[0] + bounds[2])
+        top = max(row_y - half_height, bounds[1])
+        bottom = min(row_y + half_height + 1, bounds[1] + bounds[3])
+        if left >= right or top >= bottom:
+            raise ScriptError(f'超鬼王：快速预设目标行不在可见范围内（{name}）')
+        area = (left, top, right - left, bottom - top)
+        self.click(RuleClick(roi_front=area, roi_back=area, name=name, profile='High'))
+
     def _quick_loadout_fight(self, frame: RuleFrame, *, fight_file: str | None = None) -> RuleImage:
         if len(frame.roi_ranges) not in (2, 3):
             raise ValueError('Quick loadout frame requires range1=panel and range2=fight')
@@ -116,7 +133,7 @@ class FrameQuickLoadout(QuickLoadout):
             if y is None or score < 0.55:
                 logger.warning(f'快速预设可见分组中未找到 {config.group_name}')
                 return False
-        self.device.click(layout.column(self.GROUP_CLICK_X), y, control_name='QUICK_LOADOUT_GROUP')
+        self._click_loadout_row(layout, y, group=True)
         sleep(0.4)
         return True
 
@@ -168,7 +185,7 @@ class FrameQuickLoadout(QuickLoadout):
         self, layout: QuickLoadoutLayout, frame: RuleFrame, row_y: int, *,
         equip_soul: bool, dismiss: RuleClick | None = None,
     ) -> bool:
-        self.device.click(layout.column(self.PRESET_SELECT_X), row_y, control_name='QUICK_LOADOUT_PRESET')
+        self._click_loadout_row(layout, row_y, group=False)
         sleep(0.4)
         self.screenshot()
         if not self._quick_loadout_panel_visible(frame):

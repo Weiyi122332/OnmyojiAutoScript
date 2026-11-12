@@ -21,6 +21,13 @@ from tasks.Exploration.config import AutoRotate, Exploration, ExplorationLevel, 
 
 
 class MetaDemonSettingsChecks(unittest.TestCase):
+    def assert_group_click_in_row(self, owner, row_y):
+        owner.device.click.assert_called_once()
+        click = owner.device.click.call_args.kwargs
+        self.assertEqual(click['control_name'], 'QUICK_LOADOUT_GROUP')
+        self.assertTrue(502 <= click['x'] < 610)
+        self.assertTrue(row_y - 12 <= click['y'] < row_y + 12)
+
     def test_exploration_label_migrates(self):
         conf = ConfigModel(meta_demon={'meta_demon_config': {'mode': ['鬼王战斗', '门票刷取：探索绘卷']},
                                       'scheduler': {'enable': True}})
@@ -248,7 +255,7 @@ class MetaDemonSettingsChecks(unittest.TestCase):
                 with patch('tasks.MetaDemon.quick_loadout.sleep'):
                     self.assertTrue(owner._select_group(layout, QuickLoadoutConfig(mode=QuickLoadoutMode.NUMBER)))
                 owner.appear.assert_called_once_with(owner.I_MD_RENTAL_TAB)
-                owner.device.click.assert_called_once_with(557, expected_y, control_name='QUICK_LOADOUT_GROUP')
+                self.assert_group_click_in_row(owner, expected_y)
                 owner.swipe.assert_not_called()
 
     def test_rental_group_recovers_from_the_clipped_live_tab(self):
@@ -273,7 +280,7 @@ class MetaDemonSettingsChecks(unittest.TestCase):
             self.assertTrue(owner._select_group(layout, config))
         owner.swipe.assert_called_once_with(layout.group_swipe_to_top)
         owner.screenshot.assert_called_once()
-        owner.device.click.assert_called_once_with(557, 255, control_name='QUICK_LOADOUT_GROUP')
+        self.assert_group_click_in_row(owner, 255)
 
     def test_visible_rental_group_does_not_scroll(self):
         owner = BossBattle.__new__(BossBattle)
@@ -287,7 +294,7 @@ class MetaDemonSettingsChecks(unittest.TestCase):
             self.assertTrue(owner._select_group(layout, config))
         owner.swipe.assert_not_called()
         owner.screenshot.assert_not_called()
-        owner.device.click.assert_called_once_with(557, 255, control_name='QUICK_LOADOUT_GROUP')
+        self.assert_group_click_in_row(owner, 255)
 
     def test_unavailable_rental_group_stops_after_bounded_scrolls(self):
         owner = BossBattle.__new__(BossBattle)
@@ -313,6 +320,7 @@ class MetaDemonSettingsChecks(unittest.TestCase):
                 owner.device = SimpleNamespace(click=Mock())
                 owner._quick_loadout_panel_visible = Mock(side_effect=[True, False])
                 owner._quick_loadout_fight = Mock()
+                owner._click_loadout_row = Mock()
                 owner._dismiss_quick_loadout = Mock(return_value=True)
                 owner.appear = Mock(side_effect=[True, False])
                 owner.appear_then_click = Mock(return_value=True)
@@ -324,6 +332,7 @@ class MetaDemonSettingsChecks(unittest.TestCase):
                         with self.assertRaisesRegex(ScriptError, '未启用切换御魂'):
                             owner._deploy_quick_loadout(layout, frame, 249, equip_soul=False)
                 owner._dismiss_quick_loadout.assert_not_called()
+                owner._click_loadout_row.assert_called_once_with(layout, 249, group=False)
                 if equip:
                     owner.appear_then_click.assert_called_once_with(owner.I_SOU_SWITCH_SURE, interval=0.8)
                 else:
