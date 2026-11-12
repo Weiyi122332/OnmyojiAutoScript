@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 import numpy as np
 from PIL import Image
 
-from module.exception import TaskEnd
+from module.exception import ScriptError, TaskEnd
 from tasks.MetaDemon import page as pages
 from tasks.MetaDemon.assets import MetaDemonAssets
 from tasks.MetaDemon.boss_battle import BossBattle
@@ -87,8 +87,10 @@ class SummonChecks(unittest.TestCase):
     def test_unknown_existing_boss_cannot_start_a_battle(self):
         task, clicks, clock = self.make_task([{'fire': True}])
         with clock:
-            self.assertFalse(task.summon_boss())
-        self.assertFalse(task.start_battle())
+            with self.assertRaisesRegex(ScriptError, '当前鬼王星级'):
+                task.summon_boss()
+        with self.assertRaisesRegex(ScriptError, '星级或快速预设尚未确认'):
+            task.start_battle()
         self.assertFalse(task.State.done)
         self.assertEqual(clicks, [])
 
@@ -149,10 +151,16 @@ class SummonChecks(unittest.TestCase):
                     {'queue': True}, {'panel': True, 'empty': empty, 'close': True},
                 ])
                 with clock:
-                    self.assertFalse(task.summon_boss())
+                    if empty:
+                        self.assertFalse(task.summon_boss())
+                    else:
+                        with self.assertRaisesRegex(ScriptError, '仍有门票'):
+                            task.summon_boss()
                 self.assertEqual(task.State.done, empty)
-                self.assertEqual([control for _, control in clicks],
-                                 [task.I_MD_SWITCH_TICKET, task.I_MD_CLOSE_POPUP])
+                expected = [task.I_MD_SWITCH_TICKET]
+                if empty:
+                    expected.append(task.I_MD_CLOSE_POPUP)
+                self.assertEqual([control for _, control in clicks], expected)
 
     def test_home_preview_requires_ordered_illuminated_slots(self):
         area = (1114, 496, 144, 38)

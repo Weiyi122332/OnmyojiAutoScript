@@ -9,6 +9,7 @@ import numpy as np
 from PIL import Image
 
 from module.config.config_model import ConfigModel
+from module.exception import ScriptError
 from module.server.i18n import Addition
 from tasks.Component.QuickLoadout.config import QuickLoadoutConfig, QuickLoadoutMode
 from tasks.MetaDemon.config import BossType, MetaDemon, MetaDemonRentalLineup, PRESET_GROUPS, SPECIAL_BOSS_PRESETS
@@ -317,12 +318,17 @@ class MetaDemonSettingsChecks(unittest.TestCase):
                 owner.appear_then_click = Mock(return_value=True)
                 owner.click = Mock(return_value=True)
                 with patch('tasks.MetaDemon.quick_loadout.sleep'):
-                    self.assertEqual(owner._deploy_quick_loadout(layout, frame, 249, equip_soul=equip), equip)
+                    if equip:
+                        self.assertTrue(owner._deploy_quick_loadout(layout, frame, 249, equip_soul=True))
+                    else:
+                        with self.assertRaisesRegex(ScriptError, '未启用切换御魂'):
+                            owner._deploy_quick_loadout(layout, frame, 249, equip_soul=False)
+                owner._dismiss_quick_loadout.assert_not_called()
                 if equip:
                     owner.appear_then_click.assert_called_once_with(owner.I_SOU_SWITCH_SURE, interval=0.8)
                 else:
                     owner.appear_then_click.assert_not_called()
-                    owner.click.assert_any_call(owner.C_MD_PRESET_SOUL_CANCEL, interval=0.8)
+                    owner.click.assert_called_once_with(owner._quick_loadout_fight.return_value)
 
     def test_boss_prepares_souls_and_powerful_before_challenge(self):
         owner = object.__new__(BossBattle)
@@ -342,7 +348,8 @@ class MetaDemonSettingsChecks(unittest.TestCase):
         owner.appear_then_click = Mock(side_effect=lambda *args, **kwargs: events.append('fire') or True)
         owner.is_in_battle = Mock(side_effect=[False, True, True])
         owner.run_general_battle = Mock()
-        self.assertFalse(owner.start_battle())
+        with self.assertRaisesRegex(ScriptError, '快速预设尚未确认'):
+            owner.start_battle()
         self.assertTrue(owner.check_and_prepare_battle())
         self.assertTrue(owner.start_battle())
         self.assertEqual(events, ['equip', True, 'fire'])
@@ -376,8 +383,10 @@ class MetaDemonSettingsChecks(unittest.TestCase):
         owner.conf = MetaDemon(low_star_preset={'switch_soul': True, 'group_name': '已填'})
         owner.cur_boss_type = BossType.TWO_STARS
         owner.run_quick_loadout = Mock()
-        self.assertFalse(owner.prepare_boss_preset())
-        self.assertFalse(owner.start_battle())
+        with self.assertRaisesRegex(ScriptError, '请填写快速预设编号'):
+            owner.prepare_boss_preset()
+        with self.assertRaisesRegex(ScriptError, '快速预设尚未确认'):
+            owner.start_battle()
         owner.run_quick_loadout.assert_not_called()
 
     def test_ticket_entry_uses_mode_settings_without_copying_runtime(self):

@@ -158,7 +158,7 @@ class Script:
                     line = line.strip(' \r\t\n')
                     if re.match('^═{15,}$', line):
                         start = index
-                lines = lines[start - 2:]
+                lines = lines[max(0, start - 2):]
                 lines = handle_sensitive_logs(lines)
             with open(f'{folder}/log.txt', 'w', encoding='utf-8') as f:
                 f.writelines(lines)
@@ -837,6 +837,23 @@ class Script:
         if isinstance(e, TaskEnd):
             self._capture_task_runtime_outcome(command)
             return True
+
+        if command == 'MetaDemon' or isinstance(e, MetaDemonError):
+            # 超鬼王异常需要保留现场，不自动返回庭院或重启游戏。
+            logger.exception(e)
+            logger.critical('超鬼王发生异常，已停止脚本并保留当前界面')
+            try:
+                self.save_error_log()
+            except Exception:
+                logger.exception('保存超鬼王报错现场失败')
+            try:
+                self.config.notifier.push(
+                    title='超鬼王运行出错',
+                    content=f'<{self.config_name}> {e}；脚本已停止，请查看报错截图和日志',
+                )
+            except Exception:
+                logger.exception('发送超鬼王报错通知失败')
+            raise SystemExit(1)
 
         if isinstance(e, GameNotRunningError):
             logger.warning(e)

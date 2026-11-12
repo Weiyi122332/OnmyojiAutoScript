@@ -7,6 +7,7 @@ from module.atom.frame import RuleFrame
 from module.atom.image import RuleImage
 from module.atom.ocr import RuleOcr
 from module.base.timer import Timer
+from module.exception import ScriptError
 from module.logger import logger
 from tasks.Component.QuickLoadout.config import NamedQuickLoadoutConfig, QuickLoadoutConfig, QuickLoadoutMode
 from tasks.Component.QuickLoadout.quick_loadout import QuickLoadout, QuickLoadoutLayout
@@ -171,30 +172,22 @@ class FrameQuickLoadout(QuickLoadout):
         sleep(0.4)
         self.screenshot()
         if not self._quick_loadout_panel_visible(frame):
-            return False
+            raise ScriptError('超鬼王：选择阵容后快速预设面板丢失，无法确认出战')
         self.click(self._quick_loadout_fight(frame))
         timer = Timer(self.PANEL_CLOSE_TIMEOUT).start()
-        soul_change_cancelled = False
         while not timer.reached():
             self.screenshot()
             if self.appear(self.I_MD_PRESET_SOUL_PROMPT):
                 if equip_soul:
                     self.appear_then_click(self.I_SOU_SWITCH_SURE, interval=0.8)
                 else:
-                    self.click(self.C_MD_PRESET_SOUL_CANCEL, interval=0.8)
-                    soul_change_cancelled = True
+                    raise ScriptError('超鬼王：当前预设需要装配御魂，但本组未启用切换御魂')
                 continue
-            if soul_change_cancelled:
-                logger.warning('个人预设需要装配御魂才能出战，本组关闭了切换御魂')
-                self._dismiss_quick_loadout(frame, dismiss=dismiss)
-                return False
             if not self._quick_loadout_panel_visible(frame):
                 logger.info('Quick loadout deployed')
                 return True
             sleep(0.2)
-        logger.warning('Quick loadout deploy did not close panel')
-        self._dismiss_quick_loadout(frame, dismiss=dismiss)
-        return False
+        raise ScriptError('超鬼王：快速预设出战超时，无法确认阵容或御魂切换成功')
 
     def run_quick_loadout(
         self,
@@ -205,7 +198,7 @@ class FrameQuickLoadout(QuickLoadout):
         dismiss: RuleClick | None = None,
         skip_equip_soul: bool = False,
     ) -> bool:
-        """在同一面板上阵个人预设或租借阵容。"""
+        """在同一面板上阵个人预设或租借阵容，失败时保留面板并报错。"""
         if not config.enable:
             return True
         if isinstance(config, NamedQuickLoadoutConfig) and config.custom_preset_enable:
@@ -224,21 +217,15 @@ class FrameQuickLoadout(QuickLoadout):
         self._last_quick_loadout = None
         logger.hr('Quick loadout', 2)
         if not self._open_quick_loadout(frame):
-            return False
-        try:
-            layout = self._build_quick_loadout_layout(frame)
-            logger.info(f'Quick loadout panel: {layout.panel}')
-            if not self._select_group(layout, config):
-                self._dismiss_quick_loadout(frame, dismiss=dismiss)
-                return False
-            row_y = self._select_preset_row(layout, config)
-            if row_y is None:
-                self._dismiss_quick_loadout(frame, dismiss=dismiss)
-                return False
-            deployed = self._deploy_quick_loadout(layout, frame, row_y, equip_soul=equip_soul, dismiss=dismiss)
-            if deployed:
-                self._last_quick_loadout = target
-            return deployed
-        except Exception:
-            self._dismiss_quick_loadout(frame, dismiss=dismiss)
-            raise
+            raise ScriptError('超鬼王：无法打开快速预设面板')
+        layout = self._build_quick_loadout_layout(frame)
+        logger.info(f'Quick loadout panel: {layout.panel}')
+        if not self._select_group(layout, config):
+            raise ScriptError(f'超鬼王：未找到快速预设分组 {config.group_name or config.group_number}')
+        row_y = self._select_preset_row(layout, config)
+        if row_y is None:
+            raise ScriptError(f'超鬼王：未找到快速预设阵容 {config.preset_name or config.preset_number}')
+        if not self._deploy_quick_loadout(layout, frame, row_y, equip_soul=equip_soul, dismiss=dismiss):
+            raise ScriptError('超鬼王：无法确认快速预设出战成功')
+        self._last_quick_loadout = target
+        return True

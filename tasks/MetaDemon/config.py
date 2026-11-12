@@ -9,7 +9,7 @@ from typing import Annotated, ClassVar
 from pydantic import Field, field_validator, model_validator
 
 from module.config.multi_select import normalize_multi_select
-from tasks.Component.config_base import ConfigBase, TimeDelta
+from tasks.Component.config_base import ConfigBase, TimeDelta, dynamic_hide
 from tasks.Component.config_scheduler import Scheduler
 from tasks.Component.config_settings_layout import SettingsLayoutConfig, settings_section
 
@@ -114,6 +114,8 @@ class MetaDemonScheduler(Scheduler):
     wait_interval: TimeDelta = Field(
         default=TimeDelta(hours=1, minutes=40), description='疲劳度满时等待多久再运行超鬼王。',
     )
+    waiting_for_fatigue: bool = False
+    hide_fields = dynamic_hide('waiting_for_fatigue')
 
 
 def legacy_battle_disabled(data: dict) -> bool:

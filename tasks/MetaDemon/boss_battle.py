@@ -22,7 +22,7 @@ from tasks.MetaDemon.ticket_stars import recognize_boss_stars, recognize_summon_
 import tasks.MetaDemon.page as ipages
 
 from module.logger import logger
-from module.exception import TaskEnd
+from module.exception import MetaDemonError, ScriptError, TaskEnd
 
 
 RENTAL_LINEUP_NAMES = {
@@ -64,8 +64,21 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
         self.total_count = 0
         self._current_boss_attempts = 0
         self.conf = self.config.meta_demon
+        if self.conf.scheduler.waiting_for_fatigue:
+            with self.config.lock_config:
+                self.conf.scheduler.waiting_for_fatigue = False
+                self.config.save()
 
     def run(self):
+        try:
+            self._run_boss_queue()
+        except TaskEnd:
+            raise
+        except Exception as exc:
+            # 任务组只知道外层任务名，用专用异常保留超鬼王的停止策略。
+            raise MetaDemonError(str(exc)) from exc
+
+    def _run_boss_queue(self):
         self.before_run()
         self.goto_page(ipages.page_meta_demon_boss)
         while not self.State.done:
@@ -76,9 +89,11 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
                     self.goto_page(ipages.page_meta_demon_boss)
                 case ipages.page_meta_demon_boss:
                     if not self.check_and_prepare_battle():
-                        break
+                        if self.State.done:
+                            break
+                        raise ScriptError('超鬼王：战斗准备失败，召唤队列尚未完成')
                     if not self.start_battle() and not self.appear(self.I_MD_SETTLING):
-                        break
+                        raise ScriptError('超鬼王：未能进入战斗，且未检测到结算状态')
                 case ipages.page_battle:
                     self.battle_wait(False)
                 case ipages.page_reward:
@@ -104,7 +119,7 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
 
     def start_battle(self):
         if self.cur_boss_type is None or self._active_preset is None:
-            return False
+            raise ScriptError('超鬼王：当前鬼王星级或快速预设尚未确认，无法开始战斗')
         logger.hr('Click fire, start battle')
         while True:
             self.screenshot()
@@ -122,8 +137,7 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
                     continue
                 # 不喝茶则结束任务安排下一次运行
                 self.ui_click_until_disappear(self.I_MD_CLOSE_POPUP, interval=0.6)
-                self.set_next_run('MetaDemon', target=datetime.now() + self.conf.scheduler.wait_interval)
-                self.finish_task()
+                self.wait_for_fatigue()
             if self.appear(self.I_MD_SETTLING):
                 return False
             self.appear_then_click(self.I_MD_FIRE, interval=0.8)
@@ -195,8 +209,6 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
         verification_failures = 0
         while True:
             self.screenshot()
-            if click_cnt >= max_cnt:  # 兜底,多次点击开始合成都没有出现获得奖励则退出
-                break
             if self.appear(self.I_MD_SYNTHESIS_NEED_MONEY, interval=0.8):  # 出现花钱购买合成券
                 self.ui_click(self.I_MD_CLOSE_POPUP, self.I_MD_START_SYNTHESIS, interval=0.6)  # 关闭购买弹窗
                 break
@@ -209,6 +221,8 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
                 if len(empty_list) < need_ticket:  # 空位数量小于需要的门票数量->门票不够则退出
                     logger.info(f'{target_boss_ticket} ticket not enough, skip synthesis')
                     break
+            if click_cnt >= max_cnt:
+                raise ScriptError('超鬼王：多次点击合成后仍未出现奖励，无法确认合成结果')
             if not self.ticket_matches_star(target_boss_ticket, material_level, synthesis=True):
                 logger.info('合成材料未通过底部星级复核，跳过本星级')
                 break
@@ -225,8 +239,7 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
                         f'要求={int(material_level)}, 重试={verification_failures}/3'
                     )
                     if verification_failures >= 3:
-                        logger.warning('连续三次无法确认目标合成星级，跳过本星级')
-                        break
+                        raise ScriptError('超鬼王：连续三次无法确认目标合成星级')
                     continue
                 verification_failures = 0
                 if self.appear_then_click(self.I_MD_START_SYNTHESIS, interval=2.5):  # 点击开始合成
@@ -239,9 +252,20 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
         current, remain, total = self.O_MD_FATIGUE.ocr_digit_counter(self.device.image)
         # 不喝茶且当前疲劳度已满
         if not self.conf.meta_demon_config.auto_tea and (current > total or remain < 0):
-            self.set_next_run('MetaDemon', target=datetime.now() + self.conf.scheduler.wait_interval)
-            self.finish_task()
+            self.wait_for_fatigue()
         return True
+
+    def wait_for_fatigue(self):
+        """疲劳等待使用独立恢复时间，不对齐常规 cron 或随机浮动。"""
+        self.config.reload()
+        scheduler = self.config.meta_demon.scheduler
+        next_run = (datetime.now() + scheduler.wait_interval).replace(microsecond=0)
+        with self.config.lock_config:
+            scheduler.next_run = next_run
+            scheduler.waiting_for_fatigue = True
+            self.config.save()
+        logger.info(f'超鬼王等待疲劳恢复，下次运行：{next_run}（不受 cron 影响）')
+        self.finish_task()
 
     def next_summon_star(self) -> BossType | None:
         if not self.appear(self.I_MD_SWITCH_TICKET):
@@ -284,9 +308,7 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
                 continue
             if self.appear(self.I_MD_GET_BOSS):
                 if checking_empty:
-                    logger.warning('召唤队列仍有门票，主页下一只星级未识别')
-                    self.appear_then_click(self.I_MD_CLOSE_POPUP, interval=0.8)
-                    return False
+                    raise ScriptError('超鬼王：召唤队列仍有门票，但无法识别下一只鬼王星级')
                 if self.appear_then_click(self.I_MD_CLOSE_POPUP, interval=0.8):
                     settle_until = time.monotonic() + 0.8
                 continue
@@ -311,8 +333,7 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
                 pending_star = preview
                 settle_until = time.monotonic() + 3
 
-        logger.warning('未能确认鬼王召唤，结束本轮')
-        return False
+        raise ScriptError('超鬼王：25 秒内未能确认当前鬼王星级或召唤结果')
 
     def ticket_matches_star(self, ticket: RuleImage, star: BossType, *, synthesis=False) -> bool:
         if not self.appear(ticket):
@@ -335,10 +356,9 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
         """检查并切换是否开启强力"""
         logger.hr('process power fire')
         if not self.appear(self.I_MD_FIRE):
-            self.goto_page(ipages.page_meta_demon_boss)
             self.screenshot()
             if not self.appear(self.I_MD_FIRE):  # 处于boss界面但是没有挑战按钮
-                return False
+                raise ScriptError('超鬼王：切换强力追击前未找到挑战按钮')
         enabled, disabled = self.I_MD_ENABLE_POWERFUL_FIRE, self.I_MD_DISABLE_POWERFUL_FIRE
         click, stop = (disabled, enabled) if self.enable_powerful_fire else (enabled, disabled)
         self.ui_click(click, stop, interval=0.6)
@@ -347,10 +367,14 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
     def prepare_boss_preset(self) -> bool:
         if self._active_preset is not None:
             return True
+        if self.cur_boss_type is None:
+            raise ScriptError('超鬼王：未确认当前鬼王星级，无法选择快速预设')
 
         name = ''
         if self.cur_boss_type >= BossType.FIVE_STARS:
             name = self._normalize_name(self._read_quick_loadout_stage_name(self.O_BOSS_NAME))
+            if not name:
+                raise ScriptError('超鬼王：无法识别当前鬼王名称，无法选择对应快速预设')
         preset = self.conf.preset_for(self.cur_boss_type, name)
         preset_group = ('low_star_preset' if self.cur_boss_type <= BossType.FOUR_STARS
                         else SPECIAL_BOSS_PRESETS.get(name, 'high_star_preset'))
@@ -370,15 +394,14 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
                                       group_number=group, preset_number=team)
         elif preset.group_name or preset.preset_name or preset.switch_soul:
             if not preset.group_name or not preset.preset_name:
-                logger.warning('请填写快速预设编号，或同时填写分组名和队伍名')
-                return False
+                raise ScriptError('超鬼王：请填写快速预设编号，或同时填写分组名和队伍名')
             quick = QuickLoadoutConfig(enable=True, mode=QuickLoadoutMode.OCR,
                                       group_name=preset.group_name, preset_name=preset.preset_name)
 
         if quick and not self.run_quick_loadout(
             quick, frame=self.F_QUICK_LOADOUT_FRAME, skip_equip_soul=bool(rental_name) or not preset.switch_soul,
         ):
-            return False
+            raise ScriptError(f'超鬼王：快速预设切换失败（{PRESET_GROUPS[preset_group]}）')
         self._active_preset = preset
         return True
 

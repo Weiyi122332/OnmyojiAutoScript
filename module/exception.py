@@ -23,6 +23,10 @@ class ScriptError(Exception):
     pass
 
 
+class MetaDemonError(ScriptError):
+    """超鬼王失败后保留现场，包括在任务组中运行的情况。"""
+
+
 class ScriptEnd(Exception):
     pass
 
