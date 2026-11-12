@@ -1,7 +1,12 @@
 """MetaDemon quick presets, settings payload and ticket-runner mapping."""
+from copy import copy
+from pathlib import Path
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
+
+import numpy as np
+from PIL import Image
 
 from module.config.config_model import ConfigModel
 from module.server.i18n import Addition
@@ -232,16 +237,70 @@ class MetaDemonSettingsChecks(unittest.TestCase):
             MetaDemon(low_star_preset={'preset_numbers': '1,0'})
 
     def test_first_personal_group_skips_rental_tab_without_swiping(self):
+        for rental_visible, expected_y in ((True, 306), (False, 255)):
+            with self.subTest(rental_visible=rental_visible):
+                owner = BossBattle.__new__(BossBattle)
+                layout = owner._quick_loadout_layout_at((496, 224, 553, 387), reference_size=owner.PANEL_SIZE)
+                owner.appear = Mock(return_value=rental_visible)
+                owner.device = SimpleNamespace(click=Mock())
+                owner.swipe = Mock()
+                with patch('tasks.MetaDemon.quick_loadout.sleep'):
+                    self.assertTrue(owner._select_group(layout, QuickLoadoutConfig(mode=QuickLoadoutMode.NUMBER)))
+                owner.appear.assert_called_once_with(owner.I_MD_RENTAL_TAB)
+                owner.device.click.assert_called_once_with(557, expected_y, control_name='QUICK_LOADOUT_GROUP')
+                owner.swipe.assert_not_called()
+
+    def test_rental_group_recovers_from_the_clipped_live_tab(self):
+        owner = BossBattle.__new__(BossBattle)
+        owner.I_MD_RENTAL_TAB = copy(owner.I_MD_RENTAL_TAB)
+        layout = owner._quick_loadout_layout_at((496, 224, 553, 387), reference_size=owner.PANEL_SIZE)
+        frames = []
+        for name in ('rental_tab_clipped', 'rental_tab_visible'):
+            path = Path(__file__).parent / 'fixtures' / 'meta_demon' / f'{name}.png'
+            crop = np.array(Image.open(path).convert('RGB'))
+            frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+            frame[228:291, 498:610] = crop
+            frames.append(frame)
+        self.assertFalse(owner.I_MD_RENTAL_TAB.template_match(frames[0]))
+        self.assertTrue(owner.I_MD_RENTAL_TAB.template_match(frames[1]))
+        owner.device = SimpleNamespace(image=frames[0], click=Mock())
+        owner.appear = lambda rule: rule.template_match(owner.device.image)
+        owner.screenshot = Mock(side_effect=lambda: setattr(owner.device, 'image', frames[1]))
+        owner.swipe = Mock()
+        config = QuickLoadoutConfig(mode=QuickLoadoutMode.OCR, group_name='队伍租借', preset_name='普攻')
+        with patch('tasks.MetaDemon.quick_loadout.sleep'):
+            self.assertTrue(owner._select_group(layout, config))
+        owner.swipe.assert_called_once_with(layout.group_swipe_to_top)
+        owner.screenshot.assert_called_once()
+        owner.device.click.assert_called_once_with(557, 255, control_name='QUICK_LOADOUT_GROUP')
+
+    def test_visible_rental_group_does_not_scroll(self):
         owner = BossBattle.__new__(BossBattle)
         layout = owner._quick_loadout_layout_at((496, 224, 553, 387), reference_size=owner.PANEL_SIZE)
         owner.appear = Mock(return_value=True)
         owner.device = SimpleNamespace(click=Mock())
         owner.swipe = Mock()
+        owner.screenshot = Mock()
+        config = QuickLoadoutConfig(mode=QuickLoadoutMode.OCR, group_name='队伍租借', preset_name='单体')
         with patch('tasks.MetaDemon.quick_loadout.sleep'):
-            self.assertTrue(owner._select_group(layout, QuickLoadoutConfig(mode=QuickLoadoutMode.NUMBER)))
-        owner.appear.assert_called_once_with(owner.I_MD_RENTAL_TAB)
-        owner.device.click.assert_called_once_with(557, 306, control_name='QUICK_LOADOUT_GROUP')
+            self.assertTrue(owner._select_group(layout, config))
         owner.swipe.assert_not_called()
+        owner.screenshot.assert_not_called()
+        owner.device.click.assert_called_once_with(557, 255, control_name='QUICK_LOADOUT_GROUP')
+
+    def test_unavailable_rental_group_stops_after_bounded_scrolls(self):
+        owner = BossBattle.__new__(BossBattle)
+        layout = owner._quick_loadout_layout_at((496, 224, 553, 387), reference_size=owner.PANEL_SIZE)
+        owner.appear = Mock(return_value=False)
+        owner.device = SimpleNamespace(click=Mock())
+        owner.swipe = Mock()
+        owner.screenshot = Mock()
+        config = QuickLoadoutConfig(mode=QuickLoadoutMode.OCR, group_name='队伍租借', preset_name='群体')
+        with patch('tasks.MetaDemon.quick_loadout.sleep'):
+            self.assertFalse(owner._select_group(layout, config))
+        self.assertEqual(owner.swipe.call_count, 3)
+        self.assertEqual(owner.screenshot.call_count, 3)
+        owner.device.click.assert_not_called()
 
     def test_deploy_soul_prompt_respects_the_equip_option(self):
         for equip in (True, False):

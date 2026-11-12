@@ -17,6 +17,7 @@ class FrameQuickLoadout(QuickLoadout):
     PANEL_SIZE = (555, 388)
     RENTAL_GROUP_NAME = '队伍租借'
     GROUP_BOTTOM_CLICK_Y = 371
+    RENTAL_GROUP_MAX_SWIPES = 3
 
     def _build_quick_loadout_layout(self, frame: RuleFrame) -> QuickLoadoutLayout:
         if len(frame.roi_ranges) not in (2, 3):
@@ -97,7 +98,16 @@ class FrameQuickLoadout(QuickLoadout):
             y = self._panel_row(layout, offset)
         elif config.group_name == self.RENTAL_GROUP_NAME:
             if not rental_tab:
-                logger.warning('快速预设中未找到队伍租借分组')
+                logger.info('队伍租借分组不可见，向下滑动分组列表回到顶部')
+                for _ in range(self.RENTAL_GROUP_MAX_SWIPES):
+                    self.swipe(layout.group_swipe_to_top)
+                    sleep(0.45)
+                    self.screenshot()
+                    rental_tab = self.appear(self.I_MD_RENTAL_TAB)
+                    if rental_tab:
+                        break
+            if not rental_tab:
+                logger.warning('滑动后仍未找到队伍租借分组')
                 return False
             y = self._panel_row(layout, self.GROUP_FIRST_Y)
         else:
