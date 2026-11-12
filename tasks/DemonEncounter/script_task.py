@@ -14,8 +14,7 @@ from module.base.timer import Timer
 
 from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.DemonEncounter.config import BossType, DemonEncounter, convert_to_general_battle_config
-from tasks.DemonEncounter.page import page_rwt
-from tasks.GameUi.default_pages import page_demon_encounter, page_main
+from tasks.GameUi.default_pages import page_demon_encounter, page_main, page_town
 from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.page import page_shikigami_records
 from tasks.DemonEncounter.assets import DemonEncounterAssets
@@ -62,7 +61,7 @@ class ScriptTask(GameUi, GeneralBattle, DemonEncounterAssets, SwitchSoul):
         if soul_config.enable or best_soul_config.enable:
             self.goto_page(page_shikigami_records)
             self.checkout_soul()
-        self.goto_page(page_rwt)
+        self.goto_page(page_demon_encounter)
         if not self._check_challenge_count():
             logger.info('No challenge count left today, finish DemonEncounter')
             self.goto_page(page_main)
@@ -178,8 +177,8 @@ class ScriptTask(GameUi, GeneralBattle, DemonEncounterAssets, SwitchSoul):
                     self.set_next_run(task='DemonEncounter', success=False, finish=True, server=True)
                     raise TaskEnd('DemonEncounter')
                 logger.info(f'Boss not found, re-enter demon encounter map (round {reenter_round}/3)')
+                self.goto_page(page_town)
                 self.goto_page(page_demon_encounter)
-                self.goto_page(page_rwt)
 
             raise GameStuckError(
                 f'Cannot enter {boss_name} after 3 re-enter rounds '
