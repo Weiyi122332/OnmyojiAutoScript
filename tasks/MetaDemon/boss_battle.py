@@ -12,10 +12,13 @@ from tasks.Component.GeneralBattle.general_battle import GeneralBattle
 from tasks.Component.QuickLoadout.config import QuickLoadoutConfig, QuickLoadoutMode
 from tasks.MetaDemon.quick_loadout import FrameQuickLoadout
 from tasks.GameUi.game_ui import GameUi
-from tasks.MetaDemon.config import BossType, MetaDemon, MetaDemonBattlePreset, MetaDemonRentalLineup
+from tasks.MetaDemon.config import (
+    BossType, MetaDemon, MetaDemonBattlePreset, MetaDemonRentalLineup,
+    PRESET_GROUPS, SPECIAL_BOSS_PRESETS,
+)
 from tasks.MetaDemon.assets import MetaDemonAssets
 from tasks.MetaDemon.synthesis import parse_synthesis_material_level
-from tasks.MetaDemon.ticket_stars import recognize_summon_preview, recognize_ticket_stars
+from tasks.MetaDemon.ticket_stars import recognize_boss_stars, recognize_summon_preview, recognize_ticket_stars
 import tasks.MetaDemon.page as ipages
 
 from module.logger import logger
@@ -246,6 +249,10 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
         stars = recognize_summon_preview(self.device.image, self.I_MD_SWITCH_TICKET.roi_front)
         return BossType(stars) if stars is not None else None
 
+    def current_boss_star(self) -> BossType | None:
+        stars = recognize_boss_stars(self.device.image)
+        return BossType(stars) if stars is not None else None
+
     def summon_boss(self) -> bool:
         """按主页显示的下一只星级直接召唤。"""
         pending_star = None
@@ -255,15 +262,16 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
         while time.monotonic() < deadline:
             self.screenshot()
             if self.appear(self.I_MD_FIRE):
-                if pending_star is not None:
+                if pending_star is not None or self.cur_boss_type is None:
+                    # 重启后没有召唤记录，仍可从已有鬼王的头像下恢复星级。
+                    star = self.current_boss_star() or pending_star
+                    if star is None:
+                        continue
                     self.current_count = 0
-                    self.cur_boss_type = pending_star
+                    self.cur_boss_type = star
                     self._current_boss_attempts = 0
                     self._active_preset = None
-                    logger.info(f'已确认召唤 {int(pending_star)} 星鬼王')
-                if self.cur_boss_type is None:
-                    logger.warning('当前已有鬼王，无法确认星级，结束本轮')
-                    return False
+                    logger.info(f'已确认当前 {int(star)} 星鬼王')
                 return True
 
             if pending_star is None and self.appear(self.I_MD_TICKET_EMPTY):
@@ -344,7 +352,14 @@ class BossBattle(GeneralBattle, FrameQuickLoadout, GameUi, MetaDemonAssets):
         if self.cur_boss_type >= BossType.FIVE_STARS:
             name = self._normalize_name(self._read_quick_loadout_stage_name(self.O_BOSS_NAME))
         preset = self.conf.preset_for(self.cur_boss_type, name)
+        preset_group = ('low_star_preset' if self.cur_boss_type <= BossType.FOUR_STARS
+                        else SPECIAL_BOSS_PRESETS.get(name, 'high_star_preset'))
         rental_name = RENTAL_LINEUP_NAMES.get(preset.rental_lineup)
+        logger.info(
+            f'鬼王 {int(self.cur_boss_type)} 星 {name}，快速预设：{PRESET_GROUPS[preset_group]}，'
+            f'强力追击次数：{preset.powerful_count}，'
+            f'阵容：{rental_name or preset.preset_numbers or preset.preset_name or "沿用当前阵容"}'
+        )
         quick = None
         if rental_name:
             quick = QuickLoadoutConfig(enable=True, mode=QuickLoadoutMode.OCR,

@@ -49,3 +49,11 @@ def recognize_summon_preview(image, queue_area) -> int | None:
     if any(orange > 6 or gray < 14 for orange, gray in zip(orange_pixels[stars:], gray_pixels[stars:])):
         return None
     return stars
+
+
+def recognize_boss_stars(image) -> int | None:
+    """Read the star slots below the own-boss portrait on the battle page.
+
+    The counter below the boss skills is the remaining enemy count, not stars.
+    """
+    return recognize_ticket_stars(image, (46, 136, 84, 84))

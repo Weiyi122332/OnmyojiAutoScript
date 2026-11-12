@@ -5,6 +5,7 @@
 import multiprocessing
 from asyncio import QueueEmpty, CancelledError, sleep
 from enum import Enum
+from threading import RLock
 
 from module.logger import logger
 from module.server.config_manager import ConfigManager
@@ -33,6 +34,7 @@ class ScriptProcess(ScriptWSManager):
         self.state_queue = _SCRIPT_PROCESS_CONTEXT.Queue()
         self.state: ScriptState = ScriptState.INACTIVE
         self._process = None
+        self._process_lock = RLock()
         self._latest_schedule: dict | None = None
 
     def schedule_with_live_dokan(self, schedule: dict) -> dict:
@@ -63,35 +65,42 @@ class ScriptProcess(ScriptWSManager):
         return message
 
     async def start(self):
-        self._latest_schedule = None
-        self.state = ScriptState.RUNNING
+        # 创建进程前不能让出控制权，否则重复的启动请求可能丢失旧进程句柄。
+        with self._process_lock:
+            if self._process and self._process.is_alive():
+                logger.info(f'Script {self.config_name} is already running, keep current process')
+            else:
+                if self._process is not None:
+                    self._process.join(timeout=0)
+                self._latest_schedule = None
+                self._process = _SCRIPT_PROCESS_CONTEXT.Process(
+                    target=func,
+                    args=(self.config_name, self.state_queue, self.log_pipe_in,),
+                    name=self.config_name,
+                    daemon=True,
+                )
+                self._process.start()
+            self.state = ScriptState.RUNNING
         await self.broadcast_state({"state": self.state})
-        if self._process:
-            logger.warning(f'Script {self.config_name} is initialized')
-        if self._process and self._process.is_alive():
-            logger.warning(f'Script {self.config_name} is already running and first stop it')
-            self.stop()
-        self._process = _SCRIPT_PROCESS_CONTEXT.Process(
-            target=func,
-            args=(self.config_name, self.state_queue, self.log_pipe_in,),
-            name=self.config_name,
-            daemon=True,
-        )
-        self._process.start()
 
 
     async def stop(self):
-        self._latest_schedule = None
-        self.state = ScriptState.INACTIVE
+        with self._process_lock:
+            if self._process is not None:
+                if self._process.is_alive():
+                    self._process.terminate()
+                    self._process.join(timeout=3)
+                    if self._process.is_alive():
+                        self._process.kill()
+                        self._process.join(timeout=3)
+                    if self._process.is_alive():
+                        raise RuntimeError(f'Script {self.config_name} process did not stop')
+                else:
+                    self._process.join(timeout=0)
+                self._process = None
+            self._latest_schedule = None
+            self.state = ScriptState.INACTIVE
         await self.broadcast_state({"state": self.state})
-        if self._process is None:
-            logger.warning(f'Script {self.config_name} process is removed')
-            return
-        if not self._process.is_alive():
-            logger.warning(f'Script {self.config_name} is not running')
-            return
-        self._process.terminate()
-        self._process = None
 
     async def coroutine_broadcast_state(self):
         try:
@@ -194,8 +203,10 @@ def func(config: str, state_queue: multiprocessing.Queue, log_pipe_in) -> None:
 
 
 if __name__ == '__main__':
+    import asyncio
+
     p = ScriptProcess('oas1')
-    p.start()
+    asyncio.run(p.start())
     from time import sleep
     sleep(10)
     logger.info(p._process.exitcode)

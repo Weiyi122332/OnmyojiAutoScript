@@ -5,6 +5,7 @@ import copy
 import unittest
 from datetime import datetime
 from types import SimpleNamespace
+from threading import RLock
 from unittest.mock import AsyncMock, Mock, patch
 
 from module.config.config import Config
@@ -16,6 +17,7 @@ def process_fixture():
     process = ScriptProcess.__new__(ScriptProcess)
     process.state = ScriptState.RUNNING
     process._process = Mock()
+    process._process_lock = RLock()
     process._process.is_alive.return_value = True
     process._latest_schedule = {
         'running': {'name': 'Dokan', 'next_run': '2026-10-09 20:55:01'},
@@ -110,6 +112,7 @@ class LiveDokanProcessTests(unittest.IsolatedAsyncioTestCase):
         process.broadcast_state = AsyncMock()
         process._process = None
         child = Mock()
+        child.is_alive.side_effect = [True, False, False]
         with patch('module.server.script_process._SCRIPT_PROCESS_CONTEXT.Process', return_value=child):
             await process.start()
         self.assertIsNone(process._latest_schedule)

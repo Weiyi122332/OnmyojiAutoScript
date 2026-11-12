@@ -1,5 +1,6 @@
 """Verify the main-page summon path and its star preview."""
 from copy import copy
+from pathlib import Path
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
@@ -12,7 +13,7 @@ from tasks.MetaDemon import page as pages
 from tasks.MetaDemon.assets import MetaDemonAssets
 from tasks.MetaDemon.boss_battle import BossBattle
 from tasks.MetaDemon.config import BossType
-from tasks.MetaDemon.ticket_stars import recognize_summon_preview
+from tasks.MetaDemon.ticket_stars import recognize_boss_stars, recognize_summon_preview
 
 
 class SummonChecks(unittest.TestCase):
@@ -52,6 +53,7 @@ class SummonChecks(unittest.TestCase):
         task.appear = appear
         task.appear_then_click = click
         task.next_summon_star = lambda: frame().get('preview')
+        task.current_boss_star = lambda: frame().get('boss_star')
         time_patch = patch('tasks.MetaDemon.boss_battle.time.monotonic', side_effect=lambda: state['time'])
         return task, clicks, time_patch
 
@@ -89,6 +91,56 @@ class SummonChecks(unittest.TestCase):
         self.assertFalse(task.start_battle())
         self.assertFalse(task.State.done)
         self.assertEqual(clicks, [])
+
+    def test_existing_boss_recovers_stars_without_summoning(self):
+        task, clicks, clock = self.make_task([
+            {'fire': True},  # 页面动画期间等待头像星级出现。
+            {'fire': True, 'boss_star': BossType.FIVE_STARS},
+        ])
+        with clock:
+            self.assertTrue(task.summon_boss())
+        self.assertEqual(task.cur_boss_type, BossType.FIVE_STARS)
+        self.assertEqual(task._current_boss_attempts, 0)
+        self.assertIsNone(task._active_preset)
+        self.assertEqual(clicks, [])
+
+    def test_existing_boss_keeps_attempts_and_prepared_lineup_between_attacks(self):
+        task, clicks, clock = self.make_task([{'fire': True}])
+        task.cur_boss_type = BossType.FIVE_STARS
+        preset = object()
+        task._active_preset = preset
+        with clock:
+            self.assertTrue(task.summon_boss())
+        self.assertEqual(task._current_boss_attempts, 2)
+        self.assertIs(task._active_preset, preset)
+        self.assertEqual(clicks, [])
+
+    def test_current_portrait_takes_precedence_over_stale_summon_preview(self):
+        task, clicks, clock = self.make_task([
+            {'preview': BossType.FIVE_STARS, 'summon': True},
+            {'fire': True, 'boss_star': BossType.SIX_STARS},
+        ])
+        with clock:
+            self.assertTrue(task.summon_boss())
+        self.assertEqual(task.cur_boss_type, BossType.SIX_STARS)
+        self.assertEqual(clicks, [(0, task.I_MD_SUMMON_BOSS)])
+
+    def test_live_five_star_portrait_recovers_the_existing_boss(self):
+        image_path = Path(__file__).parent / 'fixtures' / 'meta_demon' / 'five_star_portrait.png'
+        portrait = np.array(Image.open(image_path).convert('RGB'))
+        frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+        frame[136:220, 46:130] = portrait
+        self.assertEqual(recognize_boss_stars(frame), 5)
+        task, clicks, clock = self.make_task([{'fire': True}])
+        task.device = SimpleNamespace(image=frame)
+        task.current_boss_star = BossBattle.current_boss_star.__get__(task)
+        with clock:
+            self.assertTrue(task.summon_boss())
+        self.assertEqual(task.cur_boss_type, BossType.FIVE_STARS)
+        self.assertEqual(clicks, [])
+        self.assertIsNone(recognize_boss_stars(np.zeros_like(frame)))
+        self.assertIsNone(recognize_boss_stars(None))
+        self.assertIsNone(recognize_boss_stars(frame[:100]))
 
     def test_preview_missing_checks_empty_marker_without_summoning(self):
         for empty in (False, True):
