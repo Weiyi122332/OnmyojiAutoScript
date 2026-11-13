@@ -568,6 +568,9 @@ class ConfigModel(ConfigBase):
         if isinstance(task_object, MetaDemon) and scheduler.waiting_for_fatigue:
             logger.info(f'{task}: preserve fatigue recovery time {scheduler.next_run}')
             return False
+        if isinstance(task_object, MetaDemonTicket) and scheduler.waiting_for_realm_raid:
+            logger.info(f'{task}: preserve ticket continuation time {scheduler.next_run}')
+            return False
 
         cron_text = str(getattr(scheduler, 'cron', '') or '').strip()
         if not cron_text:

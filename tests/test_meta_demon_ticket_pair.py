@@ -1,5 +1,6 @@
 """Ticket pair completion and configuration fallback regression checks."""
 from datetime import datetime, timedelta
+from threading import Lock
 import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
@@ -113,7 +114,8 @@ class TicketPairChecks(unittest.TestCase):
                 owner = self.owner(True)
                 owner.config.reload = events.reload
                 owner.config.task_call = events.task_call
-                owner.set_next_run = events.set_next_run
+                owner.config.save = events.save
+                owner.config.lock_config = Lock()
                 events.task_call.return_value = True
                 runner = Mock()
                 runner._config = Exploration(scrolls={'scrolls_cd': delay})
@@ -130,8 +132,11 @@ class TicketPairChecks(unittest.TestCase):
                     call.finish_exploration(),
                     call.reload(),
                     call.task_call('RealmRaid', force_call=False),
-                    call.set_next_run(task='MetaDemonTicket', target=now + max(delay, timedelta(seconds=1))),
+                    call.save(),
                 ])
+                self.assertEqual(owner.config.meta_demon_ticket.scheduler.next_run,
+                                 now + max(delay, timedelta(seconds=1)))
+                self.assertTrue(owner.config.meta_demon_ticket.scheduler.waiting_for_realm_raid)
                 owner.config.cooperation_runtime.notify_task_completion.assert_called_once_with(
                     'MetaDemonTicket', 'other', 'ticket_finished',
                 )

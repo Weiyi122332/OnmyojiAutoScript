@@ -397,6 +397,13 @@ def run_ticket_farming(owner, mode) -> bool:
         config.reload()
         if config.task_call('RealmRaid', force_call=False):
             cooldown = max(runner._config.scrolls.scrolls_cd, timedelta(seconds=1))
-            owner.set_next_run(task='MetaDemonTicket', target=datetime.now() + cooldown)
+            next_run = (datetime.now() + cooldown).replace(microsecond=0)
+            # 清突破只是中断本轮刷票，续刷不能被常规 cron 和随机浮动延后。
+            with config.lock_config:
+                scheduler = config.meta_demon_ticket.scheduler
+                scheduler.next_run = next_run
+                scheduler.waiting_for_realm_raid = True
+                config.save()
+            logger.info(f'鬼王门票暂停清突破，续刷时间：{next_run}（不受 cron 影响）')
             raise TaskEnd
     return result

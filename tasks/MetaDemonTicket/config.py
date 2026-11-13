@@ -6,7 +6,7 @@ from pydantic import Field, field_validator
 
 from module.config.multi_select import normalize_multi_select
 from module.cooperation import instance_name
-from tasks.Component.config_base import ConfigBase, Time
+from tasks.Component.config_base import ConfigBase, Time, dynamic_hide
 from tasks.Component.config_scheduler import Scheduler
 from tasks.Component.config_settings_layout import SettingsLayoutConfig, settings_section
 from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
@@ -19,6 +19,11 @@ from tasks.Exploration.config import UserStatus
 class TicketMode(str, Enum):
     AWAKE = '门票刷取：觉醒'
     EXPLORATION = '门票刷取：探索'
+
+
+class MetaDemonTicketScheduler(Scheduler):
+    waiting_for_realm_raid: bool = False
+    hide_fields = dynamic_hide('waiting_for_realm_raid')
 
 
 class TicketGeneralConfig(ConfigBase):
@@ -59,7 +64,7 @@ class MetaDemonTicket(ConfigBase):
         settings_section('general_battle_config', '战斗配置', groups=[{'name': 'general_battle_config'}]),
     ]
 
-    scheduler: Scheduler = Field(default_factory=Scheduler)
+    scheduler: MetaDemonTicketScheduler = Field(default_factory=MetaDemonTicketScheduler)
     general_config: TicketGeneralConfig = Field(default_factory=TicketGeneralConfig)
     invite_config: TicketInviteConfig = Field(default_factory=TicketInviteConfig)
     switch_soul_config: SwitchSoulConfig = Field(default_factory=SwitchSoulConfig)
