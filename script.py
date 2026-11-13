@@ -342,7 +342,6 @@ class Script:
             bool: True if wait finished, False if config changed.
         """
         future = future + timedelta(seconds=1)
-        self.config.start_watching()
         while 1:
             # if self.stop_event is not None:
             #     if self.stop_event.is_set():
@@ -363,12 +362,12 @@ class Script:
                 if ((update_until is None or now >= update_until)
                         and self._antiban_wake_time(now) is None):
                     return False
+            # 沿用选任务前记录的版本，不能漏掉返回庭院等准备期间的配置修改。
+            if self.config.should_reload():
+                return False
             if datetime.now() > future:
                 return True
             time.sleep(1 if settings.qq_message_enable else 5)
-
-            if self.config.should_reload():
-                return False
 
     @staticmethod
     def _in_sleep_window(t, start, end) -> bool:
@@ -550,6 +549,9 @@ class Script:
         :return:
         """
         while True:
+            # 先记录版本再读取配置，保证立即执行不会被旧计划或等待准备吞掉。
+            self.config.start_watching()
+            self.config.reload()
             cooperation = self._meta_cooperation_runtime()
             if cooperation is not None:
                 now = datetime.now()

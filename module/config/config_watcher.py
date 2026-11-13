@@ -4,29 +4,27 @@
 import os
 from datetime import datetime
 
-from module.config.utils import filepath_config, DEFAULT_TIME
+from module.config.utils import filepath_config
 from module.logger import logger
 
 class ConfigWatcher:
     """
     监视特定配置文件修改的功能。
-    它跟踪了初始修改时间,(start_mtime)
+    它跟踪了初始纳秒修改时间,(start_mtime)
     并提供了方法来检查文件是否被修改(should_reload)
     和获取当前修改时间(get_mtime)。
     """
     config_name = 'script'
-    start_mtime = DEFAULT_TIME
+    start_mtime: int | None = None
 
     def start_watching(self) -> None:
         self.start_mtime = self.get_mtime()
 
-    def get_mtime(self) -> datetime:
+    def get_mtime(self) -> int:
         """
-        Last modify time of the file
+        File modification time in nanoseconds, including edits within one second.
         """
-        timestamp = os.stat(filepath_config(self.config_name)).st_mtime
-        mtime = datetime.fromtimestamp(timestamp).replace(microsecond=0)
-        return mtime
+        return os.stat(filepath_config(self.config_name)).st_mtime_ns
 
     def should_reload(self) -> bool:
         """
@@ -34,8 +32,8 @@ class ConfigWatcher:
             bool: Whether the file has been modified and configs should reload
         """
         mtime = self.get_mtime()
-        if mtime > self.start_mtime:
-            logger.info(f'Config "{self.config_name}" changed at {mtime}')
+        if mtime != self.start_mtime:
+            logger.info(f'Config "{self.config_name}" changed at {datetime.fromtimestamp(mtime / 1_000_000_000)}')
             return True
         else:
             return False

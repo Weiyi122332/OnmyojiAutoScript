@@ -242,6 +242,7 @@ class QQSchedulerTests(unittest.TestCase):
         config = self.task.config
         config.get_next = Mock(return_value=task)
         config.start_watching = Mock()
+        config.reload = Mock()
         config.should_reload = Mock(return_value=False)
         config.script = SimpleNamespace(optimization=Optimization())
         self.task.config_name = 'test'
@@ -267,9 +268,8 @@ class QQSchedulerTests(unittest.TestCase):
     def test_triggered_dojo_is_reported_running_in_dashboard_schedule(self):
         self.task.dokan_qq_monitor.state.flags.return_value = (True, True)
         self.task.dokan_qq_monitor.ready.is_set.return_value = True
-        config = self.task.config
+        config = self.scheduler_config(self.other)
         config.scheduler_update_dt = datetime.now() - timedelta(seconds=1)
-        config.get_next = Mock(return_value=self.other)
         config.get_schedule_data = MethodType(Config.get_schedule_data, config)
         self.task.state_queue = Mock()
         self.task._antiban_wake_time = Mock(return_value=None)
@@ -476,9 +476,9 @@ class QQSchedulerTests(unittest.TestCase):
         self.task.dokan_qq_monitor.state.flags.return_value = (True, True)
         self.task.dokan_qq_monitor.ready.is_set.return_value = True
         self.task.config.start_watching = Mock()
-        self.task.config.should_reload = Mock(return_value=True)
         for update, rest in ((datetime.now()+timedelta(hours=1), None),
                              (None, datetime.now()+timedelta(hours=1))):
+            self.task.config.should_reload = Mock(side_effect=[False, True])
             self.task.runtime = SimpleNamespace(server_update_wait_until=update)
             self.task._antiban_wake_time = Mock(return_value=rest)
             with patch('script.time.sleep') as sleep:
