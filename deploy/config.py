@@ -13,11 +13,11 @@ class ExecutionError(Exception):
 
 class ConfigModel:
     # Git
-    Repository: str = "https://gitcode.com/OnmyojiAutoScript/OnmyojiAutoScript.git"
-    Branch: str = "master"
+    Repository: str = "https://github.com/Weiyi122332/OnmyojiAutoScript.git"
+    Branch: str = "wy"
     GitExecutable: str = "./toolkit/Git/mingw64/bin/git.exe"
     GitProxy: Optional[str] = None
-    SSLVerify: bool = False
+    SSLVerify: bool = True
     AutoUpdate: bool = True
     KeepLocalChanges: bool = False
 
